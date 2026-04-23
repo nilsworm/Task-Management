@@ -80,6 +80,46 @@ class SprintCompletedEvent(IDomainEvent):
         return "sprint.completed"
 
 
+class TaskDeletedEvent(IDomainEvent):
+    def __init__(self, task_id: uuid.UUID) -> None:
+        super().__init__()
+        self.task_id = task_id
+
+    @property
+    def event_type(self) -> str:
+        return "task.deleted"
+
+
+class SprintDeletedEvent(IDomainEvent):
+    def __init__(self, sprint_id: uuid.UUID) -> None:
+        super().__init__()
+        self.sprint_id = sprint_id
+
+    @property
+    def event_type(self) -> str:
+        return "sprint.deleted"
+
+
+class GoalDeletedEvent(IDomainEvent):
+    def __init__(self, goal_id: uuid.UUID) -> None:
+        super().__init__()
+        self.goal_id = goal_id
+
+    @property
+    def event_type(self) -> str:
+        return "goal.deleted"
+
+
+class KeyResultDeletedEvent(IDomainEvent):
+    def __init__(self, key_result_id: uuid.UUID) -> None:
+        super().__init__()
+        self.key_result_id = key_result_id
+
+    @property
+    def event_type(self) -> str:
+        return "key_result.deleted"
+
+
 class GoalProgressEvent(IDomainEvent):
     def __init__(self, goal_id: uuid.UUID, progress_percent: float) -> None:
         if not (0.0 <= progress_percent <= 100.0):
