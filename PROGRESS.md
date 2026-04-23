@@ -63,6 +63,16 @@
 
 ## Session-Log
 
+### 2026-04-23 — Phase 3: Schema-Fixes (Migration 2)
+
+- FKs: tasks.sprint_id → sprints ON DELETE SET NULL; tasks.goal_id → goals ON DELETE SET NULL
+- key_results Tabelle: id, goal_id (FK CASCADE), title, description, target_value, current_value, unit
+- DROP sprint_task_ids (Redundanz); Sprint.task_ids jetzt via `tasks WHERE sprint_id = :id` geladen
+- tags TEXT (JSON) → ARRAY(varchar[]) auf tasks + goals (Postgres-nativ)
+- 5 Indizes auf tasks: status, sprint_id, goal_id, scheduled_date, task_type
+- Models + Mapper + PostgresSprintRepository + Infra-Tests aktualisiert
+- **289 Tests passing**
+
 ### 2026-04-22 — Phase 3, Step 4: Application Use Cases
 
 - CreateTaskUseCase, UpdateTaskUseCase, TransitionTaskUseCase, DeleteTaskUseCase
