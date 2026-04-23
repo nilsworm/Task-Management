@@ -1,9 +1,6 @@
-function App() {
-  return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-3xl font-bold">Task Manager</h1>
-    </main>
-  )
-}
+import { RouterProvider } from "react-router-dom"
+import { router } from "@/routes"
 
-export default App
+export default function App() {
+  return <RouterProvider router={router} />
+}
