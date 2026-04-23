@@ -7,6 +7,7 @@ from src.api.exception_handlers import (
     value_error_handler,
 )
 from src.api.health import router as health_router
+from src.api.routers.dashboard_router import router as dashboard_router
 from src.api.routers.goal_router import router as goal_router
 from src.api.routers.sprint_router import router as sprint_router
 from src.api.routers.task_router import router as task_router
@@ -33,3 +34,4 @@ app.include_router(health_router)
 app.include_router(task_router)
 app.include_router(sprint_router)
 app.include_router(goal_router)
+app.include_router(dashboard_router)

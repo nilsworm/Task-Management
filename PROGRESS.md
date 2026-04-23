@@ -44,8 +44,8 @@
 - [x] Task-Router (/tasks)
 - [x] Sprint-Router (/sprints)
 - [x] Goal-Router (/goals) inkl. KeyResults
-- [ ] Dashboard-Router (/dashboard)
-- [ ] OpenAPI-Spec exportieren
+- [x] Dashboard-Router (/dashboard)
+- [x] OpenAPI-Spec exportieren
 
 ### Phase 5 — Frontend
 - [ ] Types aus OpenAPI generieren (openapi-typescript)
@@ -64,6 +64,12 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-23 — Phase 4, Schritt 6+7: Dashboard-Router + OpenAPI-Export
+
+- `dashboard_router.py`: `GET /dashboard` → total_tasks, task_counts (by status), total_goals, active_sprint (mit completion_percent)
+- `openapi.json` exportiert: 15 Pfade (tasks, sprints, goals/key-results, dashboard, health)
+- 4 neue Tests — **353 total passing**
 
 ### 2026-04-23 — Phase 4, Schritt 5: Goal-Router + KeyResults
 
