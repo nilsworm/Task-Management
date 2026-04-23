@@ -50,7 +50,7 @@
 ### Phase 5 — Frontend
 - [x] Schritt 1: API-Anbindung & Type-Generierung
 - [x] Schritt 2: Layout & Routing
-- [ ] Schritt 3: Tasks-View
+- [x] Schritt 3: Tasks-View
 - [ ] Schritt 4: Sprint-View (Kanban-Board)
 - [ ] Schritt 5: Goals-View
 - [ ] Schritt 6: Dashboard
@@ -63,6 +63,19 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-24 — Phase 5, Schritt 3: Tasks-View
+
+- `src/api/hooks/tasks.ts`: useTasks, useCreateTask, useUpdateTask, useDeleteTask, useTransitionTask (optimistisches Update)
+- TasksPage: FilterBar + Tabelle + Create/Edit/Delete Modals
+- TaskFilterBar: Status / Priorität / Typ (client-seitig gefiltert)
+- TaskTable: shadcn Table mit StatusBadge, PriorityBadge, Actions
+- TaskActions: DropdownMenu mit erlaubten Status-Übergängen (TRANSITIONS-Map)
+- TaskCreateModal: type-aware (daily/sprint/goal/milestone Felder)
+- TaskEditModal: title, description, priority, estimation
+- TaskDeleteDialog: AlertDialog
+- Fix: shadcn-Komponenten hatten `src/`-Imports statt `@/` — global ersetzt
+- **27 Tests, alle grün**
 
 ### 2026-04-24 — Phase 5, Schritt 2: Layout & Routing
 
