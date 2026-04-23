@@ -22,18 +22,18 @@
 - [x] .gitignore, .env.example, README
 
 ### Phase 2 — Domain-Layer (Backend)
-- [ ] Value Objects: Priority, TaskStatus, Estimation, DateRange, Tag, BurndownPoint
-- [ ] State Machine: ITaskState + alle States mit Übergängen
-- [ ] Task-Hierarchie: abstract Task + DailyTask, SprintTask, LongTermGoal, Milestone
-- [ ] TaskFactory (ITaskFactory)
-- [ ] Domain Events + IEventBus (InMemoryEventBus)
-- [ ] Unit Tests für Domain-Logik
+- [x] Value Objects: Priority, TaskStatus, Estimation, DateRange, Tag, BurndownPoint
+- [x] State Machine: ITaskState + alle States mit Übergängen
+- [x] Task-Hierarchie: abstract Task + DailyTask, SprintTask, LongTermGoal, Milestone
+- [x] TaskFactory (ITaskFactory)
+- [x] Domain Events + IEventBus (InMemoryEventBus)
+- [x] Unit Tests für Domain-Logik
 
 ### Phase 3 — Application & Infrastructure
-- [ ] Repository-Interfaces: ITaskRepository, ISprintRepository, IGoalRepo
-- [ ] SQLAlchemy-Models + erste Alembic-Migration
-- [ ] Repository-Implementierungen (Postgres)
-- [ ] Application Services / Use Cases
+- [x] Repository-Interfaces: ITaskRepository, ISprintRepository, IGoalRepo
+- [x] SQLAlchemy-Models + erste Alembic-Migration
+- [x] Repository-Implementierungen (Postgres)
+- [x] Application Services / Use Cases
 - [ ] Planning Strategies (Daily, Sprint, Monthly)
 - [ ] Objective + KeyResult (OKR)
 - [ ] Event-Handler für Dashboard-Updates
@@ -62,6 +62,24 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-22 — Phase 3, Step 4: Application Use Cases
+
+- CreateTaskUseCase, UpdateTaskUseCase, TransitionTaskUseCase, DeleteTaskUseCase
+- CreateSprintUseCase, StartSprintUseCase, CompleteSprintUseCase, AddTaskToSprintUseCase
+- Fixed bug: estimation not forwarded to create_goal/create_milestone (unsupported by factory)
+- EventSpy helper in tests/application/conftest.py for event-capture assertions
+- 34 new unit tests (InMemory repos + EventBus, zero I/O) — **250 total passing**
+
+### 2026-04-23 — Phase 2 abgeschlossen
+
+- Value Objects: Priority, TaskStatus (Enums), Estimation, DateRange, Tag, BurndownPoint — 33 Tests ✅
+- State Machine: ITaskState + 7 States (Backlog→Done/Cancelled), StateFactory — 58 Tests ✅
+- Task-Hierarchie: abstract Task + DailyTask, SprintTask, LongTermGoal, Milestone — 35 Tests ✅
+- TaskFactory: ITaskFactory + TaskFactory — 21 Tests ✅
+- Domain Events: 6 Events + IEventBus + InMemoryEventBus — 28 Tests ✅
+- Gesamt: 175 Domain-Tests + 1 Health-Test = **176 passing**
+- Kein einziger Framework-Import im Domain-Layer
 
 ### 2026-04-22 — Phase 1 abgeschlossen
 - Monorepo-Struktur angelegt (`/backend`, `/frontend`)
