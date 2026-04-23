@@ -44,12 +44,17 @@ class PostgresTaskRepository(ITaskRepository):
         )
         return [task_from_model(m) for m in result.scalars().all()]
 
-    async def list_by_sprint(self, sprint_id: uuid.UUID) -> list[SprintTask]:
-        result = await self._session.execute(
-            select(TaskModel).where(
-                TaskModel.task_type == "sprint",
-                TaskModel.sprint_id == sprint_id,
-            )
-        )
+    async def list_by_sprint(
+        self,
+        sprint_id: uuid.UUID,
+        status_filter: TaskStatus | None = None,
+    ) -> list[SprintTask]:
+        conditions = [
+            TaskModel.task_type == "sprint",
+            TaskModel.sprint_id == sprint_id,
+        ]
+        if status_filter is not None:
+            conditions.append(TaskModel.status == status_filter.value)
+        result = await self._session.execute(select(TaskModel).where(*conditions))
         tasks = [task_from_model(m) for m in result.scalars().all()]
         return [t for t in tasks if isinstance(t, SprintTask)]

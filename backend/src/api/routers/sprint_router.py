@@ -4,9 +4,13 @@ import uuid
 
 from fastapi import APIRouter
 
+from fastapi import Query
+
 from src.api.dependencies import EventBusDep, SprintRepoDep, TaskRepoDep
 from src.api.schemas.sprint_schemas import SprintCreateRequest, SprintResponse, SprintUpdateRequest
+from src.api.schemas.task_schemas import TaskResponse
 from src.application.exceptions import EntityNotFoundError
+from src.domain.value_objects import TaskStatus
 from src.application.use_cases.sprint_use_cases import (
     AddTaskToSprintUseCase,
     CompleteSprintUseCase,
@@ -63,6 +67,21 @@ async def update_sprint(
         return SprintResponse.from_domain(sprint)
     sprint = await UpdateSprintUseCase(repo).execute(sprint_id, body.name)
     return SprintResponse.from_domain(sprint)
+
+
+@router.get("/{sprint_id}/tasks", response_model=list[TaskResponse])
+async def list_sprint_tasks(
+    sprint_id: uuid.UUID,
+    sprint_repo: SprintRepoDep,
+    task_repo: TaskRepoDep,
+    status: str | None = Query(None),
+) -> list[TaskResponse]:
+    sprint = await sprint_repo.get_by_id(sprint_id)
+    if sprint is None:
+        raise EntityNotFoundError("Sprint", str(sprint_id))
+    status_filter = TaskStatus(status) if status is not None else None
+    tasks = await task_repo.list_by_sprint(sprint_id, status_filter)
+    return [TaskResponse.from_domain(t) for t in tasks]
 
 
 @router.post("/{sprint_id}/start", response_model=SprintResponse)

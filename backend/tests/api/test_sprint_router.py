@@ -236,3 +236,81 @@ def test_update_sprint_name_via_use_case(client: TestClient) -> None:
     resp = client.patch(f"/sprints/{sprint['id']}", json={"name": "Renamed"})
     assert resp.status_code == 200
     assert resp.json()["name"] == "Renamed"
+
+
+# ---------------------------------------------------------------------------
+# GET /sprints/{id}/tasks
+# ---------------------------------------------------------------------------
+
+def test_list_sprint_tasks_empty(client: TestClient) -> None:
+    sprint = _create_sprint(client)
+    resp = client.get(f"/sprints/{sprint['id']}/tasks")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_list_sprint_tasks_sprint_not_found(client: TestClient) -> None:
+    resp = client.get(f"/sprints/{uuid.uuid4()}/tasks")
+    assert resp.status_code == 404
+
+
+def test_list_sprint_tasks_returns_tasks(
+    client: TestClient,
+    task_repo: InMemoryTaskRepository,
+) -> None:
+    import asyncio
+    from src.domain.factory import TaskFactory
+    sprint = _create_sprint(client)
+    sid = uuid.UUID(sprint["id"])
+    factory = TaskFactory()
+    t1 = factory.create_sprint("Task A", sprint_id=sid)
+    t2 = factory.create_sprint("Task B", sprint_id=sid)
+    asyncio.run(task_repo.save(t1))
+    asyncio.run(task_repo.save(t2))
+
+    resp = client.get(f"/sprints/{sid}/tasks")
+    assert resp.status_code == 200
+    assert len(resp.json()) == 2
+
+
+def test_list_sprint_tasks_filter_by_status(
+    client: TestClient,
+    task_repo: InMemoryTaskRepository,
+) -> None:
+    import asyncio
+    from src.domain.factory import TaskFactory
+    from src.domain.value_objects import TaskStatus
+    sprint = _create_sprint(client)
+    sid = uuid.UUID(sprint["id"])
+    factory = TaskFactory()
+    t1 = factory.create_sprint("Backlog task", sprint_id=sid)
+    t2 = factory.create_sprint("Todo task", sprint_id=sid)
+    t2.transition_to(TaskStatus.TODO)
+    asyncio.run(task_repo.save(t1))
+    asyncio.run(task_repo.save(t2))
+
+    resp = client.get(f"/sprints/{sid}/tasks?status=todo")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["status"] == "todo"
+
+
+def test_list_sprint_tasks_excludes_other_sprints(
+    client: TestClient,
+    task_repo: InMemoryTaskRepository,
+) -> None:
+    import asyncio
+    from src.domain.factory import TaskFactory
+    sprint = _create_sprint(client)
+    sid = uuid.UUID(sprint["id"])
+    other_sid = uuid.uuid4()
+    factory = TaskFactory()
+    t1 = factory.create_sprint("Mine", sprint_id=sid)
+    t2 = factory.create_sprint("Other", sprint_id=other_sid)
+    asyncio.run(task_repo.save(t1))
+    asyncio.run(task_repo.save(t2))
+
+    resp = client.get(f"/sprints/{sid}/tasks")
+    assert len(resp.json()) == 1
+    assert resp.json()[0]["title"] == "Mine"

@@ -24,4 +24,8 @@ class ITaskRepository(ABC):
     async def list_by_status(self, status: TaskStatus) -> list[Task]: ...
 
     @abstractmethod
-    async def list_by_sprint(self, sprint_id: uuid.UUID) -> list[SprintTask]: ...
+    async def list_by_sprint(
+        self,
+        sprint_id: uuid.UUID,
+        status_filter: TaskStatus | None = None,
+    ) -> list[SprintTask]: ...

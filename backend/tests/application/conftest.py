@@ -33,11 +33,18 @@ class InMemoryTaskRepository(ITaskRepository):
     async def list_by_status(self, status: TaskStatus) -> list[Task]:
         return [t for t in self._store.values() if t.status == status]
 
-    async def list_by_sprint(self, sprint_id: uuid.UUID) -> list[SprintTask]:
-        return [
+    async def list_by_sprint(
+        self,
+        sprint_id: uuid.UUID,
+        status_filter: TaskStatus | None = None,
+    ) -> list[SprintTask]:
+        tasks = [
             t for t in self._store.values()
             if isinstance(t, SprintTask) and t.sprint_id == sprint_id
         ]
+        if status_filter is not None:
+            tasks = [t for t in tasks if t.status == status_filter]
+        return tasks
 
 
 class InMemorySprintRepository(ISprintRepository):
