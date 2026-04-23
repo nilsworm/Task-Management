@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
+from src.application.exceptions import EntityNotFoundError, InvalidOperationError
 from src.domain.events import IEventBus, SprintCompletedEvent, SprintStartedEvent
 from src.domain.repositories.sprint_repository import ISprintRepository
 from src.domain.repositories.task_repository import ITaskRepository
@@ -30,8 +31,11 @@ class StartSprintUseCase:
     async def execute(self, sprint_id: uuid.UUID) -> Sprint:
         sprint = await self._repo.get_by_id(sprint_id)
         if sprint is None:
-            raise ValueError(f"Sprint {sprint_id} not found")
-        sprint.start()
+            raise EntityNotFoundError("Sprint", str(sprint_id))
+        try:
+            sprint.start()
+        except ValueError as exc:
+            raise InvalidOperationError(str(exc)) from exc
         await self._repo.save(sprint)
         self._event_bus.publish(SprintStartedEvent(sprint.id, sprint.date_range.start))
         return sprint
@@ -45,8 +49,11 @@ class CompleteSprintUseCase:
     async def execute(self, sprint_id: uuid.UUID) -> Sprint:
         sprint = await self._repo.get_by_id(sprint_id)
         if sprint is None:
-            raise ValueError(f"Sprint {sprint_id} not found")
-        sprint.complete()
+            raise EntityNotFoundError("Sprint", str(sprint_id))
+        try:
+            sprint.complete()
+        except ValueError as exc:
+            raise InvalidOperationError(str(exc)) from exc
         await self._repo.save(sprint)
         self._event_bus.publish(
             SprintCompletedEvent(sprint.id, datetime.now(timezone.utc))
@@ -66,10 +73,10 @@ class AddTaskToSprintUseCase:
     async def execute(self, sprint_id: uuid.UUID, task_id: uuid.UUID) -> Sprint:
         sprint = await self._sprint_repo.get_by_id(sprint_id)
         if sprint is None:
-            raise ValueError(f"Sprint {sprint_id} not found")
+            raise EntityNotFoundError("Sprint", str(sprint_id))
         task = await self._task_repo.get_by_id(task_id)
         if task is None:
-            raise ValueError(f"Task {task_id} not found")
+            raise EntityNotFoundError("Task", str(task_id))
         sprint.add_task(task_id)
         await self._sprint_repo.save(sprint)
         return sprint

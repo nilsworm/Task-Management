@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import date
 
+from src.application.exceptions import EntityNotFoundError, InvalidOperationError
 from src.domain.entities import Task
 from src.domain.events import (
     IEventBus,
@@ -95,7 +96,7 @@ class UpdateTaskUseCase:
     async def execute(self, input: UpdateTaskInput) -> Task:
         task = await self._repo.get_by_id(input.task_id)
         if task is None:
-            raise ValueError(f"Task {input.task_id} not found")
+            raise EntityNotFoundError("Task", str(input.task_id))
 
         changed: list[str] = []
         if input.title is not None:
@@ -125,10 +126,14 @@ class TransitionTaskUseCase:
     async def execute(self, task_id: uuid.UUID, new_status: TaskStatus) -> Task:
         task = await self._repo.get_by_id(task_id)
         if task is None:
-            raise ValueError(f"Task {task_id} not found")
+            raise EntityNotFoundError("Task", str(task_id))
 
         old_status = task.status
-        task.transition_to(new_status)
+        try:
+            task.transition_to(new_status)
+        except ValueError as exc:
+            raise InvalidOperationError(str(exc)) from exc
+
         await self._repo.save(task)
         self._event_bus.publish(
             TaskStatusChangedEvent(task.id, old_status.value, new_status.value)
@@ -143,5 +148,5 @@ class DeleteTaskUseCase:
     async def execute(self, task_id: uuid.UUID) -> None:
         task = await self._repo.get_by_id(task_id)
         if task is None:
-            raise ValueError(f"Task {task_id} not found")
+            raise EntityNotFoundError("Task", str(task_id))
         await self._repo.delete(task_id)
