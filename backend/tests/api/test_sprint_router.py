@@ -222,3 +222,17 @@ def test_delete_sprint(client: TestClient) -> None:
 def test_delete_sprint_not_found(client: TestClient) -> None:
     resp = client.delete(f"/sprints/{uuid.uuid4()}")
     assert resp.status_code == 404
+
+
+def test_delete_active_sprint_returns_409(client: TestClient) -> None:
+    sprint = _create_sprint(client)
+    client.post(f"/sprints/{sprint['id']}/start")
+    resp = client.delete(f"/sprints/{sprint['id']}")
+    assert resp.status_code == 409
+
+
+def test_update_sprint_name_via_use_case(client: TestClient) -> None:
+    sprint = _create_sprint(client, "Original")
+    resp = client.patch(f"/sprints/{sprint['id']}", json={"name": "Renamed"})
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Renamed"

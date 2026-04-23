@@ -8,7 +8,7 @@ from src.api.schemas.dashboard_schemas import (
     SprintSummary,
     TaskStatusCounts,
 )
-from src.domain.value_objects import TaskStatus
+from src.application.use_cases.dashboard_use_cases import GetDashboardUseCase
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -19,45 +19,30 @@ async def get_dashboard(
     sprint_repo: SprintRepoDep,
     goal_repo: GoalRepoDep,
 ) -> DashboardResponse:
-    tasks, goals, active_sprint = await _fetch_all(task_repo, sprint_repo, goal_repo)
-
-    counts = {s: 0 for s in TaskStatus}
-    for t in tasks:
-        counts[t.status] += 1
-
-    sprint_summary: SprintSummary | None = None
-    if active_sprint:
-        sprint_tasks = await task_repo.list_by_sprint(active_sprint.id)
-        done = sum(1 for t in sprint_tasks if t.status == TaskStatus.DONE)
-        total = len(sprint_tasks)
-        pct = (done / total * 100.0) if total else 0.0
-        sprint_summary = SprintSummary(
-            id=str(active_sprint.id),
-            name=active_sprint.name,
-            status=active_sprint.status.value,
-            total_tasks=total,
-            done_tasks=done,
-            completion_percent=round(pct, 1),
+    data = await GetDashboardUseCase(task_repo, sprint_repo, goal_repo).execute()
+    active = (
+        SprintSummary(
+            id=data.active_sprint.id,
+            name=data.active_sprint.name,
+            status=data.active_sprint.status,
+            total_tasks=data.active_sprint.total_tasks,
+            done_tasks=data.active_sprint.done_tasks,
+            completion_percent=data.active_sprint.completion_percent,
         )
-
-    return DashboardResponse(
-        total_tasks=len(tasks),
-        task_counts=TaskStatusCounts(
-            backlog=counts[TaskStatus.BACKLOG],
-            todo=counts[TaskStatus.TODO],
-            in_progress=counts[TaskStatus.IN_PROGRESS],
-            review=counts[TaskStatus.REVIEW],
-            blocked=counts[TaskStatus.BLOCKED],
-            done=counts[TaskStatus.DONE],
-            cancelled=counts[TaskStatus.CANCELLED],
-        ),
-        total_goals=len(goals),
-        active_sprint=sprint_summary,
+        if data.active_sprint
+        else None
     )
-
-
-async def _fetch_all(task_repo, sprint_repo, goal_repo):
-    tasks = await task_repo.list_all()
-    goals = await goal_repo.list_all()
-    active_sprint = await sprint_repo.get_active()
-    return tasks, goals, active_sprint
+    return DashboardResponse(
+        total_tasks=data.total_tasks,
+        task_counts=TaskStatusCounts(
+            backlog=data.backlog,
+            todo=data.todo,
+            in_progress=data.in_progress,
+            review=data.review,
+            blocked=data.blocked,
+            done=data.done,
+            cancelled=data.cancelled,
+        ),
+        total_goals=data.total_goals,
+        active_sprint=active,
+    )

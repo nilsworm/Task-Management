@@ -5,13 +5,21 @@ from datetime import date
 
 import pytest
 
+from src.application.exceptions import InvalidOperationError
 from src.application.use_cases.sprint_use_cases import (
     AddTaskToSprintUseCase,
     CompleteSprintUseCase,
     CreateSprintUseCase,
+    DeleteSprintUseCase,
     StartSprintUseCase,
+    UpdateSprintUseCase,
 )
-from src.domain.events import InMemoryEventBus, SprintCompletedEvent, SprintStartedEvent
+from src.domain.events import (
+    InMemoryEventBus,
+    SprintCompletedEvent,
+    SprintDeletedEvent,
+    SprintStartedEvent,
+)
 from src.domain.factory import TaskFactory
 from src.domain.sprint import Sprint, SprintStatus
 from src.domain.value_objects import DateRange
@@ -230,6 +238,84 @@ async def test_add_task_sprint_not_found_raises(
     use_case = AddTaskToSprintUseCase(sprint_repo, task_repo)
     with pytest.raises(ValueError):
         await use_case.execute(uuid.uuid4(), task.id)
+
+
+# ---------------------------------------------------------------------------
+# UpdateSprintUseCase
+# ---------------------------------------------------------------------------
+
+async def test_update_sprint_name(
+    sprint_repo: InMemorySprintRepository,
+) -> None:
+    sprint = Sprint("Old Name", _date_range())
+    await sprint_repo.save(sprint)
+
+    result = await UpdateSprintUseCase(sprint_repo).execute(sprint.id, "New Name")
+
+    assert result.name == "New Name"
+    saved = await sprint_repo.get_by_id(sprint.id)
+    assert saved is not None
+    assert saved.name == "New Name"
+
+
+async def test_update_sprint_not_found_raises(
+    sprint_repo: InMemorySprintRepository,
+) -> None:
+    with pytest.raises(ValueError):
+        await UpdateSprintUseCase(sprint_repo).execute(uuid.uuid4(), "X")
+
+
+# ---------------------------------------------------------------------------
+# DeleteSprintUseCase
+# ---------------------------------------------------------------------------
+
+async def test_delete_planned_sprint(
+    sprint_repo: InMemorySprintRepository,
+    event_bus: InMemoryEventBus,
+) -> None:
+    sprint = Sprint("Planned", _date_range())
+    await sprint_repo.save(sprint)
+
+    await DeleteSprintUseCase(sprint_repo, event_bus).execute(sprint.id)
+
+    assert await sprint_repo.get_by_id(sprint.id) is None
+
+
+async def test_delete_sprint_publishes_deleted_event(
+    sprint_repo: InMemorySprintRepository,
+    event_bus: InMemoryEventBus,
+) -> None:
+    sprint = Sprint("Planned", _date_range())
+    await sprint_repo.save(sprint)
+
+    spy = EventSpy()
+    event_bus.subscribe(SprintDeletedEvent, spy)
+
+    await DeleteSprintUseCase(sprint_repo, event_bus).execute(sprint.id)
+
+    assert len(spy.events) == 1
+    assert isinstance(spy.events[0], SprintDeletedEvent)
+    assert spy.events[0].sprint_id == sprint.id
+
+
+async def test_delete_active_sprint_raises(
+    sprint_repo: InMemorySprintRepository,
+    event_bus: InMemoryEventBus,
+) -> None:
+    sprint = Sprint("Active", _date_range())
+    sprint.start()
+    await sprint_repo.save(sprint)
+
+    with pytest.raises(InvalidOperationError):
+        await DeleteSprintUseCase(sprint_repo, event_bus).execute(sprint.id)
+
+
+async def test_delete_sprint_not_found_raises(
+    sprint_repo: InMemorySprintRepository,
+    event_bus: InMemoryEventBus,
+) -> None:
+    with pytest.raises(ValueError):
+        await DeleteSprintUseCase(sprint_repo, event_bus).execute(uuid.uuid4())
 
 
 async def test_add_task_task_not_found_raises(

@@ -11,7 +11,9 @@ from src.application.use_cases.sprint_use_cases import (
     AddTaskToSprintUseCase,
     CompleteSprintUseCase,
     CreateSprintUseCase,
+    DeleteSprintUseCase,
     StartSprintUseCase,
+    UpdateSprintUseCase,
 )
 
 router = APIRouter(prefix="/sprints", tags=["sprints"])
@@ -53,12 +55,13 @@ async def update_sprint(
     body: SprintUpdateRequest,
     repo: SprintRepoDep,
 ) -> SprintResponse:
-    sprint = await repo.get_by_id(sprint_id)
-    if sprint is None:
-        raise EntityNotFoundError("Sprint", str(sprint_id))
-    if body.name is not None:
-        sprint.name = body.name
-    await repo.save(sprint)
+    if body.name is None:
+        # No-op PATCH: trivial read, return current state
+        sprint = await repo.get_by_id(sprint_id)
+        if sprint is None:
+            raise EntityNotFoundError("Sprint", str(sprint_id))
+        return SprintResponse.from_domain(sprint)
+    sprint = await UpdateSprintUseCase(repo).execute(sprint_id, body.name)
     return SprintResponse.from_domain(sprint)
 
 
@@ -94,8 +97,9 @@ async def add_task_to_sprint(
 
 
 @router.delete("/{sprint_id}", status_code=204)
-async def delete_sprint(sprint_id: uuid.UUID, repo: SprintRepoDep) -> None:
-    sprint = await repo.get_by_id(sprint_id)
-    if sprint is None:
-        raise EntityNotFoundError("Sprint", str(sprint_id))
-    await repo.delete(sprint_id)
+async def delete_sprint(
+    sprint_id: uuid.UUID,
+    repo: SprintRepoDep,
+    bus: EventBusDep,
+) -> None:
+    await DeleteSprintUseCase(repo, bus).execute(sprint_id)

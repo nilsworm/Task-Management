@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 from src.application.exceptions import EntityNotFoundError, InvalidOperationError
-from src.domain.events import IEventBus, SprintCompletedEvent, SprintStartedEvent
+from src.domain.events import IEventBus, SprintCompletedEvent, SprintDeletedEvent, SprintStartedEvent
 from src.domain.repositories.sprint_repository import ISprintRepository
 from src.domain.repositories.task_repository import ITaskRepository
 from src.domain.sprint import Sprint
@@ -59,6 +59,36 @@ class CompleteSprintUseCase:
             SprintCompletedEvent(sprint.id, datetime.now(timezone.utc))
         )
         return sprint
+
+
+class UpdateSprintUseCase:
+    def __init__(self, repository: ISprintRepository) -> None:
+        self._repo = repository
+
+    async def execute(self, sprint_id: uuid.UUID, name: str) -> Sprint:
+        sprint = await self._repo.get_by_id(sprint_id)
+        if sprint is None:
+            raise EntityNotFoundError("Sprint", str(sprint_id))
+        sprint.name = name
+        await self._repo.save(sprint)
+        return sprint
+
+
+class DeleteSprintUseCase:
+    def __init__(self, repository: ISprintRepository, event_bus: IEventBus) -> None:
+        self._repo = repository
+        self._event_bus = event_bus
+
+    async def execute(self, sprint_id: uuid.UUID) -> None:
+        sprint = await self._repo.get_by_id(sprint_id)
+        if sprint is None:
+            raise EntityNotFoundError("Sprint", str(sprint_id))
+        if sprint.status.value == "active":
+            raise InvalidOperationError(
+                f"Cannot delete active sprint '{sprint.name}'. Complete or cancel it first."
+            )
+        await self._repo.delete(sprint_id)
+        self._event_bus.publish(SprintDeletedEvent(sprint_id))
 
 
 class AddTaskToSprintUseCase:
