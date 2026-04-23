@@ -52,7 +52,7 @@
 - [x] Schritt 2: Layout & Routing
 - [x] Schritt 3: Tasks-View
 - [x] Schritt 4: Sprint-View (Kanban-Board)
-- [ ] Schritt 5: Goals-View
+- [x] Schritt 5: Goals-View
 - [ ] Schritt 6: Dashboard
 - [ ] Schritt 7: Polish & Smoke-Tests
 
@@ -63,6 +63,18 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-24 — Phase 5, Schritt 5: Goals-View
+
+- `src/api/hooks/goals.ts`: alle 9 Hooks (Goal CRUD + KeyResult CRUD)
+- GoalsPage: Grid von GoalCards; jede Card fetcht eigene KRs für Fortschritt
+- GoalCard: Titel, Prio, KR-Count, Aggregate-Progressbar (aria-konform), Delete
+- GoalDetailPage: Overall-Progressbar + KR-Liste + Add/Edit/Delete
+- KeyResultItem: Titel, current/target/unit, Progressbar (gecappt bei 100%), Edit/Delete
+- KeyResultCreateModal: title + target + current + unit + description
+- KeyResultEditModal: current_value aktualisieren
+- 10 neue Tests (GoalCard, KeyResultItem mit Progress-/aria-Assertions)
+- **50 Tests total, alle grün**
 
 ### 2026-04-24 — Phase 5, Schritt 4: Sprint-View & Kanban-Board
 
