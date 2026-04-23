@@ -48,14 +48,13 @@
 - [x] OpenAPI-Spec exportieren
 
 ### Phase 5 — Frontend
-- [ ] Types aus OpenAPI generieren (openapi-typescript)
-- [ ] API-Client mit TanStack Query
-- [ ] Layout + Routing (React Router)
-- [ ] Task-Liste + Task-Detail
-- [ ] Kanban-Board mit Drag & Drop
-- [ ] Sprint-View
-- [ ] Goals/OKR-View
-- [ ] Dashboard mit Widgets (Burndown, Velocity, Completion Rate)
+- [x] Schritt 1: API-Anbindung & Type-Generierung
+- [ ] Schritt 2: Layout & Routing
+- [ ] Schritt 3: Tasks-View
+- [ ] Schritt 4: Sprint-View (Kanban-Board)
+- [ ] Schritt 5: Goals-View
+- [ ] Schritt 6: Dashboard
+- [ ] Schritt 7: Polish & Smoke-Tests
 
 ### Phase 6 — Polish
 - [ ] E2E-Tests (Playwright)
@@ -64,6 +63,17 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-24 — Phase 5, Schritt 1: API-Anbindung & Type-Generierung
+
+- `openapi-typescript` → `pnpm generate-api-types` aus `backend/openapi.json`
+- `src/api/types.ts` generiert (1746 Zeilen, alle Endpoints abgedeckt)
+- `src/api/client.ts`: fetch-Wrapper (`ApiError`, `apiGet/Post/Patch/Delete`)
+- `src/api/hooks/`: Shell-Dateien für tasks, sprints, goals, dashboard
+- Vitest + jsdom + @testing-library/react konfiguriert (`vitest.config.ts`, `test-setup.ts`)
+- 9 Tests für client.ts (Happy Path + Error-Handling)
+- `react-router-dom` installiert (wird in Schritt 2 verdrahtet)
+- `.env.local` + `.env.example` mit `VITE_API_URL`
 
 ### 2026-04-23 — Phase 4: Fehlende Endpoints + OpenAPI-Refresh
 
