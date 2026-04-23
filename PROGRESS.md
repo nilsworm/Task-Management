@@ -51,7 +51,7 @@
 - [x] Schritt 1: API-Anbindung & Type-Generierung
 - [x] Schritt 2: Layout & Routing
 - [x] Schritt 3: Tasks-View
-- [ ] Schritt 4: Sprint-View (Kanban-Board)
+- [x] Schritt 4: Sprint-View (Kanban-Board)
 - [ ] Schritt 5: Goals-View
 - [ ] Schritt 6: Dashboard
 - [ ] Schritt 7: Polish & Smoke-Tests
@@ -63,6 +63,18 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-24 — Phase 5, Schritt 4: Sprint-View & Kanban-Board
+
+- `src/api/hooks/sprints.ts`: useSprints, useActiveSprint, useSprint, useSprintTasks, useCreateSprint, useStartSprint, useCompleteSprint, useDeleteSprint
+- SprintsPage: Card-Grid + SprintCreateModal (name + Datumsbereich)
+- SprintCard: Name, Datum, Status-Badge, Task-Count, Start/Complete/Delete-Aktionen
+- SprintDetailPage: Header + KanbanBoard
+- KanbanBoard: DndContext, drag-end → useTransitionTask (optimistisches Update aus Step 3)
+- KanbanColumn: Droppable + SortableContext + ScrollArea, farbcodierte Header
+- KanbanTaskCard: Sortable, Drag-Overlay, Priority-Dot, Story-Points-Badge
+- shadcn card + scroll-area (src/-Import-Bug gefixt)
+- **40 Tests, alle grün**
 
 ### 2026-04-24 — Phase 5, Schritt 3: Tasks-View
 
