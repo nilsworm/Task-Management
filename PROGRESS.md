@@ -65,6 +65,27 @@
 
 ## Session-Log
 
+### 2026-04-23 — Phase 4: Fehlende Endpoints + OpenAPI-Refresh
+
+**Lücke 1:** `GET /sprints/{sprint_id}/tasks` (mit optionalem `?status=`-Filter)
+- In `sprint_router.py` ergänzt (trivial read + status-filter → direkter Repo-Aufruf)
+- 8 neue API-Tests
+
+**Lücke 2:** 4 Dashboard-Sub-Endpoints
+- `GET /dashboard/metrics` → Zähler + completion_rate (excl. Cancelled)
+- `GET /dashboard/burndown` → ideale Linie (linear) + actual_remaining; optional `?sprint_id=`
+- `GET /dashboard/velocity` → done story_points je completed Sprint + Durchschnitt; `?last_n=5`
+- `GET /dashboard/goal-progress` → avg KR-Fortschritt je Ziel
+- 4 neue Use Cases (allesamt Berechnungs-Logik → Use Cases, nicht Router)
+- 27 neue Use-Case-Tests + 18 neue API-Tests
+
+**Lücke 3:** `GET /goals/{goal_id}/key-results/{kr_id}` (Single-KR-Fetch)
+- Trivial read → direkter Repo-Aufruf in `goal_router.py`
+- 2 neue API-Tests
+
+**openapi.json** neu exportiert (alle Endpunkte enthalten)
+**449 Tests passing** (77 neue in dieser Teilsession)
+
 ### 2026-04-24 — Phase 4: Architektur-Review-Fixes
 
 **Verstoss 1 — Router → Use Cases:**
