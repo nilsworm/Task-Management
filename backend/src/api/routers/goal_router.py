@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter
 
-from src.api.dependencies import GoalRepoDep
+from src.api.dependencies import EventBusDep, GoalRepoDep
 from src.api.schemas.goal_schemas import (
     GoalCreateRequest,
     GoalResponse,
@@ -55,8 +55,8 @@ async def update_goal(
 
 
 @router.delete("/{goal_id}", status_code=204)
-async def delete_goal(goal_id: uuid.UUID, repo: GoalRepoDep) -> None:
-    await DeleteGoalUseCase(repo).execute(goal_id)
+async def delete_goal(goal_id: uuid.UUID, repo: GoalRepoDep, bus: EventBusDep) -> None:
+    await DeleteGoalUseCase(repo, bus).execute(goal_id)
 
 
 # ---------------------------------------------------------------------------
@@ -93,6 +93,6 @@ async def update_key_result(
 
 @router.delete("/{goal_id}/key-results/{kr_id}", status_code=204)
 async def delete_key_result(
-    goal_id: uuid.UUID, kr_id: uuid.UUID, repo: GoalRepoDep
+    goal_id: uuid.UUID, kr_id: uuid.UUID, repo: GoalRepoDep, bus: EventBusDep
 ) -> None:
-    await DeleteKeyResultUseCase(repo).execute(kr_id)
+    await DeleteKeyResultUseCase(repo, bus).execute(kr_id)

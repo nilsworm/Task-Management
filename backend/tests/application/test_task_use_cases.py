@@ -309,20 +309,42 @@ async def test_transition_task_not_found_raises(
 
 async def test_delete_task_removes_it(
     task_repo: InMemoryTaskRepository,
+    event_bus: InMemoryEventBus,
     factory: TaskFactory,
 ) -> None:
     task = factory.create_daily("Temp task")
     await task_repo.save(task)
 
-    use_case = DeleteTaskUseCase(task_repo)
+    use_case = DeleteTaskUseCase(task_repo, event_bus)
     await use_case.execute(task.id)
 
     assert await task_repo.get_by_id(task.id) is None
 
 
+async def test_delete_task_publishes_deleted_event(
+    task_repo: InMemoryTaskRepository,
+    event_bus: InMemoryEventBus,
+    factory: TaskFactory,
+) -> None:
+    from src.domain.events import TaskDeletedEvent
+
+    task = factory.create_daily("Temp task")
+    await task_repo.save(task)
+
+    spy = EventSpy()
+    event_bus.subscribe(TaskDeletedEvent, spy)
+
+    await DeleteTaskUseCase(task_repo, event_bus).execute(task.id)
+
+    assert len(spy.events) == 1
+    assert isinstance(spy.events[0], TaskDeletedEvent)
+    assert spy.events[0].task_id == task.id
+
+
 async def test_delete_task_not_found_raises(
     task_repo: InMemoryTaskRepository,
+    event_bus: InMemoryEventBus,
 ) -> None:
-    use_case = DeleteTaskUseCase(task_repo)
+    use_case = DeleteTaskUseCase(task_repo, event_bus)
     with pytest.raises(ValueError):
         await use_case.execute(uuid.uuid4())

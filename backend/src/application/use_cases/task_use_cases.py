@@ -9,6 +9,7 @@ from src.domain.entities import Task
 from src.domain.events import (
     IEventBus,
     TaskCreatedEvent,
+    TaskDeletedEvent,
     TaskStatusChangedEvent,
     TaskUpdatedEvent,
 )
@@ -142,11 +143,13 @@ class TransitionTaskUseCase:
 
 
 class DeleteTaskUseCase:
-    def __init__(self, repository: ITaskRepository) -> None:
+    def __init__(self, repository: ITaskRepository, event_bus: IEventBus) -> None:
         self._repo = repository
+        self._event_bus = event_bus
 
     async def execute(self, task_id: uuid.UUID) -> None:
         task = await self._repo.get_by_id(task_id)
         if task is None:
             raise EntityNotFoundError("Task", str(task_id))
         await self._repo.delete(task_id)
+        self._event_bus.publish(TaskDeletedEvent(task_id))

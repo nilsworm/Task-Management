@@ -74,9 +74,10 @@ async def test_transition_missing_task_raises_not_found(
 
 async def test_delete_missing_task_raises_not_found(
     task_repo: InMemoryTaskRepository,
+    event_bus: InMemoryEventBus,
 ) -> None:
     with pytest.raises(EntityNotFoundError):
-        await DeleteTaskUseCase(task_repo).execute(uuid.uuid4())
+        await DeleteTaskUseCase(task_repo, event_bus).execute(uuid.uuid4())
 
 
 # ---------------------------------------------------------------------------

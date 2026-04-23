@@ -6,6 +6,7 @@ from datetime import date
 from fastapi import APIRouter, Query
 
 from src.api.dependencies import EventBusDep, TaskRepoDep
+from src.application.exceptions import EntityNotFoundError
 from src.api.schemas.task_schemas import (
     TaskCreateRequest,
     TaskResponse,
@@ -53,8 +54,6 @@ async def list_tasks(
 
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(task_id: uuid.UUID, repo: TaskRepoDep) -> TaskResponse:
-    from src.application.exceptions import EntityNotFoundError
-
     task = await repo.get_by_id(task_id)
     if task is None:
         raise EntityNotFoundError("Task", str(task_id))
@@ -84,5 +83,5 @@ async def transition_task(
 
 
 @router.delete("/{task_id}", status_code=204)
-async def delete_task(task_id: uuid.UUID, repo: TaskRepoDep) -> None:
-    await DeleteTaskUseCase(repo).execute(task_id)
+async def delete_task(task_id: uuid.UUID, repo: TaskRepoDep, bus: EventBusDep) -> None:
+    await DeleteTaskUseCase(repo, bus).execute(task_id)

@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from src.application.exceptions import EntityNotFoundError
 from src.domain.entities import KeyResult, LongTermGoal
+from src.domain.events import GoalDeletedEvent, IEventBus, KeyResultDeletedEvent
 from src.domain.repositories.goal_repository import IGoalRepository
 from src.domain.value_objects import DateRange, Priority, Tag
 
@@ -52,14 +53,16 @@ class UpdateGoalUseCase:
 
 
 class DeleteGoalUseCase:
-    def __init__(self, repository: IGoalRepository) -> None:
+    def __init__(self, repository: IGoalRepository, event_bus: IEventBus) -> None:
         self._repo = repository
+        self._event_bus = event_bus
 
     async def execute(self, goal_id: uuid.UUID) -> None:
         goal = await self._repo.get_by_id(goal_id)
         if goal is None:
             raise EntityNotFoundError("Goal", str(goal_id))
         await self._repo.delete(goal_id)
+        self._event_bus.publish(GoalDeletedEvent(goal_id))
 
 
 @dataclass
@@ -130,11 +133,13 @@ class UpdateKeyResultUseCase:
 
 
 class DeleteKeyResultUseCase:
-    def __init__(self, repository: IGoalRepository) -> None:
+    def __init__(self, repository: IGoalRepository, event_bus: IEventBus) -> None:
         self._repo = repository
+        self._event_bus = event_bus
 
     async def execute(self, key_result_id: uuid.UUID) -> None:
         kr = await self._repo.get_key_result(key_result_id)
         if kr is None:
             raise EntityNotFoundError("KeyResult", str(key_result_id))
         await self._repo.delete_key_result(key_result_id)
+        self._event_bus.publish(KeyResultDeletedEvent(key_result_id))
