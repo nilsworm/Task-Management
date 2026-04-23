@@ -49,7 +49,7 @@
 
 ### Phase 5 — Frontend
 - [x] Schritt 1: API-Anbindung & Type-Generierung
-- [ ] Schritt 2: Layout & Routing
+- [x] Schritt 2: Layout & Routing
 - [ ] Schritt 3: Tasks-View
 - [ ] Schritt 4: Sprint-View (Kanban-Board)
 - [ ] Schritt 5: Goals-View
@@ -63,6 +63,16 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-24 — Phase 5, Schritt 2: Layout & Routing
+
+- React Router v7: 6 Routen unter `AppLayout` (/, /tasks, /sprints, /sprints/:id, /goals, /goals/:id)
+- `AppLayout`: Sidebar (240px) mit NavLink + Active-Highlight, Header mit ThemeToggle
+- `stores/theme.ts`: Zustand-Store mit localStorage-Persistenz; setzt `dark`-Klasse auf `<html>`
+- Dark Mode: CSS-Variablen in `index.css` + `@custom-variant dark (&:is(.dark *))`
+- shadcn `button`, `separator`, `badge` installiert — `components.json` auf `src/`-Pfade korrigiert
+- Fix: TypeScript 6 `erasableSyntaxOnly` — Constructor-Parameter-Properties entfernt
+- 3 AppLayout-Tests — **12 Tests total, alle grün**
 
 ### 2026-04-24 — Phase 5, Schritt 1: API-Anbindung & Type-Generierung
 
