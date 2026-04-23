@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+import uuid
+from datetime import datetime, timezone
+
+from src.domain.events import IEventBus, SprintCompletedEvent, SprintStartedEvent
+from src.domain.repositories.sprint_repository import ISprintRepository
+from src.domain.repositories.task_repository import ITaskRepository
+from src.domain.sprint import Sprint
+from src.domain.value_objects import DateRange
+
+
+class CreateSprintUseCase:
+    def __init__(self, repository: ISprintRepository, event_bus: IEventBus) -> None:
+        self._repo = repository
+        self._event_bus = event_bus
+
+    async def execute(self, name: str, date_range: DateRange) -> Sprint:
+        sprint = Sprint(name, date_range)
+        await self._repo.save(sprint)
+        self._event_bus.publish(SprintStartedEvent(sprint.id, date_range.start))
+        return sprint
+
+
+class StartSprintUseCase:
+    def __init__(self, repository: ISprintRepository, event_bus: IEventBus) -> None:
+        self._repo = repository
+        self._event_bus = event_bus
+
+    async def execute(self, sprint_id: uuid.UUID) -> Sprint:
+        sprint = await self._repo.get_by_id(sprint_id)
+        if sprint is None:
+            raise ValueError(f"Sprint {sprint_id} not found")
+        sprint.start()
+        await self._repo.save(sprint)
+        self._event_bus.publish(SprintStartedEvent(sprint.id, sprint.date_range.start))
+        return sprint
+
+
+class CompleteSprintUseCase:
+    def __init__(self, repository: ISprintRepository, event_bus: IEventBus) -> None:
+        self._repo = repository
+        self._event_bus = event_bus
+
+    async def execute(self, sprint_id: uuid.UUID) -> Sprint:
+        sprint = await self._repo.get_by_id(sprint_id)
+        if sprint is None:
+            raise ValueError(f"Sprint {sprint_id} not found")
+        sprint.complete()
+        await self._repo.save(sprint)
+        self._event_bus.publish(
+            SprintCompletedEvent(sprint.id, datetime.now(timezone.utc))
+        )
+        return sprint
+
+
+class AddTaskToSprintUseCase:
+    def __init__(
+        self,
+        sprint_repo: ISprintRepository,
+        task_repo: ITaskRepository,
+    ) -> None:
+        self._sprint_repo = sprint_repo
+        self._task_repo = task_repo
+
+    async def execute(self, sprint_id: uuid.UUID, task_id: uuid.UUID) -> Sprint:
+        sprint = await self._sprint_repo.get_by_id(sprint_id)
+        if sprint is None:
+            raise ValueError(f"Sprint {sprint_id} not found")
+        task = await self._task_repo.get_by_id(task_id)
+        if task is None:
+            raise ValueError(f"Task {task_id} not found")
+        sprint.add_task(task_id)
+        await self._sprint_repo.save(sprint)
+        return sprint
