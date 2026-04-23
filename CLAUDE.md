@@ -81,6 +81,7 @@ Das Projekt folgt **Clean Architecture** und **Domain-Driven Design**.
 - Pydantic v2 für DTOs, SQLAlchemy-Models streng von Domain-Entities trennen
 - Docstrings nur da, wo der Zweck nicht aus Namen + Typen hervorgeht
 - Keine Business-Logik in Routern oder SQLAlchemy-Models — nur in Domain oder Application-Layer
+- Repositories machen ausschließlich Datenzugriff. Keine Domain-Regeln, keine Berechnungen, keine Berechtigungen in Repos. Sobald solche Logik anfällt, entsteht ein Use Case. Triviale CRUD-Reads bleiben direkter Repo-Zugriff aus dem Router.
 
 **TypeScript:**
 - Strict Mode ohne Ausnahmen

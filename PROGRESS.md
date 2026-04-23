@@ -65,6 +65,22 @@
 
 ## Session-Log
 
+### 2026-04-24 — Phase 4: Architektur-Review-Fixes
+
+**Verstoss 1 — Router → Use Cases:**
+- `UpdateSprintUseCase` + `DeleteSprintUseCase` (aktiver Sprint → 409 + SprintDeletedEvent)
+- `GetDashboardUseCase` (Aggregations-Logik aus Router extrahiert)
+- `DeleteTaskUseCase`, `DeleteGoalUseCase`, `DeleteKeyResultUseCase` + je ein Delete-Event
+- 4 neue Delete-Events: TaskDeletedEvent, SprintDeletedEvent, GoalDeletedEvent, KeyResultDeletedEvent
+
+**Verstoss 2 — DI auf Interfaces:**
+- `dependencies.py`: Return-Typen + Annotated-Aliases auf ITaskRepository / ISprintRepository / IGoalRepository / IEventBus
+
+**Dokumentation:**
+- `CLAUDE.md`: Repo-Regel ergänzt
+- `Excalidraw/design-decisions.md`: neu angelegt (Löschregeln, Use-Case-Regel, DI-Entscheidung)
+- **367 Tests passing** (14 neue)
+
 ### 2026-04-23 — Phase 4, Schritt 6+7: Dashboard-Router + OpenAPI-Export
 
 - `dashboard_router.py`: `GET /dashboard` → total_tasks, task_counts (by status), total_goals, active_sprint (mit completion_percent)
