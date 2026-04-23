@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-from src.domain.entities import LongTermGoal, SprintTask, Task
+from src.domain.entities import KeyResult, LongTermGoal, SprintTask, Task
 from src.domain.events import IDomainEvent, IEventHandler, InMemoryEventBus
 from src.domain.factory import TaskFactory
 from src.domain.repositories.goal_repository import IGoalRepository
@@ -66,6 +66,7 @@ class InMemorySprintRepository(ISprintRepository):
 class InMemoryGoalRepository(IGoalRepository):
     def __init__(self) -> None:
         self._store: dict[uuid.UUID, LongTermGoal] = {}
+        self._key_results: dict[uuid.UUID, KeyResult] = {}
 
     async def get_by_id(self, goal_id: uuid.UUID) -> LongTermGoal | None:
         return self._store.get(goal_id)
@@ -78,6 +79,18 @@ class InMemoryGoalRepository(IGoalRepository):
 
     async def list_all(self) -> list[LongTermGoal]:
         return list(self._store.values())
+
+    async def list_key_results(self, goal_id: uuid.UUID) -> list[KeyResult]:
+        return [kr for kr in self._key_results.values() if kr.goal_id == goal_id]
+
+    async def get_key_result(self, key_result_id: uuid.UUID) -> KeyResult | None:
+        return self._key_results.get(key_result_id)
+
+    async def save_key_result(self, key_result: KeyResult) -> None:
+        self._key_results[key_result.id] = key_result
+
+    async def delete_key_result(self, key_result_id: uuid.UUID) -> None:
+        self._key_results.pop(key_result_id, None)
 
 
 class EventSpy(IEventHandler):

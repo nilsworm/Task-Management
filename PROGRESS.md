@@ -43,7 +43,7 @@
 - [x] Pydantic-Schemas (Request/Response-DTOs)
 - [x] Task-Router (/tasks)
 - [x] Sprint-Router (/sprints)
-- [ ] Goal-Router (/goals) inkl. KeyResults
+- [x] Goal-Router (/goals) inkl. KeyResults
 - [ ] Dashboard-Router (/dashboard)
 - [ ] OpenAPI-Spec exportieren
 
@@ -64,6 +64,17 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-23 — Phase 4, Schritt 5: Goal-Router + KeyResults
+
+- `KeyResult` domain entity (dataclass mit `progress_percent` property)
+- `IGoalRepository` um 4 KeyResult-Methoden erweitert
+- `PostgresGoalRepository`: `list_key_results`, `get_key_result`, `save_key_result`, `delete_key_result`
+- `key_result_to_model`/`key_result_from_model` mapper
+- `goal_use_cases.py`: CreateGoal, UpdateGoal, DeleteGoal, CreateKeyResult, UpdateKeyResult, DeleteKeyResult
+- `goal_router.py`: CRUD /goals + CRUD /goals/{id}/key-results
+- `KeyResultResponse.from_domain()`, `GoalUpdateRequest.to_use_case_input()`, KeyResult-Schema-Methoden
+- 23 neue API-Tests — **349 total passing**
 
 ### 2026-04-23 — Phase 4, Schritt 4: Sprint-Router
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date
+from typing import Any
 
 import pytest
 
@@ -74,6 +75,7 @@ class InMemorySprintRepository(ISprintRepository):
 class InMemoryGoalRepository(IGoalRepository):
     def __init__(self) -> None:
         self._store: dict[uuid.UUID, LongTermGoal] = {}
+        self._key_results: dict[uuid.UUID, Any] = {}
 
     async def get_by_id(self, goal_id: uuid.UUID) -> LongTermGoal | None:
         return self._store.get(goal_id)
@@ -86,6 +88,18 @@ class InMemoryGoalRepository(IGoalRepository):
 
     async def list_all(self) -> list[LongTermGoal]:
         return list(self._store.values())
+
+    async def list_key_results(self, goal_id: uuid.UUID) -> list[Any]:
+        return [kr for kr in self._key_results.values() if kr.goal_id == goal_id]
+
+    async def get_key_result(self, key_result_id: uuid.UUID) -> Any | None:
+        return self._key_results.get(key_result_id)
+
+    async def save_key_result(self, key_result: Any) -> None:
+        self._key_results[key_result.id] = key_result
+
+    async def delete_key_result(self, key_result_id: uuid.UUID) -> None:
+        self._key_results.pop(key_result_id, None)
 
 
 # ---------------------------------------------------------------------------

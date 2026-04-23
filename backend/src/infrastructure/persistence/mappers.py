@@ -3,10 +3,10 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from src.domain.entities import DailyTask, LongTermGoal, Milestone, SprintTask, Task
+from src.domain.entities import DailyTask, KeyResult, LongTermGoal, Milestone, SprintTask, Task
 from src.domain.sprint import Sprint, SprintStatus
 from src.domain.value_objects import DateRange, Estimation, Priority, Tag, TaskStatus
-from src.infrastructure.persistence.models.goal_model import GoalModel
+from src.infrastructure.persistence.models.goal_model import GoalModel, KeyResultModel
 from src.infrastructure.persistence.models.sprint_model import SprintModel
 from src.infrastructure.persistence.models.task_model import TaskModel
 
@@ -126,6 +126,34 @@ def goal_to_model(goal: LongTermGoal) -> GoalModel:
         model.date_range_start = goal.date_range.start
         model.date_range_end = goal.date_range.end
     return model
+
+
+def key_result_to_model(kr: KeyResult) -> KeyResultModel:
+    return KeyResultModel(
+        id=kr.id,
+        goal_id=kr.goal_id,
+        title=kr.title,
+        description=kr.description,
+        target_value=kr.target_value,
+        current_value=kr.current_value,
+        unit=kr.unit,
+        created_at=kr.created_at,
+        updated_at=kr.updated_at,
+    )
+
+
+def key_result_from_model(model: KeyResultModel) -> KeyResult:
+    return KeyResult(
+        id=model.id,
+        goal_id=model.goal_id,
+        title=model.title,
+        description=model.description,
+        target_value=model.target_value,
+        current_value=model.current_value,
+        unit=model.unit,
+        created_at=_utc(model.created_at),
+        updated_at=_utc(model.updated_at),
+    )
 
 
 def goal_from_model(model: GoalModel) -> LongTermGoal:

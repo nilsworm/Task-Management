@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from typing import final
 
@@ -17,6 +18,23 @@ from src.domain.value_objects import (
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+@dataclass
+class KeyResult:
+    id: uuid.UUID
+    goal_id: uuid.UUID
+    title: str
+    description: str
+    target_value: float
+    current_value: float
+    unit: str
+    created_at: datetime
+    updated_at: datetime
+
+    @property
+    def progress_percent(self) -> float:
+        return min(self.current_value / self.target_value * 100.0, 100.0)
 
 
 class Task(ABC):
