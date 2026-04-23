@@ -63,6 +63,12 @@
 
 ## Session-Log
 
+### 2026-04-23 — Phase 3: Schema-Nachbesserung (Migration 3)
+
+- Index `ix_key_results_goal_id` auf `key_results.goal_id` ergänzt
+- Model (`KeyResultModel`) mit `index=True` auf der Spalte aktualisiert
+- `alembic check` meldet "No new upgrade operations detected" ✅
+
 ### 2026-04-23 — Phase 3: Schema-Fixes (Migration 2)
 
 - FKs: tasks.sprint_id → sprints ON DELETE SET NULL; tasks.goal_id → goals ON DELETE SET NULL
