@@ -8,6 +8,11 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from src.config import settings
 from src.infrastructure.database import Base
 
+# Import all models so Alembic autogenerate detects them
+import src.infrastructure.persistence.models.task_model  # noqa: F401
+import src.infrastructure.persistence.models.sprint_model  # noqa: F401
+import src.infrastructure.persistence.models.goal_model  # noqa: F401
+
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
