@@ -33,6 +33,7 @@ class KeyResultModel(Base):
         UUID(as_uuid=True),
         ForeignKey("goals.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
