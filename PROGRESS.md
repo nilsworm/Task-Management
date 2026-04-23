@@ -42,7 +42,7 @@
 - [x] API-Infrastruktur (DI, Exception-Handler, App-Struktur, CORS)
 - [x] Pydantic-Schemas (Request/Response-DTOs)
 - [x] Task-Router (/tasks)
-- [ ] Sprint-Router (/sprints)
+- [x] Sprint-Router (/sprints)
 - [ ] Goal-Router (/goals) inkl. KeyResults
 - [ ] Dashboard-Router (/dashboard)
 - [ ] OpenAPI-Spec exportieren
@@ -64,6 +64,13 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-23 — Phase 4, Schritt 4: Sprint-Router
+
+- `src/api/routers/sprint_router.py`: POST/GET(list)/GET(active)/GET(detail)/PATCH/POST(start)/POST(complete)/POST(tasks/{id})/DELETE
+- `GET /sprints/active` → `SprintResponse | None`
+- `POST /sprints/{id}/tasks/{task_id}` → AddTaskToSprintUseCase
+- 20 neue API-Tests — **326 total passing**
 
 ### 2026-04-23 — Phase 4, Schritt 3: Task-Router
 
