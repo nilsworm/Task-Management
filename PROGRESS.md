@@ -40,7 +40,7 @@
 
 ### Phase 4 — API-Layer
 - [x] API-Infrastruktur (DI, Exception-Handler, App-Struktur, CORS)
-- [ ] Pydantic-Schemas (Request/Response-DTOs)
+- [x] Pydantic-Schemas (Request/Response-DTOs)
 - [ ] Task-Router (/tasks)
 - [ ] Sprint-Router (/sprints)
 - [ ] Goal-Router (/goals) inkl. KeyResults
@@ -64,6 +64,14 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-23 — Phase 4, Schritt 2: Pydantic-Schemas
+
+- `src/api/schemas/common.py`: `PriorityLiteral`, `StatusLiteral`
+- `src/api/schemas/task_schemas.py`: `TaskCreateRequest.to_use_case_input()`, `TaskUpdateRequest.to_use_case_input()`, `TaskTransitionRequest.to_task_status()`, `TaskResponse.from_domain()` (isinstance-Dispatch für alle 4 Task-Typen)
+- `src/api/schemas/sprint_schemas.py`: `SprintCreateRequest.to_date_range()`, `SprintResponse.from_domain()`
+- `src/api/schemas/goal_schemas.py`: `GoalCreateRequest.to_domain()`, `GoalResponse.from_domain()`, `KeyResultCreate/Update/Response`
+- 22 neue Mapping-Tests — **285 total passing**
 
 ### 2026-04-23 — Phase 4, Schritt 1: API-Infrastruktur
 
