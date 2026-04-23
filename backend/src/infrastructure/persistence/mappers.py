@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import uuid
 from datetime import datetime, timezone
 
@@ -8,20 +7,20 @@ from src.domain.entities import DailyTask, LongTermGoal, Milestone, SprintTask, 
 from src.domain.sprint import Sprint, SprintStatus
 from src.domain.value_objects import DateRange, Estimation, Priority, Tag, TaskStatus
 from src.infrastructure.persistence.models.goal_model import GoalModel
-from src.infrastructure.persistence.models.sprint_model import SprintModel, SprintTaskIdModel
+from src.infrastructure.persistence.models.sprint_model import SprintModel
 from src.infrastructure.persistence.models.task_model import TaskModel
-
-
-def _tags_to_json(tags: frozenset[Tag]) -> str:
-    return json.dumps([t.name for t in tags])
-
-
-def _tags_from_json(raw: str) -> frozenset[Tag]:
-    return frozenset(Tag(name) for name in json.loads(raw))
 
 
 def _utc(dt: datetime) -> datetime:
     return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
+def _tags_to_list(tags: frozenset[Tag]) -> list[str]:
+    return [t.name for t in tags]
+
+
+def _tags_from_list(raw: list[str]) -> frozenset[Tag]:
+    return frozenset(Tag(name) for name in (raw or []))
 
 
 # ---------------------------------------------------------------------------
@@ -37,7 +36,7 @@ def task_to_model(task: Task) -> TaskModel:
         status=task.status.value,
         priority=task.priority.value,
         story_points=task.estimation.story_points if task.estimation else None,
-        tags=_tags_to_json(task.tags),
+        tags=_tags_to_list(task.tags),
         created_at=task.created_at,
         updated_at=task.updated_at,
     )
@@ -62,7 +61,7 @@ def task_from_model(model: TaskModel) -> Task:
         status=TaskStatus(model.status),
         priority=Priority(model.priority),
         estimation=estimation,
-        tags=_tags_from_json(model.tags),
+        tags=_tags_from_list(model.tags),
         created_at=_utc(model.created_at),
         updated_at=_utc(model.updated_at),
     )
@@ -119,7 +118,7 @@ def goal_to_model(goal: LongTermGoal) -> GoalModel:
         description=goal.description,
         status=goal.status.value,
         priority=goal.priority.value,
-        tags=_tags_to_json(goal.tags),
+        tags=_tags_to_list(goal.tags),
         created_at=goal.created_at,
         updated_at=goal.updated_at,
     )
@@ -141,7 +140,7 @@ def goal_from_model(model: GoalModel) -> LongTermGoal:
         description=model.description,
         status=TaskStatus(model.status),
         priority=Priority(model.priority),
-        tags=_tags_from_json(model.tags),
+        tags=_tags_from_list(model.tags),
         date_range=date_range,
         created_at=_utc(model.created_at),
         updated_at=_utc(model.updated_at),

@@ -8,7 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.repositories.sprint_repository import ISprintRepository
 from src.domain.sprint import Sprint, SprintStatus
 from src.infrastructure.persistence.mappers import sprint_from_model, sprint_to_model
-from src.infrastructure.persistence.models.sprint_model import SprintModel, SprintTaskIdModel
+from src.infrastructure.persistence.models.sprint_model import SprintModel
+from src.infrastructure.persistence.models.task_model import TaskModel
 
 
 class PostgresSprintRepository(ISprintRepository):
@@ -28,13 +29,9 @@ class PostgresSprintRepository(ISprintRepository):
     async def save(self, sprint: Sprint) -> None:
         model = sprint_to_model(sprint)
         await self._session.merge(model)
-        await self._sync_task_ids(sprint)
         await self._session.commit()
 
     async def delete(self, sprint_id: uuid.UUID) -> None:
-        await self._session.execute(
-            delete(SprintTaskIdModel).where(SprintTaskIdModel.sprint_id == sprint_id)
-        )
         await self._session.execute(
             delete(SprintModel).where(SprintModel.id == sprint_id)
         )
@@ -60,13 +57,9 @@ class PostgresSprintRepository(ISprintRepository):
 
     async def _load_task_ids(self, sprint_id: uuid.UUID) -> list[uuid.UUID]:
         result = await self._session.execute(
-            select(SprintTaskIdModel).where(SprintTaskIdModel.sprint_id == sprint_id)
+            select(TaskModel.id).where(
+                TaskModel.sprint_id == sprint_id,
+                TaskModel.task_type == "sprint",
+            )
         )
-        return [row.task_id for row in result.scalars().all()]
-
-    async def _sync_task_ids(self, sprint: Sprint) -> None:
-        await self._session.execute(
-            delete(SprintTaskIdModel).where(SprintTaskIdModel.sprint_id == sprint.id)
-        )
-        for task_id in sprint.task_ids:
-            self._session.add(SprintTaskIdModel(sprint_id=sprint.id, task_id=task_id))
+        return list(result.scalars().all())

@@ -20,7 +20,7 @@ import src.infrastructure.persistence.models.task_model  # noqa: F401
 
 TEST_DB_URL = "postgresql+asyncpg://taskmanager:taskmanager@localhost:5432/taskmanager_test"
 _ADMIN_URL = "postgresql+asyncpg://taskmanager:taskmanager@localhost:5432/postgres"
-_TABLES = "tasks, sprints, sprint_task_ids, goals"
+_TABLES = "key_results, tasks, sprints, goals"
 
 
 # ---------------------------------------------------------------------------
