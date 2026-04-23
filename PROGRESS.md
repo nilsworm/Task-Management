@@ -39,11 +39,13 @@
 - [ ] Event-Handler für Dashboard-Updates
 
 ### Phase 4 — API-Layer
-- [ ] FastAPI-Router: /tasks, /sprints, /goals, /dashboard
-- [ ] Pydantic-Schemas (Request/Response)
-- [ ] Dependency Injection für Repositories
-- [ ] CORS für lokales Frontend
-- [ ] OpenAPI-Spec prüfen
+- [x] API-Infrastruktur (DI, Exception-Handler, App-Struktur, CORS)
+- [ ] Pydantic-Schemas (Request/Response-DTOs)
+- [ ] Task-Router (/tasks)
+- [ ] Sprint-Router (/sprints)
+- [ ] Goal-Router (/goals) inkl. KeyResults
+- [ ] Dashboard-Router (/dashboard)
+- [ ] OpenAPI-Spec exportieren
 
 ### Phase 5 — Frontend
 - [ ] Types aus OpenAPI generieren (openapi-typescript)
@@ -62,6 +64,15 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-23 — Phase 4, Schritt 1: API-Infrastruktur
+
+- `application/exceptions.py`: `EntityNotFoundError` (→ 404) + `InvalidOperationError` (→ 409)
+- Use Cases: not-found → `EntityNotFoundError`, State-Machine-Fehler → `InvalidOperationError`
+- `api/dependencies.py`: `get_session/task_repo/sprint_repo/goal_repo/event_bus` als `Depends()`-Provider
+- `api/exception_handlers.py`: drei zentrale HTTP-Fehler-Handler (404 / 409 / 400)
+- `src/main.py`: Handler registriert, CORS bestätigt (localhost:5173), `api/routers/` vorbereitet
+- 13 neue Tests — **302 total passing**
 
 ### 2026-04-23 — Phase 3: Schema-Nachbesserung (Migration 3)
 
