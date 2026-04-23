@@ -196,6 +196,29 @@ def test_list_key_results_goal_not_found(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
+# GET /goals/{id}/key-results/{kr_id}
+# ---------------------------------------------------------------------------
+
+def test_get_key_result(client: TestClient) -> None:
+    goal = _create_goal(client)
+    kr = client.post(f"/goals/{goal['id']}/key-results", json={
+        "title": "KR to fetch", "target_value": 10.0,
+    }).json()
+
+    resp = client.get(f"/goals/{goal['id']}/key-results/{kr['id']}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["id"] == kr["id"]
+    assert data["title"] == "KR to fetch"
+
+
+def test_get_key_result_not_found(client: TestClient) -> None:
+    goal = _create_goal(client)
+    resp = client.get(f"/goals/{goal['id']}/key-results/{uuid.uuid4()}")
+    assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
 # PATCH /goals/{id}/key-results/{kr_id}
 # ---------------------------------------------------------------------------
 

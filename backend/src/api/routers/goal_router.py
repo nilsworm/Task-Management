@@ -80,6 +80,16 @@ async def create_key_result(
     return KeyResultResponse.from_domain(kr)
 
 
+@router.get("/{goal_id}/key-results/{kr_id}", response_model=KeyResultResponse)
+async def get_key_result(
+    goal_id: uuid.UUID, kr_id: uuid.UUID, repo: GoalRepoDep
+) -> KeyResultResponse:
+    kr = await repo.get_key_result(kr_id)
+    if kr is None:
+        raise EntityNotFoundError("KeyResult", str(kr_id))
+    return KeyResultResponse.from_domain(kr)
+
+
 @router.patch("/{goal_id}/key-results/{kr_id}", response_model=KeyResultResponse)
 async def update_key_result(
     goal_id: uuid.UUID,

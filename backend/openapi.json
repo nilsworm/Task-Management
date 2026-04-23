@@ -542,6 +542,69 @@
         }
       }
     },
+    "/sprints/{sprint_id}/tasks": {
+      "get": {
+        "tags": [
+          "sprints"
+        ],
+        "summary": "List Sprint Tasks",
+        "operationId": "list_sprint_tasks_sprints__sprint_id__tasks_get",
+        "parameters": [
+          {
+            "name": "sprint_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sprint Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskResponse"
+                  },
+                  "title": "Response List Sprint Tasks Sprints  Sprint Id  Tasks Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sprints/{sprint_id}/start": {
       "post": {
         "tags": [
@@ -972,6 +1035,57 @@
       }
     },
     "/goals/{goal_id}/key-results/{kr_id}": {
+      "get": {
+        "tags": [
+          "goals"
+        ],
+        "summary": "Get Key Result",
+        "operationId": "get_key_result_goals__goal_id__key_results__kr_id__get",
+        "parameters": [
+          {
+            "name": "goal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Goal Id"
+            }
+          },
+          {
+            "name": "kr_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Kr Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyResultResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "goals"
@@ -1098,10 +1212,214 @@
           }
         }
       }
+    },
+    "/dashboard/metrics": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Metrics",
+        "operationId": "get_metrics_dashboard_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/burndown": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Burndown",
+        "operationId": "get_burndown_dashboard_burndown_get",
+        "parameters": [
+          {
+            "name": "sprint_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sprint Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BurndownResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/velocity": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Velocity",
+        "operationId": "get_velocity_dashboard_velocity_get",
+        "parameters": [
+          {
+            "name": "last_n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 5,
+              "title": "Last N"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VelocityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/goal-progress": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Goal Progress",
+        "operationId": "get_goal_progress_dashboard_goal_progress_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalProgressResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "BurndownPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "remaining_points": {
+            "type": "integer",
+            "title": "Remaining Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "remaining_points"
+        ],
+        "title": "BurndownPoint"
+      },
+      "BurndownResponse": {
+        "properties": {
+          "sprint_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sprint Id"
+          },
+          "sprint_name": {
+            "type": "string",
+            "title": "Sprint Name"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "total_points": {
+            "type": "integer",
+            "title": "Total Points"
+          },
+          "ideal_line": {
+            "items": {
+              "$ref": "#/components/schemas/BurndownPoint"
+            },
+            "type": "array",
+            "title": "Ideal Line"
+          },
+          "actual_remaining": {
+            "type": "integer",
+            "title": "Actual Remaining"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sprint_id",
+          "sprint_name",
+          "start_date",
+          "end_date",
+          "total_points",
+          "ideal_line",
+          "actual_remaining"
+        ],
+        "title": "BurndownResponse"
+      },
       "DashboardResponse": {
         "properties": {
           "total_tasks": {
@@ -1197,6 +1515,51 @@
           "title"
         ],
         "title": "GoalCreateRequest"
+      },
+      "GoalProgressItem": {
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Goal Id"
+          },
+          "goal_title": {
+            "type": "string",
+            "title": "Goal Title"
+          },
+          "progress_percent": {
+            "type": "number",
+            "title": "Progress Percent"
+          },
+          "key_results_count": {
+            "type": "integer",
+            "title": "Key Results Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "goal_id",
+          "goal_title",
+          "progress_percent",
+          "key_results_count"
+        ],
+        "title": "GoalProgressItem"
+      },
+      "GoalProgressResponse": {
+        "properties": {
+          "goals": {
+            "items": {
+              "$ref": "#/components/schemas/GoalProgressItem"
+            },
+            "type": "array",
+            "title": "Goals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "goals"
+        ],
+        "title": "GoalProgressResponse"
       },
       "GoalResponse": {
         "properties": {
@@ -1540,6 +1903,23 @@
         "type": "object",
         "title": "KeyResultUpdateRequest"
       },
+      "MetricsResponse": {
+        "properties": {
+          "task_counts": {
+            "$ref": "#/components/schemas/TaskStatusCounts"
+          },
+          "completion_rate": {
+            "type": "number",
+            "title": "Completion Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_counts",
+          "completion_rate"
+        ],
+        "title": "MetricsResponse"
+      },
       "SprintCreateRequest": {
         "properties": {
           "name": {
@@ -1674,6 +2054,30 @@
         },
         "type": "object",
         "title": "SprintUpdateRequest"
+      },
+      "SprintVelocity": {
+        "properties": {
+          "sprint_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sprint Id"
+          },
+          "sprint_name": {
+            "type": "string",
+            "title": "Sprint Name"
+          },
+          "completed_points": {
+            "type": "integer",
+            "title": "Completed Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sprint_id",
+          "sprint_name",
+          "completed_points"
+        ],
+        "title": "SprintVelocity"
       },
       "TaskCreateRequest": {
         "properties": {
@@ -2118,6 +2522,27 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VelocityResponse": {
+        "properties": {
+          "sprints": {
+            "items": {
+              "$ref": "#/components/schemas/SprintVelocity"
+            },
+            "type": "array",
+            "title": "Sprints"
+          },
+          "average_velocity": {
+            "type": "number",
+            "title": "Average Velocity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sprints",
+          "average_velocity"
+        ],
+        "title": "VelocityResponse"
       }
     }
   }
