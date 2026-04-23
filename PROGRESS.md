@@ -41,7 +41,7 @@
 ### Phase 4 — API-Layer
 - [x] API-Infrastruktur (DI, Exception-Handler, App-Struktur, CORS)
 - [x] Pydantic-Schemas (Request/Response-DTOs)
-- [ ] Task-Router (/tasks)
+- [x] Task-Router (/tasks)
 - [ ] Sprint-Router (/sprints)
 - [ ] Goal-Router (/goals) inkl. KeyResults
 - [ ] Dashboard-Router (/dashboard)
@@ -64,6 +64,13 @@
 - [ ] README finalisieren
 
 ## Session-Log
+
+### 2026-04-23 — Phase 4, Schritt 3: Task-Router
+
+- `src/api/routers/task_router.py`: POST/GET(list+filter)/GET(detail)/PATCH/POST(transition)/DELETE
+- Filter: `?status=` via `list_by_status`, `?sprint_id=` via `list_by_sprint`
+- `TaskFactory` singleton im Router (stateless, domain-only)
+- 21 neue API-Tests gegen TestClient mit DI-Overrides — **306 total passing**
 
 ### 2026-04-23 — Phase 4, Schritt 2: Pydantic-Schemas
 

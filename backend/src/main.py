@@ -7,6 +7,7 @@ from src.api.exception_handlers import (
     value_error_handler,
 )
 from src.api.health import router as health_router
+from src.api.routers.task_router import router as task_router
 from src.application.exceptions import EntityNotFoundError, InvalidOperationError
 
 app = FastAPI(
@@ -27,3 +28,4 @@ app.add_exception_handler(InvalidOperationError, invalid_operation_handler)  # t
 app.add_exception_handler(ValueError, value_error_handler)  # type: ignore[arg-type]
 
 app.include_router(health_router)
+app.include_router(task_router)
