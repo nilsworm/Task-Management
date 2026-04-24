@@ -46,8 +46,8 @@ describe("SprintCard", () => {
   })
 
   it("renders task count", () => {
-    renderCard({ ...BASE_SPRINT, task_ids: ["t1", "t2"] })
-    expect(screen.getByText("2 tasks")).toBeInTheDocument()
+    const { container } = renderCard({ ...BASE_SPRINT, task_ids: ["t1", "t2"] })
+    expect(container.textContent).toContain("2 tasks")
   })
 
   it("shows Start button for planned sprint", () => {

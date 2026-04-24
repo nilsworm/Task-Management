@@ -1,13 +1,10 @@
 import { useState } from "react"
 import { LayoutList, LayoutGrid, Plus } from "lucide-react"
 import { useTasks } from "@/api/hooks/tasks"
-import type { Task } from "@/api/hooks/tasks"
 import { TaskFilterBar } from "./TaskFilterBar"
 import { TaskTable } from "./TaskTable"
 import { TaskBoardView } from "./TaskBoardView"
 import { TaskCreateModal } from "./TaskCreateModal"
-import { TaskEditModal } from "./TaskEditModal"
-import { TaskDeleteDialog } from "./TaskDeleteDialog"
 import type { TaskFilters } from "./TaskFilterBar"
 
 type ViewMode = "list" | "board"
@@ -19,11 +16,9 @@ function RowSkeleton() {
 }
 
 export function TasksPage() {
-  const [view, setView] = useState<ViewMode>("list")
-  const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS)
+  const [view, setView]           = useState<ViewMode>("list")
+  const [filters, setFilters]     = useState<TaskFilters>(DEFAULT_FILTERS)
   const [createOpen, setCreateOpen] = useState(false)
-  const [editTask, setEditTask] = useState<Task | null>(null)
-  const [deleteTask, setDeleteTask] = useState<Task | null>(null)
 
   const { data: tasks = [], isLoading, isError } = useTasks()
 
@@ -102,15 +97,13 @@ export function TasksPage() {
 
       {/* Content */}
       {!isLoading && !isError && view === "list" && (
-        <TaskTable tasks={visible} onEdit={setEditTask} onDelete={setDeleteTask} />
+        <TaskTable tasks={visible} />
       )}
       {!isLoading && !isError && view === "board" && (
-        <TaskBoardView tasks={visible} onEdit={setEditTask} onDelete={setDeleteTask} />
+        <TaskBoardView tasks={visible} />
       )}
 
       <TaskCreateModal open={createOpen} onClose={() => setCreateOpen(false)} />
-      <TaskEditModal key={editTask?.id ?? ""} task={editTask} onClose={() => setEditTask(null)} />
-      <TaskDeleteDialog task={deleteTask} onClose={() => setDeleteTask(null)} />
     </div>
   )
 }

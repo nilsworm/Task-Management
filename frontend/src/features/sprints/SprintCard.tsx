@@ -33,10 +33,18 @@ export function SprintCard({ sprint }: Props) {
         <p className="line-clamp-2 text-[11px] text-muted-foreground">{sprint.goal}</p>
       )}
 
-      {/* Task count */}
-      <span className="font-mono text-[10px] text-muted-foreground">
-        {sprint.task_ids.length} task{sprint.task_ids.length !== 1 ? "s" : ""}
-      </span>
+      {/* Progress */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-1 rounded-full bg-surface-3 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-green transition-all"
+            style={{ width: `${sprint.completion_percent}%` }}
+          />
+        </div>
+        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+          {sprint.completion_percent}% · {sprint.task_ids.length} task{sprint.task_ids.length !== 1 ? "s" : ""}
+        </span>
+      </div>
 
       {/* Actions */}
       <div
