@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -42,26 +41,25 @@ export function SprintAssignTask({ sprintId, assignedTaskIds }: Props) {
   return (
     <div className="flex items-center gap-2">
       <Select value={selectedId} onValueChange={setSelectedId}>
-        <SelectTrigger className="w-56 h-8 text-xs">
+        <SelectTrigger className="h-7 w-52 rounded-[5px] border-border bg-surface-2 font-mono text-[11px] text-muted-foreground">
           <SelectValue placeholder="Assign existing task…" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="font-mono text-[11px]">
           {assignable.map((t) => (
-            <SelectItem key={t.id} value={t.id} className="text-xs">
+            <SelectItem key={t.id} value={t.id} className="text-[11px]">
               {t.title}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-8"
+      <button
         disabled={!selectedId || assign.isPending}
         onClick={handleAssign}
+        className="flex h-7 w-7 items-center justify-center rounded-[5px] border border-border bg-surface-2 text-muted-foreground transition-colors hover:bg-surface-3 hover:text-foreground disabled:opacity-40"
+        aria-label="Assign task"
       >
         <Plus className="h-3.5 w-3.5" />
-      </Button>
+      </button>
     </div>
   )
 }
