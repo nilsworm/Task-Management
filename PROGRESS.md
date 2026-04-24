@@ -34,8 +34,8 @@
 - [x] SQLAlchemy-Models + erste Alembic-Migration
 - [x] Repository-Implementierungen (Postgres)
 - [x] Application Services / Use Cases
-- [ ] Planning Strategies (Daily, Sprint, Monthly)
-- [ ] Objective + KeyResult (OKR)
+- [ ] Planning Strategies (Daily, Sprint, Monthly) CANCELED ❌
+- [x] Objective + KeyResult (OKR)
 - [ ] Event-Handler für Dashboard-Updates
 
 ### Phase 4 — API-Layer
@@ -53,16 +53,59 @@
 - [x] Schritt 3: Tasks-View
 - [x] Schritt 4: Sprint-View (Kanban-Board)
 - [x] Schritt 5: Goals-View
-- [ ] Schritt 6: Dashboard
-- [ ] Schritt 7: Polish & Smoke-Tests
+- [x] Schritt 6: Dashboard
+- [x] Schritt 7: Polish & Smoke-Tests
 
-### Phase 6 — Polish
-- [ ] E2E-Tests (Playwright)
-- [ ] Seed-Daten für lokale Entwicklung
-- [ ] Docker Compose: alles mit einem Befehl starten
-- [ ] README finalisieren
+### Phase 6 — Polish & Finalisierung
+- [ ] Schritt 1: Seed-Daten ✅
+- [ ] Schritt 2: E2E-Tests (Playwright)
+- [ ] Schritt 3: Docker Compose vollständig
+- [ ] Schritt 4: Lücken & TODOs
+- [ ] Schritt 5: Dokumentation finalisieren
+- [ ] Schritt 6: Dev-Experience (Makefile / justfile, VS Code)
+- [ ] Schritt 7: Finale Architektur-Überprüfung
 
 ## Session-Log
+
+### 2026-04-24 — Phase 6, Schritt 1: Seed-Daten
+
+- `backend/scripts/__init__.py` + `backend/scripts/seed.py`
+- Aufruf: `uv run python -m scripts.seed [--reset]` (aus `/backend`)
+- Idempotent via `uuid.uuid5(SEED_NS, name)` — feste UUIDs, `merge()` macht Upsert
+- `--reset`: löscht `key_results → tasks → sprints → goals` (FK-Reihenfolge)
+- Daten: 4 Sprints (2 completed/19+22 pts, 1 active/28 pts, 1 planned), 31 Tasks (23 sprint, 5 daily, 2 milestone, 1 goal-type), 3 Goals, 7 KeyResults
+- Dashboard-Coverage: Velocity zeigt 2 Balken (Ø 20.5 pts), Burndown aktiver Sprint, Goal-Progress 93%/35%/85%
+- 449 Backend-Tests weiterhin grün ✅
+
+### 2026-04-24 — Phase 5, Schritt 7: Polish & Smoke-Tests
+
+- `sonner` 2.0.7 + `@playwright/test` 1.59.1 installiert
+- `src/components/ui/sonner.tsx`: shadcn-konformer Toaster-Wrapper
+- `src/components/ui/skeleton.tsx`: `animate-pulse`-Primitive
+- `src/components/shared/ErrorBoundary.tsx`: Class-Component mit "Try again"-Reset
+- `App.tsx`: `<Toaster />` eingebunden
+- `AppLayout.tsx`: `<ErrorBoundary>` um `<Outlet />` (schützt einzelne Seiten)
+- Toast `success/error` in allen Mutations: TaskCreate/Edit/Delete, SprintCreate/Start/Complete/Delete, GoalDelete, KRCreate/Edit/Delete (9 Dateien)
+- Skeleton-Loading in TasksPage (5 Zeilen), SprintsPage (3 Cards), GoalsPage (3 Cards)
+- `playwright.config.ts`: webServer (`pnpm dev`), Chromium, `reuseExistingServer`
+- `tests/e2e/smoke.spec.ts`: 7 Tests — Dashboard/Tasks/Sprints/Goals laden, Sidebar-Navigation, 3 Modal-Open/Close-Flows
+- `vitest.config.ts`: `tests/e2e/**` von Vitest-Scan ausgeschlossen
+- **69 Unit-Tests, alle grün** | Build sauber ✅
+- E2E-Tests mit `pnpm test:e2e` starten (Playwright-Browser-Installation: `pnpm exec playwright install chromium`)
+
+### **Phase 5 vollständig abgeschlossen ✅**
+
+### 2026-04-24 — Phase 5, Schritt 6: Dashboard
+
+- `recharts` 3.8.1 installiert (eigene TS-Types, kein `@types/recharts` nötig)
+- `src/api/hooks/dashboard.ts`: 5 Hooks — `useDashboard`, `useMetrics`, `useBurndown(sprintId?)`, `useVelocity(lastN?)`, `useGoalProgress()` — alle mit `refetchInterval: 30_000`
+- `MetricsWidget`: Counts-Tabelle + Completion Rate als Donut (Recharts PieChart), leerer Zustand
+- `BurndownWidget`: LineChart mit ideal_line (grau, gestrichelt) + ReferenceLine für actual_remaining (grün) + optionale ReferenceLine für heute (blau)
+- `VelocityWidget`: BarChart je Sprint + ReferenceLine für average_velocity (gelb, gestrichelt)
+- `GoalProgressWidget`: Goal-Liste mit Progressbars + KR-Count, aria-konform
+- `DashboardPage`: 2×2-Grid (responsive 1-spaltig), Skeleton-Loader, Burndown-Fehler-Fallback (kein aktiver Sprint)
+- 19 neue Tests (MetricsWidget 5, GoalProgressWidget 8, DashboardPage 6)
+- **69 Tests total, alle grün** | Build sauber ✅
 
 ### 2026-04-24 — Phase 5, Schritt 5: Goals-View
 
