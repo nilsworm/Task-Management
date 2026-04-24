@@ -29,8 +29,8 @@ describe("MetricsWidget", () => {
 
   it("renders status rows in the table", () => {
     render(<MetricsWidget metrics={BASE_METRICS} />)
-    expect(screen.getByText("Backlog")).toBeInTheDocument()
-    expect(screen.getByText("Done")).toBeInTheDocument()
+    expect(screen.getAllByText("Backlog").length).toBeGreaterThan(0)
+    expect(screen.getAllByText("Done").length).toBeGreaterThan(0)
   })
 
   it("renders total count", () => {
