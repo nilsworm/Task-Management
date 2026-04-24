@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useDeleteGoal } from "@/api/hooks/goals"
 import type { Goal } from "@/api/hooks/goals"
+import { toast } from "sonner"
 
 interface Props {
   goal: Goal
@@ -53,7 +54,12 @@ export function GoalCard({ goal, progressPercent, keyResultsCount }: Props) {
           variant="ghost"
           className="text-destructive hover:text-destructive"
           disabled={del.isPending}
-          onClick={() => del.mutate(goal.id)}
+          onClick={() =>
+            del.mutate(goal.id, {
+              onSuccess: () => toast.success("Goal deleted"),
+              onError: () => toast.error("Failed to delete goal"),
+            })
+          }
         >
           Delete
         </Button>

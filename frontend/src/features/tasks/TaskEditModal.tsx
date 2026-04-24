@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select"
 import { useUpdateTask } from "@/api/hooks/tasks"
 import type { Task, TaskUpdate } from "@/api/hooks/tasks"
+import { toast } from "sonner"
 
 interface Props {
   task: Task | null
@@ -26,21 +27,18 @@ interface Props {
 }
 
 export function TaskEditModal({ task, onClose }: Props) {
-  const [form, setForm] = useState<Omit<TaskUpdate, "id">>({})
+  const [form, setForm] = useState<Omit<TaskUpdate, "id">>(() =>
+    task
+      ? {
+          title: task.title,
+          description: task.description,
+          priority: task.priority as TaskUpdate["priority"],
+          estimation: task.estimation,
+        }
+      : {},
+  )
   const [error, setError] = useState<string | null>(null)
   const update = useUpdateTask()
-
-  useEffect(() => {
-    if (task) {
-      setForm({
-        title: task.title,
-        description: task.description,
-        priority: task.priority as TaskUpdate["priority"],
-        estimation: task.estimation,
-      })
-      setError(null)
-    }
-  }, [task])
 
   if (!task) return null
 
@@ -52,9 +50,11 @@ export function TaskEditModal({ task, onClose }: Props) {
     }
     try {
       await update.mutateAsync({ id: task!.id, ...form })
+      toast.success("Task updated")
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update task.")
+      toast.error("Failed to update task")
     }
   }
 

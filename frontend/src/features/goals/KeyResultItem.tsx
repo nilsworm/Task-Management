@@ -2,6 +2,7 @@ import { Pencil, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useDeleteKeyResult } from "@/api/hooks/goals"
 import type { KeyResult } from "@/api/hooks/goals"
+import { toast } from "sonner"
 
 interface Props {
   kr: KeyResult
@@ -30,7 +31,12 @@ export function KeyResultItem({ kr, onEdit }: Props) {
             size="icon"
             className="h-7 w-7 text-destructive hover:text-destructive"
             disabled={del.isPending}
-            onClick={() => del.mutate(kr.id)}
+            onClick={() =>
+              del.mutate(kr.id, {
+                onSuccess: () => toast.success("Key result deleted"),
+                onError: () => toast.error("Failed to delete key result"),
+              })
+            }
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>

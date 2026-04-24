@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { SprintStatusBadge } from "./SprintStatusBadge"
 import { useStartSprint, useCompleteSprint, useDeleteSprint } from "@/api/hooks/sprints"
 import type { Sprint } from "@/api/hooks/sprints"
+import { toast } from "sonner"
 
 interface Props {
   sprint: Sprint
@@ -49,7 +50,12 @@ export function SprintCard({ sprint }: Props) {
             size="sm"
             variant="outline"
             disabled={start.isPending}
-            onClick={() => start.mutate(sprint.id)}
+            onClick={() =>
+              start.mutate(sprint.id, {
+                onSuccess: () => toast.success("Sprint started"),
+                onError: () => toast.error("Failed to start sprint"),
+              })
+            }
           >
             Start
           </Button>
@@ -59,7 +65,12 @@ export function SprintCard({ sprint }: Props) {
             size="sm"
             variant="outline"
             disabled={complete.isPending}
-            onClick={() => complete.mutate(sprint.id)}
+            onClick={() =>
+              complete.mutate(sprint.id, {
+                onSuccess: () => toast.success("Sprint completed"),
+                onError: () => toast.error("Failed to complete sprint"),
+              })
+            }
           >
             Complete
           </Button>
@@ -70,7 +81,12 @@ export function SprintCard({ sprint }: Props) {
             variant="ghost"
             className="text-destructive hover:text-destructive"
             disabled={del.isPending}
-            onClick={() => del.mutate(sprint.id)}
+            onClick={() =>
+              del.mutate(sprint.id, {
+                onSuccess: () => toast.success("Sprint deleted"),
+                onError: () => toast.error("Failed to delete sprint"),
+              })
+            }
           >
             Delete
           </Button>

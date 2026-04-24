@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useCreateSprint } from "@/api/hooks/sprints"
+import { toast } from "sonner"
 
 interface Props {
   open: boolean
@@ -42,9 +43,11 @@ export function SprintCreateModal({ open, onClose }: Props) {
     if (form.start_date > form.end_date) return setError("Start date must be before end date.")
     try {
       await create.mutateAsync(form)
+      toast.success("Sprint created")
       handleClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create sprint.")
+      toast.error("Failed to create sprint")
     }
   }
 

@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { ThemeToggle } from "@/components/shared/ThemeToggle"
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 import { cn } from "@/lib/utils"
 
 const navItems = [
@@ -57,7 +58,9 @@ export function AppLayout() {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

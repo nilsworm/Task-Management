@@ -37,11 +37,18 @@ export function useSprintTasks(sprintId: string) {
   })
 }
 
+function invalidateDashboard(qc: ReturnType<typeof useQueryClient>) {
+  return qc.invalidateQueries({ queryKey: ["dashboard"] })
+}
+
 export function useCreateSprint() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: SprintCreate) => apiPost<Sprint>("/sprints", body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SPRINTS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: SPRINTS_KEY })
+      invalidateDashboard(qc)
+    },
   })
 }
 
@@ -49,7 +56,10 @@ export function useStartSprint() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiPost<Sprint>(`/sprints/${id}/start`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SPRINTS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: SPRINTS_KEY })
+      invalidateDashboard(qc)
+    },
   })
 }
 
@@ -57,7 +67,10 @@ export function useCompleteSprint() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiPost<Sprint>(`/sprints/${id}/complete`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SPRINTS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: SPRINTS_KEY })
+      invalidateDashboard(qc)
+    },
   })
 }
 
@@ -65,6 +78,21 @@ export function useDeleteSprint() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiDelete(`/sprints/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SPRINTS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: SPRINTS_KEY })
+      invalidateDashboard(qc)
+    },
+  })
+}
+
+export function useAddTaskToSprint(sprintId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (taskId: string) => apiPost<Sprint>(`/sprints/${sprintId}/tasks/${taskId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...SPRINTS_KEY, sprintId, "tasks"] })
+      qc.invalidateQueries({ queryKey: [...SPRINTS_KEY, sprintId] })
+      qc.invalidateQueries({ queryKey: ["tasks"] })
+    },
   })
 }

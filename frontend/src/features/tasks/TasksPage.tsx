@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { useTasks } from "@/api/hooks/tasks"
 import type { Task } from "@/api/hooks/tasks"
+import { Skeleton } from "@/components/ui/skeleton"
 import { TaskFilterBar } from "./TaskFilterBar"
 import { TaskTable } from "./TaskTable"
 import { TaskCreateModal } from "./TaskCreateModal"
@@ -48,12 +49,18 @@ export function TasksPage() {
         <p className="text-sm text-destructive">Failed to load tasks. Is the backend running?</p>
       )}
 
+      {isLoading && (
+        <div className="flex flex-col gap-2">
+          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+        </div>
+      )}
+
       {!isLoading && !isError && (
         <TaskTable tasks={visible} onEdit={setEditTask} onDelete={setDeleteTask} />
       )}
 
       <TaskCreateModal open={createOpen} onClose={() => setCreateOpen(false)} />
-      <TaskEditModal task={editTask} onClose={() => setEditTask(null)} />
+      <TaskEditModal key={editTask?.id ?? ""} task={editTask} onClose={() => setEditTask(null)} />
       <TaskDeleteDialog task={deleteTask} onClose={() => setDeleteTask(null)} />
     </div>
   )

@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useCreateKeyResult } from "@/api/hooks/goals"
+import { toast } from "sonner"
 
 interface Props {
   goalId: string
@@ -52,9 +53,11 @@ export function KeyResultCreateModal({ goalId, open, onClose }: Props) {
         unit: form.unit,
         description: form.description,
       })
+      toast.success("Key result added")
       handleClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create key result.")
+      toast.error("Failed to add key result")
     }
   }
 

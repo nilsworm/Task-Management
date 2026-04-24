@@ -86,6 +86,7 @@ export function GoalDetailPage() {
         onClose={() => setCreateOpen(false)}
       />
       <KeyResultEditModal
+        key={editKr?.id ?? ""}
         goalId={id!}
         kr={editKr}
         onClose={() => setEditKr(null)}

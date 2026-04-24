@@ -36,11 +36,18 @@ export function useTask(id: string) {
   })
 }
 
+function invalidateDashboard(qc: ReturnType<typeof useQueryClient>) {
+  return qc.invalidateQueries({ queryKey: ["dashboard"] })
+}
+
 export function useCreateTask() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: TaskCreate) => apiPost<Task>("/tasks", body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: TASKS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TASKS_KEY })
+      invalidateDashboard(qc)
+    },
   })
 }
 
@@ -49,7 +56,10 @@ export function useUpdateTask() {
   return useMutation({
     mutationFn: ({ id, ...body }: TaskUpdate & { id: string }) =>
       apiPatch<Task>(`/tasks/${id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: TASKS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TASKS_KEY })
+      invalidateDashboard(qc)
+    },
   })
 }
 
@@ -57,8 +67,19 @@ export function useDeleteTask() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiDelete(`/tasks/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: TASKS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: TASKS_KEY })
+      invalidateDashboard(qc)
+    },
   })
+}
+
+// matches ["sprints", <id>, "tasks"] — the query key used by useSprintTasks
+const sprintTasksFilter = {
+  predicate: (q: { queryKey: unknown }) => {
+    const key = q.queryKey as unknown[]
+    return key[0] === "sprints" && key[2] === "tasks"
+  },
 }
 
 export function useTransitionTask() {
@@ -68,15 +89,28 @@ export function useTransitionTask() {
       apiPost<Task>(`/tasks/${id}/transition`, { status }),
     onMutate: async ({ id, status }) => {
       await qc.cancelQueries({ queryKey: TASKS_KEY })
-      const prev = qc.getQueryData<Task[]>(TASKS_KEY)
-      qc.setQueriesData<Task[]>({ queryKey: TASKS_KEY }, (old) =>
-        old?.map((t) => (t.id === id ? { ...t, status } : t)),
-      )
-      return { prev }
+
+      const updater = (old: Task[] | undefined) =>
+        old?.map((t) => (t.id === id ? { ...t, status } : t))
+
+      // snapshot + optimistic update: global task list
+      const prevTasks = qc.getQueriesData<Task[]>({ queryKey: TASKS_KEY })
+      qc.setQueriesData<Task[]>({ queryKey: TASKS_KEY }, updater)
+
+      // snapshot + optimistic update: sprint task list (used by KanbanBoard)
+      const prevSprintTasks = qc.getQueriesData<Task[]>(sprintTasksFilter)
+      qc.setQueriesData<Task[]>(sprintTasksFilter, updater)
+
+      return { prevTasks, prevSprintTasks }
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) qc.setQueryData(TASKS_KEY, ctx.prev)
+      ctx?.prevTasks?.forEach(([key, data]) => qc.setQueryData(key, data))
+      ctx?.prevSprintTasks?.forEach(([key, data]) => qc.setQueryData(key, data))
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: TASKS_KEY }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: TASKS_KEY })
+      qc.invalidateQueries(sprintTasksFilter)
+      invalidateDashboard(qc)
+    },
   })
 }

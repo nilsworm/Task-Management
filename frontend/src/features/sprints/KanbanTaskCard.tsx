@@ -28,7 +28,7 @@ export function KanbanTaskCard({ task }: Props) {
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} data-testid={`task-card-${task.id}`} {...attributes} {...listeners}>
       <Card
         className={cn(
           "cursor-grab select-none active:cursor-grabbing",

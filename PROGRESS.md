@@ -57,15 +57,76 @@
 - [x] Schritt 7: Polish & Smoke-Tests
 
 ### Phase 6 — Polish & Finalisierung
-- [ ] Schritt 1: Seed-Daten ✅
-- [ ] Schritt 2: E2E-Tests (Playwright)
-- [ ] Schritt 3: Docker Compose vollständig
-- [ ] Schritt 4: Lücken & TODOs
-- [ ] Schritt 5: Dokumentation finalisieren
-- [ ] Schritt 6: Dev-Experience (Makefile / justfile, VS Code)
-- [ ] Schritt 7: Finale Architektur-Überprüfung
+- [x] Schritt 1: Seed-Daten
+- [x] Schritt 2: E2E-Tests (Playwright)
+- [x] Schritt 3: Docker Compose vollständig
+- [x] Schritt 4: Lücken & TODOs
+- [x] Schritt 5: Dokumentation finalisieren
+- [x] Schritt 6: Dev-Experience (Makefile / justfile, VS Code)
+- [x] Schritt 7: Finale Architektur-Überprüfung
 
 ## Session-Log
+
+### 2026-04-24 — Phase 6, Schritt 7: Finale Architektur-Überprüfung
+
+- **Domain-Layer:** Null Framework-Imports bestätigt (reines Python/stdlib) ✅
+- **Application-Layer:** Null Infrastructure/API-Imports — nur Domain-Interfaces und -Entities ✅
+- **Repository-Symmetrie:** ITaskRepository, ISprintRepository, IGoalRepository — alle Interface-Methoden in Postgres-Implementierungen vorhanden, keine Extras ✅
+- **Infrastructure-Layer:** Keine Business-Logik (nur `raise ValueError` in Mapper + bedingter Filter) ✅
+- **ESLint-Fixes:**
+  - `routes/index.tsx`: `NotFoundPage` in eigene Datei `features/shared/NotFoundPage.tsx` extrahiert
+  - `TaskEditModal.tsx` + `GoalDetailPage/KeyResultEditModal.tsx`: `useEffect`-setState entfernt → lazy `useState`-Initializer + `key`-Prop in Eltern-Komponente
+  - `badge.tsx` / `button.tsx` (shadcn/ui): `eslint-disable-next-line react-refresh/only-export-components` (standard shadcn-Pattern: Komponente + Variant-Funktion in einer Datei)
+- `pnpm eslint src --max-warnings=0` → 0 Fehler ✅
+- `pnpm tsc --noEmit` → 0 Fehler ✅
+
+### **Phase 6 vollständig abgeschlossen ✅**
+
+### 2026-04-24 — Phase 6, Schritt 6: Dev-Experience
+
+- `Makefile`: 17 Targets — `install`, `up/down`, `migrate`, `migration n=…`, `backend`, `frontend`, `seed/seed-reset`, `test/test-be/test-fe/test-e2e`, `build/docker/logs`, `clean`; `make help` gibt strukturierte Übersicht aus
+- `.vscode/settings.json`: Python-Interpreter auf `backend/.venv`, pytest-Discovery, Prettier für TS/TSX, Tailwind-Regex für cn(), Vitest rootConfig, Datei-Exclusions
+- `.vscode/extensions.json`: Empfehlungen — Pylance, Prettier, ESLint, Tailwind CSS, Vitest Explorer, Playwright, Docker, GitLens
+- `.vscode/launch.json`: 3 Debug-Configs — FastAPI starten, pytest (alle), pytest (aktuelle Datei)
+
+### 2026-04-24 — Phase 6, Schritt 5: Dokumentation finalisieren
+
+- `README.md` komplett überarbeitet: Tech-Stack-Tabelle, Option A (Docker full-stack), Option B (lokale Entwicklung), Seed-Anleitung, Test-Commands (pytest/Vitest/Playwright), Projektstruktur-Übersicht, Env-Variablen-Tabelle
+
+### 2026-04-24 — Phase 6, Schritt 4: Lücken & TODOs
+
+- `src/api/hooks/sprints.ts`: `useAddTaskToSprint(sprintId)` Hook ergänzt — `POST /sprints/{id}/tasks/{task_id}`
+- `src/features/tasks/TaskFilterBar.tsx`: Status/Priority/Type-Labels kapitalisiert (STATUS_LABELS Map statt `replace("_", " ")`) — konsistent mit TaskStatusBadge
+- `src/routes/index.tsx`: Catch-all Route `"*"` → `NotFoundPage` (inline, 404 + Link zu Dashboard)
+- `src/features/tasks/TaskCreateModal.tsx`: Sprint-Typ-Feld: roher UUID-Input → `<Select>` mit `useSprints()` (Name + Status)
+- `src/features/sprints/SprintAssignTask.tsx`: Neue Komponente — lädt unassigned SprintTasks via `useTasks()`, zeigt Select + Assign-Button
+- `src/features/sprints/SprintDetailPage.tsx`: `<SprintAssignTask>` eingebunden (nur für planned/active Sprints, `task_ids` als assignedTaskIds übergeben)
+- 69 Tests weiterhin grün, tsc sauber ✅
+
+### 2026-04-24 — Phase 6, Schritt 3: Docker Compose vollständig
+
+- `backend/src/config.py`: `cors_origins: str` Feld (kommagetrennt, default: localhost:5173,5174)
+- `backend/src/main.py`: CORS nutzt `settings.cors_origins` statt Hardcode
+- `backend/Dockerfile`: python:3.12-slim + uv, CMD: `alembic upgrade head && uvicorn`
+- `backend/.dockerignore`: .venv, __pycache__, tests, .env ausgeschlossen
+- `frontend/Dockerfile`: 2-Stage — node:22-alpine build (VITE_API_URL als ARG) → nginx:alpine serve
+- `frontend/nginx.conf`: `try_files $uri /index.html` für SPA-Routing, Assets-Cache 1y
+- `frontend/.dockerignore`: node_modules, dist, .env*, playwright-report ausgeschlossen
+- `docker-compose.yml`: backend (Port 8000, healthcheck via /health) + frontend (Port 5174, depends on backend healthy)
+- `.env.example`: CORS_ORIGINS, FRONTEND_PORT ergänzt
+- Start: `docker compose up --build` — Migrations laufen automatisch vor dem Backend-Start
+
+### 2026-04-24 — Phase 6, Schritt 2: E2E-Tests (Playwright)
+
+- `tests/e2e/global-setup.ts`: Health-Check gegen `/health`, dann `uv run python -m scripts.seed --reset` (überspringt wenn Backend nicht erreichbar)
+- `playwright.config.ts`: `globalSetup` hinzugefügt + `video: "retain-on-failure"`
+- `KanbanColumn.tsx`: `data-testid="column-{status}"` auf äußerstem Div
+- `KanbanTaskCard.tsx`: `data-testid="task-card-{id}"` auf äußerstem Div
+- `tests/e2e/tasks.spec.ts`: 5 Tests — Create via UI, Transition via Actions-Dropdown, Edit Titel, Delete, Validierungs-Error
+- `tests/e2e/sprints.spec.ts`: 4 Tests — Create via UI, Kanban-Spalten prüfen, Drag & Drop (review→done, 1800px-Viewport, manuelle Mouse-Steps für dnd-kit), Sprint starten
+- `tests/e2e/goals.spec.ts`: 4 Tests — Create via UI, Goal-Detail aufrufen, KeyResult hinzufügen, Goal löschen
+- `tests/e2e/dashboard.spec.ts`: 4 Tests — Active Sprint Name, Metrics Widget, Velocity Widget, Goal Progress
+- Alle Backend-Tests: via `request`-Fixture direkt gegen `http://localhost:8000`
 
 ### 2026-04-24 — Phase 6, Schritt 1: Seed-Daten
 

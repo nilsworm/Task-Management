@@ -44,6 +44,7 @@ export function KanbanColumn({ status, tasks }: Props) {
 
   return (
     <div
+      data-testid={`column-${status}`}
       className={cn(
         "flex w-64 shrink-0 flex-col rounded-lg border-2",
         COLUMN_COLORS[status],

@@ -6,9 +6,29 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-const STATUSES = ["backlog", "todo", "in_progress", "review", "blocked", "done", "cancelled"]
-const PRIORITIES = ["low", "medium", "high", "critical"]
-const TASK_TYPES = ["daily", "sprint", "goal", "milestone"]
+const STATUS_LABELS: Record<string, string> = {
+  backlog: "Backlog",
+  todo: "Todo",
+  in_progress: "In Progress",
+  review: "Review",
+  blocked: "Blocked",
+  done: "Done",
+  cancelled: "Cancelled",
+}
+
+const PRIORITY_LABELS: Record<string, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  critical: "Critical",
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  daily: "Daily",
+  sprint: "Sprint",
+  goal: "Goal",
+  milestone: "Milestone",
+}
 
 export interface TaskFilters {
   status: string
@@ -33,10 +53,8 @@ export function TaskFilterBar({ filters, onChange }: Props) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All statuses</SelectItem>
-          {STATUSES.map((s) => (
-            <SelectItem key={s} value={s}>
-              {s.replace("_", " ")}
-            </SelectItem>
+          {Object.entries(STATUS_LABELS).map(([value, label]) => (
+            <SelectItem key={value} value={value}>{label}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -50,10 +68,8 @@ export function TaskFilterBar({ filters, onChange }: Props) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All priorities</SelectItem>
-          {PRIORITIES.map((p) => (
-            <SelectItem key={p} value={p}>
-              {p}
-            </SelectItem>
+          {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+            <SelectItem key={value} value={value}>{label}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -67,10 +83,8 @@ export function TaskFilterBar({ filters, onChange }: Props) {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All types</SelectItem>
-          {TASK_TYPES.map((t) => (
-            <SelectItem key={t} value={t}>
-              {t}
-            </SelectItem>
+          {Object.entries(TYPE_LABELS).map(([value, label]) => (
+            <SelectItem key={value} value={value}>{label}</SelectItem>
           ))}
         </SelectContent>
       </Select>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { useSprints } from "@/api/hooks/sprints"
 import { SprintCard } from "./SprintCard"
 import { SprintCreateModal } from "./SprintCreateModal"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function SprintsPage() {
   const [createOpen, setCreateOpen] = useState(false)
@@ -34,11 +35,19 @@ export function SprintsPage() {
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sprints.map((sprint) => (
-          <SprintCard key={sprint.id} sprint={sprint} />
-        ))}
-      </div>
+      {isLoading && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 w-full" />)}
+        </div>
+      )}
+
+      {!isLoading && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {sprints.map((sprint) => (
+            <SprintCard key={sprint.id} sprint={sprint} />
+          ))}
+        </div>
+      )}
 
       <SprintCreateModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>

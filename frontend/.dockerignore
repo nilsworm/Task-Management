@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.env.*
+.pnpm-store
+tests/e2e
+playwright-report
+test-results

@@ -12,6 +12,7 @@ from src.api.routers.goal_router import router as goal_router
 from src.api.routers.sprint_router import router as sprint_router
 from src.api.routers.task_router import router as task_router
 from src.application.exceptions import EntityNotFoundError, InvalidOperationError
+from src.config import settings
 
 app = FastAPI(
     title="Task Manager API",
@@ -21,7 +22,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
     allow_methods=["*"],
     allow_headers=["*"],
 )

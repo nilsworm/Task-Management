@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useDeleteTask } from "@/api/hooks/tasks"
 import type { Task } from "@/api/hooks/tasks"
+import { toast } from "sonner"
 
 interface Props {
   task: Task | null
@@ -21,8 +22,13 @@ export function TaskDeleteDialog({ task, onClose }: Props) {
 
   async function handleConfirm() {
     if (!task) return
-    await del.mutateAsync(task.id)
-    onClose()
+    try {
+      await del.mutateAsync(task.id)
+      toast.success("Task deleted")
+      onClose()
+    } catch {
+      toast.error("Failed to delete task")
+    }
   }
 
   return (

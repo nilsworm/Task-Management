@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select"
 import { useCreateTask } from "@/api/hooks/tasks"
 import type { TaskCreate } from "@/api/hooks/tasks"
+import { useSprints } from "@/api/hooks/sprints"
+import { toast } from "sonner"
 
 interface Props {
   open: boolean
@@ -36,6 +38,7 @@ export function TaskCreateModal({ open, onClose }: Props) {
   const [form, setForm] = useState<TaskCreate>(DEFAULT_FORM)
   const [error, setError] = useState<string | null>(null)
   const create = useCreateTask()
+  const { data: sprints = [] } = useSprints()
 
   function handleClose() {
     setForm(DEFAULT_FORM)
@@ -51,9 +54,11 @@ export function TaskCreateModal({ open, onClose }: Props) {
     }
     try {
       await create.mutateAsync(form)
+      toast.success("Task created")
       handleClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create task.")
+      toast.error("Failed to create task")
     }
   }
 
@@ -147,13 +152,26 @@ export function TaskCreateModal({ open, onClose }: Props) {
 
           {form.task_type === "sprint" && (
             <div className="grid gap-1.5">
-              <Label htmlFor="sprint_id">Sprint ID</Label>
-              <Input
-                id="sprint_id"
-                placeholder="Sprint UUID (optional)"
+              <Label htmlFor="sprint_id">Sprint</Label>
+              <Select
                 value={form.sprint_id ?? ""}
-                onChange={(e) => setForm({ ...form, sprint_id: e.target.value || null })}
-              />
+                onValueChange={(v) => setForm({ ...form, sprint_id: v || null })}
+              >
+                <SelectTrigger id="sprint_id">
+                  <SelectValue placeholder="No sprint (unassigned)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No sprint</SelectItem>
+                  {sprints.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                      <span className="ml-2 text-xs text-muted-foreground capitalize">
+                        {s.status}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useUpdateKeyResult } from "@/api/hooks/goals"
 import type { KeyResult } from "@/api/hooks/goals"
+import { toast } from "sonner"
 
 interface Props {
   goalId: string
@@ -19,16 +20,9 @@ interface Props {
 }
 
 export function KeyResultEditModal({ goalId, kr, onClose }: Props) {
-  const [current, setCurrent] = useState("")
+  const [current, setCurrent] = useState(() => (kr ? String(kr.current_value) : ""))
   const [error, setError] = useState<string | null>(null)
   const update = useUpdateKeyResult(goalId)
-
-  useEffect(() => {
-    if (kr) {
-      setCurrent(String(kr.current_value))
-      setError(null)
-    }
-  }, [kr])
 
   if (!kr) return null
 
@@ -38,9 +32,11 @@ export function KeyResultEditModal({ goalId, kr, onClose }: Props) {
     if (isNaN(val) || val < 0) return setError("Must be a non-negative number.")
     try {
       await update.mutateAsync({ id: kr!.id, current_value: val })
+      toast.success("Progress updated")
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update.")
+      toast.error("Failed to update progress")
     }
   }
 

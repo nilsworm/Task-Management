@@ -6,6 +6,8 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://taskmanager:taskmanager@localhost:5432/taskmanager"
     backend_port: int = 8000
+    # comma-separated list of allowed CORS origins
+    cors_origins: str = "http://localhost:5173,http://localhost:5174"
 
 
 settings = Settings()

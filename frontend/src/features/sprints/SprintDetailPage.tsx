@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { useSprint, useSprintTasks, useStartSprint, useCompleteSprint } from "@/api/hooks/sprints"
 import { SprintStatusBadge } from "./SprintStatusBadge"
 import { KanbanBoard } from "./KanbanBoard"
+import { SprintAssignTask } from "./SprintAssignTask"
 
 export function SprintDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -50,11 +51,14 @@ export function SprintDetailPage() {
             Complete Sprint
           </Button>
         )}
+        {(sprint.status === "planned" || sprint.status === "active") && (
+          <SprintAssignTask sprintId={sprint.id} assignedTaskIds={sprint.task_ids} />
+        )}
       </div>
 
       {tasks.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">
-          No tasks in this sprint. Add tasks via the Tasks view.
+          No tasks in this sprint yet.
         </p>
       ) : (
         <KanbanBoard tasks={tasks} />

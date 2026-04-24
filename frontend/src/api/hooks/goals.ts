@@ -15,6 +15,10 @@ function krKey(goalId: string) {
   return [...GOALS_KEY, goalId, "key-results"] as const
 }
 
+function invalidateDashboard(qc: ReturnType<typeof useQueryClient>) {
+  return qc.invalidateQueries({ queryKey: ["dashboard"] })
+}
+
 export function useGoals() {
   return useQuery({
     queryKey: GOALS_KEY,
@@ -42,7 +46,10 @@ export function useCreateGoal() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: GoalCreate) => apiPost<Goal>("/goals", body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: GOALS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: GOALS_KEY })
+      invalidateDashboard(qc)
+    },
   })
 }
 
@@ -59,7 +66,10 @@ export function useDeleteGoal() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiDelete(`/goals/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: GOALS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: GOALS_KEY })
+      invalidateDashboard(qc)
+    },
   })
 }
 
@@ -68,7 +78,10 @@ export function useCreateKeyResult(goalId: string) {
   return useMutation({
     mutationFn: (body: KeyResultCreate) =>
       apiPost<KeyResult>(`/goals/${goalId}/key-results`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: krKey(goalId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: krKey(goalId) })
+      invalidateDashboard(qc)
+    },
   })
 }
 
@@ -77,7 +90,10 @@ export function useUpdateKeyResult(goalId: string) {
   return useMutation({
     mutationFn: ({ id, ...body }: KeyResultUpdate & { id: string }) =>
       apiPatch<KeyResult>(`/goals/${goalId}/key-results/${id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: krKey(goalId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: krKey(goalId) })
+      invalidateDashboard(qc)
+    },
   })
 }
 
@@ -85,6 +101,9 @@ export function useDeleteKeyResult(goalId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiDelete(`/goals/${goalId}/key-results/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: krKey(goalId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: krKey(goalId) })
+      invalidateDashboard(qc)
+    },
   })
 }
