@@ -17,7 +17,7 @@ describe("KanbanBoard", () => {
   it("renders all 6 columns", () => {
     renderBoard()
     expect(screen.getByText("Backlog")).toBeInTheDocument()
-    expect(screen.getByText("Todo")).toBeInTheDocument()
+    expect(screen.getByText("To Do")).toBeInTheDocument()
     expect(screen.getByText("In Progress")).toBeInTheDocument()
     expect(screen.getByText("Review")).toBeInTheDocument()
     expect(screen.getByText("Blocked")).toBeInTheDocument()
