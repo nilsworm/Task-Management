@@ -29,7 +29,7 @@ async def create_sprint(
     repo: SprintRepoDep,
     bus: EventBusDep,
 ) -> SprintResponse:
-    sprint = await CreateSprintUseCase(repo, bus).execute(body.name, body.to_date_range())
+    sprint = await CreateSprintUseCase(repo, bus).execute(body.name, body.to_date_range(), body.goal)
     return SprintResponse.from_domain(sprint)
 
 
@@ -59,13 +59,13 @@ async def update_sprint(
     body: SprintUpdateRequest,
     repo: SprintRepoDep,
 ) -> SprintResponse:
-    if body.name is None:
+    if body.name is None and body.goal is None:
         # No-op PATCH: trivial read, return current state
         sprint = await repo.get_by_id(sprint_id)
         if sprint is None:
             raise EntityNotFoundError("Sprint", str(sprint_id))
         return SprintResponse.from_domain(sprint)
-    sprint = await UpdateSprintUseCase(repo).execute(sprint_id, body.name)
+    sprint = await UpdateSprintUseCase(repo).execute(sprint_id, body.name, body.goal)
     return SprintResponse.from_domain(sprint)
 
 

@@ -314,3 +314,40 @@ def test_list_sprint_tasks_excludes_other_sprints(
     resp = client.get(f"/sprints/{sid}/tasks")
     assert len(resp.json()) == 1
     assert resp.json()[0]["title"] == "Mine"
+
+
+# ---------------------------------------------------------------------------
+# goal field — POST + PATCH
+# ---------------------------------------------------------------------------
+
+def test_create_sprint_with_goal(client: TestClient) -> None:
+    resp = client.post("/sprints", json={
+        "name": "Sprint G",
+        "start_date": "2026-05-01",
+        "end_date": "2026-05-14",
+        "goal": "Ship the auth flow",
+    })
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["goal"] == "Ship the auth flow"
+
+
+def test_create_sprint_goal_defaults_to_null(client: TestClient) -> None:
+    data = _create_sprint(client)
+    assert data["goal"] is None
+
+
+def test_update_sprint_goal(client: TestClient) -> None:
+    sprint = _create_sprint(client)
+    resp = client.patch(f"/sprints/{sprint['id']}", json={"goal": "Zero downtime migration"})
+    assert resp.status_code == 200
+    assert resp.json()["goal"] == "Zero downtime migration"
+
+
+def test_update_sprint_goal_and_name_together(client: TestClient) -> None:
+    sprint = _create_sprint(client, "Old Name")
+    resp = client.patch(f"/sprints/{sprint['id']}", json={"name": "New Name", "goal": "New goal"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == "New Name"
+    assert data["goal"] == "New goal"

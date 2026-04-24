@@ -13,6 +13,7 @@ class SprintCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     start_date: date
     end_date: date
+    goal: str | None = Field(None, max_length=500)
 
     def to_date_range(self) -> DateRange:
         return DateRange(self.start_date, self.end_date)
@@ -20,6 +21,7 @@ class SprintCreateRequest(BaseModel):
 
 class SprintUpdateRequest(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=200)
+    goal: str | None = None
 
 
 class SprintResponse(BaseModel):
@@ -28,6 +30,7 @@ class SprintResponse(BaseModel):
     status: str
     start_date: date
     end_date: date
+    goal: str | None
     task_ids: list[uuid.UUID]
     created_at: datetime
 
@@ -39,6 +42,7 @@ class SprintResponse(BaseModel):
             status=sprint.status.value,
             start_date=sprint.date_range.start,
             end_date=sprint.date_range.end,
+            goal=sprint.goal,
             task_ids=sprint.task_ids,
             created_at=sprint.created_at,
         )
