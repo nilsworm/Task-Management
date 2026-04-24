@@ -23,6 +23,7 @@ const BASE_SPRINT: Sprint = {
   status: "planned",
   start_date: "2026-05-01",
   end_date: "2026-05-14",
+  goal: null,
   task_ids: [],
   created_at: "2026-04-01T00:00:00Z",
 }
