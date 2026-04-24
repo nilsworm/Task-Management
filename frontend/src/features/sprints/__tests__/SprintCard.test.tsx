@@ -25,6 +25,7 @@ const BASE_SPRINT: Sprint = {
   end_date: "2026-05-14",
   goal: null,
   task_ids: [],
+  completion_percent: 0,
   created_at: "2026-04-01T00:00:00Z",
 }
 

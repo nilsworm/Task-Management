@@ -32,10 +32,11 @@ class SprintResponse(BaseModel):
     end_date: date
     goal: str | None
     task_ids: list[uuid.UUID]
+    completion_percent: int
     created_at: datetime
 
     @classmethod
-    def from_domain(cls, sprint: Sprint) -> SprintResponse:
+    def from_domain(cls, sprint: Sprint, completion_percent: int = 0) -> SprintResponse:
         return cls(
             id=sprint.id,
             name=sprint.name,
@@ -44,5 +45,6 @@ class SprintResponse(BaseModel):
             end_date=sprint.date_range.end,
             goal=sprint.goal,
             task_ids=sprint.task_ids,
+            completion_percent=completion_percent,
             created_at=sprint.created_at,
         )

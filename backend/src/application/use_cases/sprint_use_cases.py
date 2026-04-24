@@ -118,3 +118,23 @@ class AddTaskToSprintUseCase:
         sprint.add_task(task_id)
         await self._sprint_repo.save(sprint)
         return sprint
+
+
+class RemoveTaskFromSprintUseCase:
+    def __init__(
+        self,
+        sprint_repo: ISprintRepository,
+        task_repo: ITaskRepository,
+    ) -> None:
+        self._sprint_repo = sprint_repo
+        self._task_repo = task_repo
+
+    async def execute(self, sprint_id: uuid.UUID, task_id: uuid.UUID) -> None:
+        sprint = await self._sprint_repo.get_by_id(sprint_id)
+        if sprint is None:
+            raise EntityNotFoundError("Sprint", str(sprint_id))
+        task = await self._task_repo.get_by_id(task_id)
+        if task is None:
+            raise EntityNotFoundError("Task", str(task_id))
+        sprint.remove_task(task_id)
+        await self._sprint_repo.save(sprint)
