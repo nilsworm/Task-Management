@@ -24,6 +24,13 @@
 - [x] Phase B6 — Goals
 - [x] Phase B7 — Finale Durchsicht
 
+### Phase 7 — Interaktions-Ergänzungen (Änderungen 1–5)
+- [x] Phase A — Backend: completion_percent + RemoveTaskFromSprint + tags/due_date in UpdateTask
+- [x] Phase B1 — TaskExpandedRow (inline edit in /tasks list), TaskTable + TasksPage vereinfacht
+- [x] Phase B2 — Sprint-Detail: Kanban → SprintTaskList (inline expand), SprintTaskPicker, SprintInlineCreate, dnd-kit entfernt
+- [x] Phase B3 — SprintCard + SprintDetailPage: Fortschrittsbalken + %
+- [x] Phase B4 — TaskBoardView: Priority-Border + "→ Next"-Button, onEdit/onDelete entfernt
+
 **Backlog (Daily Log — aus Scope-Entscheidung ausgenommen):**
 - Daily Log mit Mood-Tracking und @Task-Mentions
 
@@ -79,6 +86,22 @@
 - [x] Schritt 7: Finale Architektur-Überprüfung
 
 ## Session-Log
+
+### 2026-04-24 — Phase 7, Interaktions-Ergänzungen B1–B4
+
+- **B1 TaskExpandedRow:** Inline-Edit-Karte im /tasks-List-View — Save/Cancel/Delete, Status-Transition-Chips, Priority-Select (farbig), Estimation-Stepper, Tags, Due-Date, Description-Textarea; Priority-gefärbter linker Rand
+- **B1 TaskTable:** Expandable rows via `expandedId`-State, Props auf `tasks + onDeleted?` reduziert
+- **B1 TasksPage:** Modal-State + TaskEditModal/TaskDeleteDialog entfernt, TaskBoardView ohne onEdit/onDelete aufgerufen
+- **B2 SprintTaskList:** Kompakte Listenspalten (Title, Status, Priority, Pts, ×), inline TaskExpandedRow bei Klick, × entfernt Task aus Sprint via `useRemoveTaskFromSprint`
+- **B2 SprintTaskPicker:** Modal mit Search-Input, listet alle nicht-zugewiesenen Tasks, Single-Click assigned via `useAddTaskToSprint`
+- **B2 SprintInlineCreate:** Inline-Titel-Eingabe in Sprint-Detail; erstellt Task mit task_type=sprint + sprint_id vorbelegt
+- **B2 SprintDetailPage:** Kanban durch SprintTaskList ersetzt, "New Task" + "Assign existing"-Buttons, Fortschritt prominenter
+- **B2 dnd-kit entfernt:** @dnd-kit/core + sortable + utilities aus package.json entfernt, KanbanBoard/Column/Card-Dateien gelöscht, KanbanBoard.test.tsx gelöscht
+- **B3 SprintCard:** Fortschrittsbalken (bg-green, 100%-Breite = completion_percent%) + "X% · N tasks" Text
+- **B3 SprintDetailPage:** Fortschritts-Panel (goal + Progress-Bar + done/total) oberhalb Controls
+- **B4 TaskBoardView:** Priority-gefärbter linker Rand, "→ Next"-Button direkt auf Karte; TaskActions-Komponente entfernt
+- **Fix:** `priority` State in TaskExpandedRow als `Priority`-Union-Typ (TaskResponse.priority ist `string` in generierten Types)
+- **69 Tests grün** | Build sauber ✅
 
 ### **Phase 7 vollständig abgeschlossen ✅**
 
