@@ -1,81 +1,126 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { useState } from "react"
 import { TaskStatusBadge } from "./TaskStatusBadge"
-import { TaskActions } from "./TaskActions"
+import { TaskExpandedRow } from "./TaskExpandedRow"
 import type { Task } from "@/api/hooks/tasks"
 
-const PRIORITY_CLASSES: Record<string, string> = {
-  low: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
-  medium: "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400",
-  high: "bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400",
-  critical: "bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400",
+const PRIORITY_COLORS: Record<string, string> = {
+  low:      "#9090b0",
+  medium:   "#a78bfa",
+  high:     "#ffd166",
+  critical: "#ff4d6d",
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  daily:     "daily",
+  sprint:    "sprint",
+  goal:      "goal",
+  milestone: "milestone",
 }
 
 interface Props {
   tasks: Task[]
-  onEdit: (task: Task) => void
-  onDelete: (task: Task) => void
+  onDeleted?: () => void
 }
 
-export function TaskTable({ tasks, onEdit, onDelete }: Props) {
+export function TaskTable({ tasks, onDeleted }: Props) {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  function toggleExpand(id: string) {
+    setExpandedId((prev) => (prev === id ? null : id))
+  }
+
   if (tasks.length === 0) {
     return (
-      <p className="py-12 text-center text-sm text-muted-foreground">
-        No tasks found. Create one to get started.
+      <p className="py-12 text-center text-[11px] text-muted-foreground">
+        No tasks match the current filters.
       </p>
     )
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Title</TableHead>
-          <TableHead className="w-28">Type</TableHead>
-          <TableHead className="w-32">Status</TableHead>
-          <TableHead className="w-24">Priority</TableHead>
-          <TableHead className="w-20">Points</TableHead>
-          <TableHead className="w-10" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {tasks.map((task) => (
-          <TableRow key={task.id}>
-            <TableCell className="font-medium">{task.title}</TableCell>
-            <TableCell>
-              <span className="text-xs text-muted-foreground">{task.task_type}</span>
-            </TableCell>
-            <TableCell>
-              <TaskStatusBadge status={task.status} />
-            </TableCell>
-            <TableCell>
-              <Badge
-                variant="outline"
-                className={`border-transparent text-xs ${PRIORITY_CLASSES[task.priority] ?? ""}`}
-              >
-                {task.priority}
-              </Badge>
-            </TableCell>
-            <TableCell className="text-sm text-muted-foreground">
-              {task.estimation ?? "—"}
-            </TableCell>
-            <TableCell>
-              <TaskActions
-                task={task}
-                onEdit={() => onEdit(task)}
-                onDelete={() => onDelete(task)}
-              />
-            </TableCell>
-          </TableRow>
+    <div className="flex flex-col rounded-[6px] border border-border bg-surface-2 overflow-hidden">
+      {/* Column headers */}
+      <div className="grid grid-cols-[24px_1fr_80px_110px_80px_52px] gap-3 border-b border-border bg-surface-1 px-3 py-2">
+        {["", "Title", "Type", "Status", "Priority", "Pts"].map((h, i) => (
+          <span key={i} className="font-mono text-[10px] font-semibold uppercase tracking-[0.5px] text-muted-foreground">
+            {h}
+          </span>
         ))}
-      </TableBody>
-    </Table>
+      </div>
+
+      {tasks.map((task, idx) => {
+        const isExpanded = expandedId === task.id
+        const priorityColor = PRIORITY_COLORS[task.priority] ?? "#9090b0"
+        const isDone = task.status === "done"
+
+        return (
+          <div key={task.id}>
+            {/* Collapsed row */}
+            {!isExpanded && (
+              <div
+                onClick={() => toggleExpand(task.id)}
+                className={`grid grid-cols-[24px_1fr_80px_110px_80px_52px] items-center gap-3 px-3 py-2 cursor-pointer transition-colors hover:bg-surface-3 ${
+                  idx < tasks.length - 1 ? "border-b border-border" : ""
+                }`}
+              >
+                {/* Quick-done checkbox */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    // handled by TaskExpandedRow transition — no-op here
+                  }}
+                  className={`flex h-4 w-4 items-center justify-center rounded-[3px] border transition-colors ${
+                    isDone
+                      ? "border-green bg-green/20"
+                      : "border-border-strong bg-transparent"
+                  }`}
+                >
+                  {isDone && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 5l2.5 2.5L8 3" stroke="#06d6a0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+
+                <span
+                  className={`truncate text-xs font-medium ${isDone ? "text-muted-foreground line-through" : "text-foreground"}`}
+                >
+                  {task.title}
+                </span>
+
+                <span className="truncate font-mono text-[10px] text-muted-foreground">
+                  {TYPE_LABELS[task.task_type] ?? task.task_type}
+                </span>
+
+                <div><TaskStatusBadge status={task.status} /></div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: priorityColor }} />
+                  <span className="font-mono text-[10px]" style={{ color: priorityColor }}>
+                    {task.priority}
+                  </span>
+                </div>
+
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  {task.estimation != null ? `${task.estimation}pt` : "—"}
+                </span>
+              </div>
+            )}
+
+            {/* Expanded inline edit */}
+            {isExpanded && (
+              <TaskExpandedRow
+                task={task}
+                onClose={() => setExpandedId(null)}
+                onDeleted={() => {
+                  setExpandedId(null)
+                  onDeleted?.()
+                }}
+              />
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }

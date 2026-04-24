@@ -5,7 +5,7 @@ import { TaskStatusBadge } from "../TaskStatusBadge"
 describe("TaskStatusBadge", () => {
   it.each([
     ["backlog", "Backlog"],
-    ["todo", "Todo"],
+    ["todo", "To Do"],
     ["in_progress", "In Progress"],
     ["review", "Review"],
     ["blocked", "Blocked"],

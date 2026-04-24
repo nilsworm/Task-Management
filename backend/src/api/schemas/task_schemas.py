@@ -54,6 +54,8 @@ class TaskUpdateRequest(BaseModel):
     description: str | None = None
     priority: PriorityLiteral | None = None
     estimation: int | None = Field(None, ge=1, le=100)
+    tags: list[str] | None = None
+    due_date: date | None = None
 
     def to_use_case_input(self, task_id: uuid.UUID) -> UpdateTaskInput:
         return UpdateTaskInput(
@@ -62,6 +64,8 @@ class TaskUpdateRequest(BaseModel):
             description=self.description,
             priority=Priority(self.priority) if self.priority else None,
             estimation=Estimation(self.estimation) if self.estimation else None,
+            tags=frozenset(Tag(t) for t in self.tags) if self.tags is not None else None,
+            due_date=self.due_date,
         )
 
 

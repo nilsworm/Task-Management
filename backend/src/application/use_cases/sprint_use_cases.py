@@ -16,8 +16,8 @@ class CreateSprintUseCase:
         self._repo = repository
         self._event_bus = event_bus
 
-    async def execute(self, name: str, date_range: DateRange) -> Sprint:
-        sprint = Sprint(name, date_range)
+    async def execute(self, name: str, date_range: DateRange, goal: str | None = None) -> Sprint:
+        sprint = Sprint(name, date_range, goal=goal)
         await self._repo.save(sprint)
         self._event_bus.publish(SprintStartedEvent(sprint.id, date_range.start))
         return sprint
@@ -65,11 +65,19 @@ class UpdateSprintUseCase:
     def __init__(self, repository: ISprintRepository) -> None:
         self._repo = repository
 
-    async def execute(self, sprint_id: uuid.UUID, name: str) -> Sprint:
+    async def execute(
+        self,
+        sprint_id: uuid.UUID,
+        name: str | None = None,
+        goal: str | None = None,
+    ) -> Sprint:
         sprint = await self._repo.get_by_id(sprint_id)
         if sprint is None:
             raise EntityNotFoundError("Sprint", str(sprint_id))
-        sprint.name = name
+        if name is not None:
+            sprint.name = name
+        if goal is not None:
+            sprint.goal = goal
         await self._repo.save(sprint)
         return sprint
 
@@ -110,3 +118,23 @@ class AddTaskToSprintUseCase:
         sprint.add_task(task_id)
         await self._sprint_repo.save(sprint)
         return sprint
+
+
+class RemoveTaskFromSprintUseCase:
+    def __init__(
+        self,
+        sprint_repo: ISprintRepository,
+        task_repo: ITaskRepository,
+    ) -> None:
+        self._sprint_repo = sprint_repo
+        self._task_repo = task_repo
+
+    async def execute(self, sprint_id: uuid.UUID, task_id: uuid.UUID) -> None:
+        sprint = await self._sprint_repo.get_by_id(sprint_id)
+        if sprint is None:
+            raise EntityNotFoundError("Sprint", str(sprint_id))
+        task = await self._task_repo.get_by_id(task_id)
+        if task is None:
+            raise EntityNotFoundError("Task", str(task_id))
+        sprint.remove_task(task_id)
+        await self._sprint_repo.save(sprint)

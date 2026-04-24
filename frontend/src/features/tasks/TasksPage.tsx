@@ -1,23 +1,24 @@
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { LayoutList, LayoutGrid, Plus } from "lucide-react"
 import { useTasks } from "@/api/hooks/tasks"
-import type { Task } from "@/api/hooks/tasks"
-import { Skeleton } from "@/components/ui/skeleton"
 import { TaskFilterBar } from "./TaskFilterBar"
 import { TaskTable } from "./TaskTable"
+import { TaskBoardView } from "./TaskBoardView"
 import { TaskCreateModal } from "./TaskCreateModal"
-import { TaskEditModal } from "./TaskEditModal"
-import { TaskDeleteDialog } from "./TaskDeleteDialog"
 import type { TaskFilters } from "./TaskFilterBar"
+
+type ViewMode = "list" | "board"
 
 const DEFAULT_FILTERS: TaskFilters = { status: "all", priority: "all", taskType: "all" }
 
+function RowSkeleton() {
+  return <div className="h-9 animate-pulse rounded-[5px] bg-surface-3" />
+}
+
 export function TasksPage() {
-  const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS)
+  const [view, setView]           = useState<ViewMode>("list")
+  const [filters, setFilters]     = useState<TaskFilters>(DEFAULT_FILTERS)
   const [createOpen, setCreateOpen] = useState(false)
-  const [editTask, setEditTask] = useState<Task | null>(null)
-  const [deleteTask, setDeleteTask] = useState<Task | null>(null)
 
   const { data: tasks = [], isLoading, isError } = useTasks()
 
@@ -29,39 +30,80 @@ export function TasksPage() {
   })
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
+      {/* Page header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Tasks</h1>
-          <p className="text-sm text-muted-foreground">
-            {isLoading ? "Loading…" : `${visible.length} of ${tasks.length} tasks`}
-          </p>
+        <div className="flex items-center gap-3">
+          <h1 className="text-sm font-semibold text-foreground">Tasks</h1>
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {isLoading ? "…" : `${visible.length} / ${tasks.length}`}
+          </span>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Task
-        </Button>
+
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center rounded-[5px] border border-border bg-surface-2 p-0.5">
+            <button
+              onClick={() => setView("list")}
+              className={`flex h-6 w-6 items-center justify-center rounded-[4px] transition-colors ${
+                view === "list"
+                  ? "bg-surface-3 text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label="List view"
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setView("board")}
+              className={`flex h-6 w-6 items-center justify-center rounded-[4px] transition-colors ${
+                view === "board"
+                  ? "bg-surface-3 text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label="Board view"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {/* New task button */}
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex h-7 items-center gap-1.5 rounded-[5px] border border-border bg-surface-2 px-3 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-surface-3 hover:text-foreground"
+          >
+            <Plus className="h-3 w-3" />
+            New task
+          </button>
+        </div>
       </div>
 
+      {/* Filters */}
       <TaskFilterBar filters={filters} onChange={setFilters} />
 
+      {/* Error state */}
       {isError && (
-        <p className="text-sm text-destructive">Failed to load tasks. Is the backend running?</p>
+        <p className="text-[11px] text-destructive">
+          Failed to load tasks. Is the backend running?
+        </p>
       )}
 
+      {/* Loading state */}
       {isLoading && (
-        <div className="flex flex-col gap-2">
-          {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+        <div className="flex flex-col gap-1.5">
+          {[...Array(6)].map((_, i) => <RowSkeleton key={i} />)}
         </div>
       )}
 
-      {!isLoading && !isError && (
-        <TaskTable tasks={visible} onEdit={setEditTask} onDelete={setDeleteTask} />
+      {/* Content */}
+      {!isLoading && !isError && view === "list" && (
+        <TaskTable tasks={visible} />
+      )}
+      {!isLoading && !isError && view === "board" && (
+        <TaskBoardView tasks={visible} />
       )}
 
       <TaskCreateModal open={createOpen} onClose={() => setCreateOpen(false)} />
-      <TaskEditModal key={editTask?.id ?? ""} task={editTask} onClose={() => setEditTask(null)} />
-      <TaskDeleteDialog task={deleteTask} onClose={() => setDeleteTask(null)} />
     </div>
   )
 }

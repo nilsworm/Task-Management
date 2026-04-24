@@ -96,3 +96,15 @@ export function useAddTaskToSprint(sprintId: string) {
     },
   })
 }
+
+export function useRemoveTaskFromSprint(sprintId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (taskId: string) => apiDelete(`/sprints/${sprintId}/tasks/${taskId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...SPRINTS_KEY, sprintId, "tasks"] })
+      qc.invalidateQueries({ queryKey: [...SPRINTS_KEY, sprintId] })
+      qc.invalidateQueries({ queryKey: ["tasks"] })
+    },
+  })
+}

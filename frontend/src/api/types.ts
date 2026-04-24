@@ -191,7 +191,8 @@ export interface paths {
         put?: never;
         /** Add Task To Sprint */
         post: operations["add_task_to_sprint_sprints__sprint_id__tasks__task_id__post"];
-        delete?: never;
+        /** Remove Task From Sprint */
+        delete: operations["remove_task_from_sprint_sprints__sprint_id__tasks__task_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -591,6 +592,8 @@ export interface components {
              * Format: date
              */
             end_date: string;
+            /** Goal */
+            goal?: string | null;
         };
         /** SprintResponse */
         SprintResponse: {
@@ -613,8 +616,12 @@ export interface components {
              * Format: date
              */
             end_date: string;
+            /** Goal */
+            goal: string | null;
             /** Task Ids */
             task_ids: string[];
+            /** Completion Percent */
+            completion_percent: number;
             /**
              * Created At
              * Format: date-time
@@ -640,6 +647,8 @@ export interface components {
         SprintUpdateRequest: {
             /** Name */
             name?: string | null;
+            /** Goal */
+            goal?: string | null;
         };
         /** SprintVelocity */
         SprintVelocity: {
@@ -767,6 +776,10 @@ export interface components {
             priority?: ("low" | "medium" | "high" | "critical") | null;
             /** Estimation */
             estimation?: number | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Due Date */
+            due_date?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1297,6 +1310,36 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SprintResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_task_from_sprint_sprints__sprint_id__tasks__task_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sprint_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
