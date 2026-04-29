@@ -58,6 +58,8 @@ services:
       - "traefik.http.routers.taskmanager.entrypoints=websecure"
       - "traefik.http.routers.taskmanager.tls=true"
       - "traefik.http.routers.taskmanager.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.taskmanager.middlewares=taskmanager-auth"
+      - "traefik.http.middlewares.taskmanager-auth.basicauth.users=nilsworm:$$apr1$$eBNEsMJO$$m6iz7TcVIJ84MwKxGXGPn1"
       - "traefik.http.services.taskmanager.loadbalancer.server.port=80"
     restart: unless-stopped
 
