@@ -14,13 +14,14 @@ from sqlalchemy.pool import NullPool
 from src.infrastructure.database import Base
 
 # Register all models with Base.metadata before create_all
+import src.infrastructure.persistence.models.cost_models  # noqa: F401
 import src.infrastructure.persistence.models.goal_model  # noqa: F401
 import src.infrastructure.persistence.models.sprint_model  # noqa: F401
 import src.infrastructure.persistence.models.task_model  # noqa: F401
 
 TEST_DB_URL = "postgresql+asyncpg://taskmanager:taskmanager@localhost:5432/taskmanager_test"
 _ADMIN_URL = "postgresql+asyncpg://taskmanager:taskmanager@localhost:5432/postgres"
-_TABLES = "key_results, tasks, sprints, goals"
+_TABLES = "cost_transactions, cost_recurring, key_results, tasks, sprints, goals"
 
 
 # ---------------------------------------------------------------------------

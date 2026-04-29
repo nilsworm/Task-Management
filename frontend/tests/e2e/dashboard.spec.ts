@@ -7,7 +7,7 @@ test.describe("Dashboard", () => {
 
   test("shows active sprint name from seed data", async ({ page }) => {
     // After seeding, Sprint 3: Frontend is the active sprint
-    await expect(page.getByText("Sprint 3: Frontend")).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText("Sprint 3: Frontend").first()).toBeVisible({ timeout: 10_000 })
   })
 
   test("Task Metrics widget renders with status data", async ({ page }) => {
@@ -19,7 +19,7 @@ test.describe("Dashboard", () => {
   test("Velocity widget renders with completed sprint data", async ({ page }) => {
     await expect(page.getByText("Velocity")).toBeVisible({ timeout: 10_000 })
     // Sprint 1 and Sprint 2 are completed — at least one should appear in the chart axis
-    await expect(page.getByText(/Sprint [12]/)).toBeVisible()
+    await expect(page.getByText(/Sprint [12]/).first()).toBeVisible()
   })
 
   test("Goal Progress widget lists seeded goals", async ({ page }) => {

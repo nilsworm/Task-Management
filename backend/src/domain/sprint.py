@@ -27,6 +27,7 @@ class Sprint:
         id: uuid.UUID | None = None,
         status: SprintStatus = SprintStatus.PLANNED,
         task_ids: list[uuid.UUID] | None = None,
+        goal: str | None = None,
         created_at: datetime | None = None,
     ) -> None:
         if not name.strip():
@@ -36,6 +37,7 @@ class Sprint:
         self.date_range: DateRange = date_range
         self.status: SprintStatus = status
         self.task_ids: list[uuid.UUID] = task_ids or []
+        self.goal: str | None = goal
         self.created_at: datetime = created_at or _now()
 
     def add_task(self, task_id: uuid.UUID) -> None:

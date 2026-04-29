@@ -14,7 +14,7 @@ import type { Task, TaskStatus } from "@/api/hooks/tasks"
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   backlog: "Backlog",
-  todo: "Todo",
+  todo: "To Do",
   in_progress: "In Progress",
   review: "Review",
   blocked: "Blocked",

@@ -314,3 +314,103 @@ def test_list_sprint_tasks_excludes_other_sprints(
     resp = client.get(f"/sprints/{sid}/tasks")
     assert len(resp.json()) == 1
     assert resp.json()[0]["title"] == "Mine"
+
+
+# ---------------------------------------------------------------------------
+# goal field — POST + PATCH
+# ---------------------------------------------------------------------------
+
+def test_create_sprint_with_goal(client: TestClient) -> None:
+    resp = client.post("/sprints", json={
+        "name": "Sprint G",
+        "start_date": "2026-05-01",
+        "end_date": "2026-05-14",
+        "goal": "Ship the auth flow",
+    })
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["goal"] == "Ship the auth flow"
+
+
+def test_create_sprint_goal_defaults_to_null(client: TestClient) -> None:
+    data = _create_sprint(client)
+    assert data["goal"] is None
+
+
+def test_update_sprint_goal(client: TestClient) -> None:
+    sprint = _create_sprint(client)
+    resp = client.patch(f"/sprints/{sprint['id']}", json={"goal": "Zero downtime migration"})
+    assert resp.status_code == 200
+    assert resp.json()["goal"] == "Zero downtime migration"
+
+
+def test_update_sprint_goal_and_name_together(client: TestClient) -> None:
+    sprint = _create_sprint(client, "Old Name")
+    resp = client.patch(f"/sprints/{sprint['id']}", json={"name": "New Name", "goal": "New goal"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == "New Name"
+    assert data["goal"] == "New goal"
+
+
+# ---------------------------------------------------------------------------
+# completion_percent
+# ---------------------------------------------------------------------------
+
+def test_completion_percent_zero_when_no_tasks(client: TestClient) -> None:
+    data = _create_sprint(client)
+    assert data["completion_percent"] == 0
+
+
+def test_completion_percent_computed_from_done_tasks(
+    client: TestClient,
+    task_repo: InMemoryTaskRepository,
+) -> None:
+    import asyncio
+    from src.domain.factory import TaskFactory
+    from src.domain.value_objects import TaskStatus
+
+    factory = TaskFactory()
+    sprint = _create_sprint(client)
+    sid = uuid.UUID(sprint["id"])
+
+    t1 = factory.create_sprint("Done task", sprint_id=sid)
+    t1.transition_to(TaskStatus.TODO)
+    t1.transition_to(TaskStatus.IN_PROGRESS)
+    t1.transition_to(TaskStatus.REVIEW)
+    t1.transition_to(TaskStatus.DONE)
+    t2 = factory.create_sprint("In progress", sprint_id=sid)
+    asyncio.run(task_repo.save(t1))
+    asyncio.run(task_repo.save(t2))
+
+    resp = client.get(f"/sprints/{sid}")
+    assert resp.status_code == 200
+    assert resp.json()["completion_percent"] == 50
+
+
+# ---------------------------------------------------------------------------
+# DELETE /sprints/{id}/tasks/{task_id}
+# ---------------------------------------------------------------------------
+
+def test_remove_task_from_sprint(client: TestClient, task_repo: InMemoryTaskRepository) -> None:
+    import asyncio
+    from src.domain.factory import TaskFactory
+
+    factory = TaskFactory()
+    sprint_data = _create_sprint(client)
+    sprint_id = uuid.UUID(sprint_data["id"])
+
+    task = factory.create_sprint("Task to remove", sprint_id=sprint_id)
+    asyncio.run(task_repo.save(task))
+    client.post(f"/sprints/{sprint_id}/tasks/{task.id}")
+
+    resp = client.delete(f"/sprints/{sprint_id}/tasks/{task.id}")
+    assert resp.status_code == 204
+
+    detail = client.get(f"/sprints/{sprint_id}").json()
+    assert str(task.id) not in detail["task_ids"]
+
+
+def test_remove_task_sprint_not_found(client: TestClient) -> None:
+    resp = client.delete(f"/sprints/{uuid.uuid4()}/tasks/{uuid.uuid4()}")
+    assert resp.status_code == 404

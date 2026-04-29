@@ -10,9 +10,30 @@
 ## Architektur-Referenz
 - Klassendiagramm: `/Excalidraw/class-diagram.excalidraw`
 - Architektur-Übersicht: `/Excalidraw/architecture-overview.excalidraw`
+- Cost Management Architektur: Excalidraw (erstellt 2026-04-29, Branch `feature/cost-management`)
 - Clean Architecture / DDD, keine Authentication (Single-User lokal)
 
 ## Phasenplan
+
+### Phase 7 — Design-Refresh (feature/design-refresh)
+- [x] Phase A — Backend: Sprint Goal-Feld
+- [x] Phase B1 — Design-Tokens (Tailwind + shadcn)
+- [x] Phase B2 — Layout & Sidebar
+- [x] Phase B3 — Dashboard
+- [x] Phase B4 — Tasks (Liste + Board-View-Switch)
+- [x] Phase B5 — Sprints
+- [x] Phase B6 — Goals
+- [x] Phase B7 — Finale Durchsicht
+
+### Phase 7 — Interaktions-Ergänzungen (Änderungen 1–5)
+- [x] Phase A — Backend: completion_percent + RemoveTaskFromSprint + tags/due_date in UpdateTask
+- [x] Phase B1 — TaskExpandedRow (inline edit in /tasks list), TaskTable + TasksPage vereinfacht
+- [x] Phase B2 — Sprint-Detail: Kanban → SprintTaskList (inline expand), SprintTaskPicker, SprintInlineCreate, dnd-kit entfernt
+- [x] Phase B3 — SprintCard + SprintDetailPage: Fortschrittsbalken + %
+- [x] Phase B4 — TaskBoardView: Priority-Border + "→ Next"-Button, onEdit/onDelete entfernt
+
+**Backlog (Daily Log — aus Scope-Entscheidung ausgenommen):**
+- Daily Log mit Mood-Tracking und @Task-Mentions
 
 ### Phase 1 — Fundament ✅
 - [x] Monorepo-Struktur (`/backend`, `/frontend`)
@@ -65,7 +86,165 @@
 - [x] Schritt 6: Dev-Experience (Makefile / justfile, VS Code)
 - [x] Schritt 7: Finale Architektur-Überprüfung
 
+---
+
+### Phase 7 — Cost Management (`feature/cost-management`)
+
+> Ziel: Ein vollständiges Kostenverwaltungs-Modul direkt im Task Manager. Nach jeder Phase ist etwas sichtbar und nutzbar.
+
+#### Phase 7.1 — Domain + API Fundament ✅
+**Liefergegenstand:** Funktionierendes Backend mit CRUD für Transaktionen und wiederkehrende Einträge (testbar via Swagger UI / curl)
+
+- [x] Domain-Entities: `Transaction`, `RecurringTransaction` (dataclasses, pure Python)
+- [x] Value Objects: `TransactionType` (INCOME/EXPENSE), `RecurrenceInterval` (WEEKLY/MONTHLY/YEARLY) — `amount: Decimal` direkt in Entity (YAGNI, kein Money-VO)
+- [x] `ICostRepository` Interface (ABC, konsistent mit restlichem System)
+- [x] Use Cases: `CreateTransactionUC`, `ListTransactionsUC`, `DeleteTransactionUC`, `CreateRecurringUC`, `ListRecurringUC`, `DeleteRecurringUC`, `ListCostTagsUC`
+- [x] SQLAlchemy Models: `TransactionModel`, `RecurringTransactionModel` (Tabellen `cost_transactions`, `cost_recurring`)
+- [x] `PostgresCostRepository` Implementierung
+- [x] Alembic-Migration `a3f2e1d9c8b7` (manuell, FK `cost_transactions → cost_recurring`)
+- [x] API-Router `/cost/transactions` (POST, GET, DELETE) + `/cost/recurring` (POST, GET, DELETE) + `/cost/tags` (GET)
+- [x] Pydantic DTOs mit vollständiger Input-Validierung (amount `gt=0`, tags `max_length=50`, tag-Normalisierung)
+- [x] `COST_CURRENCY` ENV-Variable in `config.py`
+- [x] 49 neue Tests (5 Domain-VO, 13 Domain-Entity, 13 Use Case, 18 API) — **459 total passing**
+
+**Security-Check:** Alle Inputs über Pydantic validiert, amount als `Decimal` mit `gt=0`, tags als `list[str]` mit `max_length` pro Tag, Vergangene-Monat-Schutz in DeleteTransactionUC (409).
+
+---
+
+#### Phase 7.2 — Frontend Grundansicht ✅
+**Liefergegenstand:** „Cost Management"-Button in der Sidebar, Seite mit Transaktionsliste und Formularen zum Hinzufügen
+
+- [x] Sidebar-Eintrag „Cost Management" (NavLink, Wallet-Icon)
+- [x] `CostManagementPage` mit 3 Tabs: Übersicht | Regelmäßig | Analyse
+- [x] `TransactionList`: Tabelle (Datum, Titel, Betrag, Typ, Tags) + Löschen
+- [x] `TransactionCreateModal`: Titel, Betrag, Typ, Datum, Tags (Autocomplete), Beschreibung
+- [x] `TransactionDeleteDialog` (inkl. Vergangenheits-Schutz-Hinweis)
+- [x] `RecurringList`: Tabelle mit Interval-Badge + Aktiv/Inaktiv-Status
+- [x] `RecurringCreateModal`: Titel, Betrag, Typ, Interval, Tag-of-month, Tags
+- [x] `TransactionTypeBadge` + `formatAmount` (Hilfsfunktionen)
+- [x] TanStack Query Hooks: `useTransactions`, `useCreateTransaction`, `useDeleteTransaction`, `useRecurring`, `useCreateRecurring`, `useDeleteRecurring`, `useCostTags`
+- [x] OpenAPI-Types neu generiert (cost-Endpoints enthalten)
+- [x] 9 neue Vitest-Tests (Badge, formatAmount, CostManagementPage Tab-Navigation) — **80 total passing**
+- [x] `pnpm tsc --noEmit` → 0 Fehler
+
+---
+
+#### Phase 7.3 — Summary Cards + Tag-Filterung ✅
+**Liefergegenstand:** Monatsübersicht (Einnahmen / Ausgaben / Saldo) als Cards oben, Filterung nach Tags
+
+- [x] `GetCostSummaryUC`: Summe Einnahmen, Ausgaben, Saldo für laufenden Monat
+- [x] `GET /cost/summary?year=YYYY&month=MM` API-Endpoint
+- [x] `SummaryCards`-Komponente: Einnahmen (grün), Ausgaben (rot), Saldo (blau/rot je Vorzeichen)
+- [x] `TagFilterBar` für Transaktionsliste (Multi-Select, Zurücksetzen-Button)
+- [x] Backend-seitige Tag-Filterung bereits in `ListTransactionsUC` + Repo
+- [x] Tests: 3 UC-Tests, 3 Router-Tests, 6 Vitest-Tests (SummaryCards)
+
+---
+
+#### Phase 7.4 — Diagramme & Analyse ✅
+**Liefergegenstand:** Pie Chart (Ausgaben nach Tag) + Gegenüberstellung Einnahmen vs. Ausgaben pro Monat mit Tag-Filter
+
+- [x] `GET /cost/analytics?year=YYYY&month=MM&tags=` API-Endpoint
+- [x] `GetCostAnalyticsUseCase`: gruppierte Ausgaben nach Tag (sortiert nach Betrag) + Monatsvergleich letzte 6 Monate
+- [x] `AnalyticsTab`-Komponente: PieChart (Donut, Ausgaben nach Tag) + BarChart (Einnahmen vs. Ausgaben je Monat)
+- [x] Tag-Filter (TagFilterBar) auf Analyse-Tab wirkt auf beide Charts
+- [x] Skeleton-Loading + Leerzustand-Handling (je Chart separat)
+- [x] 8 neue Tests (4 UC, 4 API) — **584 Backend, 87 Frontend passing**
+
+---
+
+#### Phase 7.5 — Generierung + Polish ✅
+**Liefergegenstand:** Automatische Übernahme wiederkehrender Einträge in den aktuellen Monat + vollständige UX
+
+- [x] `GenerateMonthlyUC`: erstellt Transaktionen aus aktiven `RecurringTransaction`-Einträgen für einen Monat (idempotent via `recurring_source_id`)
+- [x] `POST /cost/generate-monthly?year=YYYY&month=MM` — Button „Monat laden" in UI
+- [x] Duplicate-Schutz: zweiter Aufruf überschreibt nicht, zeigt 409 wenn bereits generiert
+- [x] E2E-Tests (Playwright): 6 Cost-Tests (serial mode), alle 33 E2E-Tests grün
+- [x] Smoke-Tests: 2 neue Cost-Navigation-Tests, alle 10 Smoke-Tests grün
+- [x] OpenAPI-Spec aktualisiert + TypeScript-Types neu generiert
+- [x] Infrastruktur-Tests: `test_cost_repository.py` (13 Tests gegen echtes Postgres)
+- [x] Vorhandene E2E-Bugs gefixt: dashboard strict-mode, goals delete-locator
+- [ ] Rate-Limiting + Audit-Log: zurückgestellt bis Auth-System steht
+
+---
+
 ## Session-Log
+
+### 2026-04-24 — Phase 7, Interaktions-Ergänzungen B1–B4
+
+- **B1 TaskExpandedRow:** Inline-Edit-Karte im /tasks-List-View — Save/Cancel/Delete, Status-Transition-Chips, Priority-Select (farbig), Estimation-Stepper, Tags, Due-Date, Description-Textarea; Priority-gefärbter linker Rand
+- **B1 TaskTable:** Expandable rows via `expandedId`-State, Props auf `tasks + onDeleted?` reduziert
+- **B1 TasksPage:** Modal-State + TaskEditModal/TaskDeleteDialog entfernt, TaskBoardView ohne onEdit/onDelete aufgerufen
+- **B2 SprintTaskList:** Kompakte Listenspalten (Title, Status, Priority, Pts, ×), inline TaskExpandedRow bei Klick, × entfernt Task aus Sprint via `useRemoveTaskFromSprint`
+- **B2 SprintTaskPicker:** Modal mit Search-Input, listet alle nicht-zugewiesenen Tasks, Single-Click assigned via `useAddTaskToSprint`
+- **B2 SprintInlineCreate:** Inline-Titel-Eingabe in Sprint-Detail; erstellt Task mit task_type=sprint + sprint_id vorbelegt
+- **B2 SprintDetailPage:** Kanban durch SprintTaskList ersetzt, "New Task" + "Assign existing"-Buttons, Fortschritt prominenter
+- **B2 dnd-kit entfernt:** @dnd-kit/core + sortable + utilities aus package.json entfernt, KanbanBoard/Column/Card-Dateien gelöscht, KanbanBoard.test.tsx gelöscht
+- **B3 SprintCard:** Fortschrittsbalken (bg-green, 100%-Breite = completion_percent%) + "X% · N tasks" Text
+- **B3 SprintDetailPage:** Fortschritts-Panel (goal + Progress-Bar + done/total) oberhalb Controls
+- **B4 TaskBoardView:** Priority-gefärbter linker Rand, "→ Next"-Button direkt auf Karte; TaskActions-Komponente entfernt
+- **Fix:** `priority` State in TaskExpandedRow als `Priority`-Union-Typ (TaskResponse.priority ist `string` in generierten Types)
+- **69 Tests grün** | Build sauber ✅
+
+### **Phase 7 vollständig abgeschlossen ✅**
+
+### 2026-04-24 — Phase 7, B3–B7: Dashboard / Tasks / Sprints / Goals / Polish
+
+- **B3 Dashboard:** MetricsWidget (Pie + Legende + Tabelle), BurndownWidget, VelocityWidget, GoalProgressWidget — alle mit Design-Palette-Farben, Glow-Effekten, Mono-Typo, subtle Grid-Styling; `WidgetSkeleton`
+- **B4 Tasks:** `TaskStatusBadge` neu (Design-Palette, kein Badge-Wrapper); `TaskFilterBar` kompakter; `TaskTable` als Grid-Layout (kein shadcn Table); `TaskBoardView` neu — 6 Kanban-Spalten, Task-Karten mit Priority-Dot; `TasksPage` mit List/Board-Toggle-Button
+- **B5 Sprints:** `SprintStatusBadge` neu (Palette); `SprintCard` ohne shadcn Card, mit Goal-Feld; `SprintsPage` kompakter Header; `SprintDetailPage` mit Goal-Banner + neuem Back-Button; `KanbanColumn`/`KanbanTaskCard` auf Design-Palette
+- **B6 Goals:** `GoalCard` ohne shadcn Card, Priority-Farbe für Progress-Bar + Badge; `GoalsPage` kompakter Header; `GoalDetailPage` neu; `KeyResultItem` mit lila Glow-Progressbar
+- **B7 Polish:** `TaskActions` "Todo" → "To Do"; `SprintAssignTask` auf neues Button-/Select-Styling; Sweep: kein `text-2xl font-bold` mehr im Frontend
+- **71 Tests grün** | Build sauber ✅
+
+### 2026-04-24 — Phase 7, B2: Layout & Sidebar
+
+- `AppLayout.tsx` komplett neu: `LogoMark` (Gradient-Box 24×24, "PD"), Brand "devflow"
+- Sidebar-Nav: `border border-transparent` / `border-cyan/20 bg-cyan/10 text-cyan` für active, `hover:bg-surface-3` für inactive, Icon-Opacity
+- Header: `GlobalStats` (Cyan/Green Dot + Count via `useMetrics`), Datum-Chip (mono), Divider, ThemeToggle — alles rechts
+- Content-Padding: `p-3` (12px) statt `p-6`
+- Test-Update: `useMetrics` gemockt, Assertions auf "devflow" + Stats
+- **71 Tests grün** | Build sauber ✅
+
+### 2026-04-24 — Phase 7, B1: Design-Tokens
+
+- `index.html`: Titel → "devflow", Google Fonts (Inter + JetBrains Mono)
+- `index.css`: Komplettes Token-System neu aufgebaut
+  - `@theme`: `--font-sans/mono`, `--radius: 0.375rem`, shadcn semantic tokens (background/card/primary/muted/border/ring/destructive) für Light + Dark
+  - Neue Design-Palette-Tokens: `--color-cyan/green/yellow/red/purple/orange`, Surface-Layer `surface-0…4`, `text-secondary/tertiary`, `border-strong`
+  - `.dark`-Overrides: alle surface/text/border Tokens auf Design-Dark-Werte
+  - Extra CSS-Variablen (`:root`/`.dark`): dim-Varianten, Shadow-Scale (4 Stufen), `--bg-radial`, `--overlay`
+  - `@layer base`: box-sizing, body-Font, scrollbar (4px), antialiasing
+- `App.css`: altes Vite-Starter-CSS geleert
+- SprintCard-Test: `goal: null` im Mock ergänzt (neues Pflichtfeld)
+- **69 Tests grün** | Build sauber ✅
+
+### 2026-04-24 — Phase 7, Phase A: Backend Sprint Goal
+
+- `Sprint`-Entity: `goal: str | None = None` ergänzt
+- `SprintModel`: `goal TEXT NULL`-Spalte
+- Mapper `sprint_to_model` / `sprint_from_model`: goal-Feld
+- `SprintCreateRequest` + `SprintUpdateRequest`: `goal: str | None` (max 500 Zeichen)
+- `SprintResponse`: `goal: str | None` + `from_domain()`
+- `CreateSprintUseCase.execute`: `goal`-Parameter durchgeleitet
+- `UpdateSprintUseCase.execute`: `name` und `goal` beide optional, unabhängig patchbar
+- `sprint_router.py`: PATCH-no-op-Check auf `name is None and goal is None`
+- Alembic-Migration `7013b7d457bf_add_sprint_goal_field.py`: `ADD COLUMN sprints.goal TEXT NULL`
+- `alembic upgrade head` + `alembic check` ✅
+- **457 Tests, alle grün** (8 neue)
+
+### 2026-04-29 — Phase 7: Cost Management (7.1–7.3 + 7.5 abgeschlossen)
+
+- Branch `feature/cost-management` → `feature/coolify-nginx-proxy` (nginx-Proxy für Coolify)
+- Domain: `Transaction`, `RecurringTransaction`, `ICostRepository`, Value Objects
+- Application: 8 Use Cases inkl. `GenerateMonthlyUC` (idempotent), `GetCostSummaryUC`
+- Infrastructure: `PostgresCostRepository`, Alembic-Migration `a3f2e1d9c8b7`
+- API: 8 Endpoints (`/cost/transactions`, `/cost/recurring`, `/cost/tags`, `/cost/summary`, `/cost/generate-monthly`)
+- Frontend: `CostManagementPage` (3 Tabs), `SummaryCards`, `TagFilterBar`, `TransactionList/Modal/Delete`, `RecurringList/Modal`
+- nginx-Proxy: `VITE_API_URL=/api`, `/api/` → `backend:8000` intern; Vite-Proxy für lokale Dev
+- Seed-Script um Cost-Daten erweitert (6 Recurring, 12 Transaktionen)
+- Tests: 528 Backend (davon 13 Infrastruktur-Integration), 18 Frontend-Unit, 33 E2E alle grün
+- Phase 7.4 (Analyse-Charts) noch offen
 
 ### 2026-04-24 — Phase 6, Schritt 7: Finale Architektur-Überprüfung
 

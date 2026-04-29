@@ -15,14 +15,18 @@ import argparse
 import asyncio
 import uuid
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.domain.cost.entities import RecurringTransaction, Transaction
+from src.domain.cost.value_objects import RecurrenceInterval, TransactionType
 from src.domain.entities import DailyTask, KeyResult, LongTermGoal, Milestone, SprintTask
 from src.domain.sprint import Sprint, SprintStatus
 from src.domain.value_objects import DateRange, Estimation, Priority, TaskStatus
 from src.infrastructure.database import async_session_factory
+from src.infrastructure.persistence.repositories.cost_repository import PostgresCostRepository
 from src.infrastructure.persistence.repositories.goal_repository import PostgresGoalRepository
 from src.infrastructure.persistence.repositories.sprint_repository import PostgresSprintRepository
 from src.infrastructure.persistence.repositories.task_repository import PostgresTaskRepository
@@ -56,6 +60,8 @@ async def _reset(session: AsyncSession) -> None:
     await session.execute(text("DELETE FROM tasks"))
     await session.execute(text("DELETE FROM sprints"))
     await session.execute(text("DELETE FROM goals"))
+    await session.execute(text("DELETE FROM cost_transactions"))
+    await session.execute(text("DELETE FROM cost_recurring"))
     await session.commit()
     print("  DB reset — all seed tables cleared.")
 
@@ -403,6 +409,12 @@ async def _seed(session: AsyncSession) -> None:
         await goal_repo.save_key_result(kr)
 
     # -----------------------------------------------------------------------
+    # Cost data
+    # -----------------------------------------------------------------------
+
+    await _seed_cost(session, today)
+
+    # -----------------------------------------------------------------------
     # Summary
     # -----------------------------------------------------------------------
 
@@ -427,6 +439,199 @@ async def _seed(session: AsyncSession) -> None:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
+
+async def _seed_cost(session: AsyncSession, today: date) -> None:
+    cost_repo = PostgresCostRepository(session)
+
+    # Recurring entries
+    recurring: list[RecurringTransaction] = [
+        RecurringTransaction.create(
+            "Miete",
+            Decimal("1200.00"),
+            TransactionType.EXPENSE,
+            RecurrenceInterval.MONTHLY,
+            id=sid("rec-miete"),
+            day_of_month=1,
+            tags=["wohnen"],
+            start_date=date(2025, 1, 1),
+        ),
+        RecurringTransaction.create(
+            "Gehalt",
+            Decimal("3500.00"),
+            TransactionType.INCOME,
+            RecurrenceInterval.MONTHLY,
+            id=sid("rec-gehalt"),
+            day_of_month=25,
+            tags=["arbeit"],
+            start_date=date(2025, 1, 1),
+        ),
+        RecurringTransaction.create(
+            "Netflix",
+            Decimal("17.99"),
+            TransactionType.EXPENSE,
+            RecurrenceInterval.MONTHLY,
+            id=sid("rec-netflix"),
+            day_of_month=15,
+            tags=["abo", "entertainment"],
+            start_date=date(2025, 3, 1),
+        ),
+        RecurringTransaction.create(
+            "Spotify",
+            Decimal("10.99"),
+            TransactionType.EXPENSE,
+            RecurrenceInterval.MONTHLY,
+            id=sid("rec-spotify"),
+            day_of_month=8,
+            tags=["abo", "entertainment"],
+            start_date=date(2025, 1, 1),
+        ),
+        RecurringTransaction.create(
+            "Fitnessstudio",
+            Decimal("29.90"),
+            TransactionType.EXPENSE,
+            RecurrenceInterval.MONTHLY,
+            id=sid("rec-gym"),
+            day_of_month=1,
+            tags=["sport", "gesundheit"],
+            start_date=date(2025, 2, 1),
+        ),
+        RecurringTransaction.create(
+            "Haftpflichtversicherung",
+            Decimal("89.00"),
+            TransactionType.EXPENSE,
+            RecurrenceInterval.YEARLY,
+            id=sid("rec-haftpflicht"),
+            tags=["versicherung"],
+            start_date=date(2025, 1, 1),
+        ),
+    ]
+    for r in recurring:
+        await cost_repo.save_recurring(r)
+
+    # Manual transactions — current month (April 2026) + a few from March
+    def cd(day: int, month_offset: int = 0) -> date:
+        m = today.month + month_offset
+        y = today.year
+        if m < 1:
+            m += 12
+            y -= 1
+        return date(y, m, day)
+
+    transactions: list[Transaction] = [
+        # April 2026
+        Transaction.create(
+            "Miete April",
+            Decimal("1200.00"),
+            TransactionType.EXPENSE,
+            cd(1),
+            id=sid("tx-miete-apr"),
+            tags=["wohnen"],
+            recurring_source_id=sid("rec-miete"),
+        ),
+        Transaction.create(
+            "Gehalt April",
+            Decimal("3500.00"),
+            TransactionType.INCOME,
+            cd(25),
+            id=sid("tx-gehalt-apr"),
+            tags=["arbeit"],
+            recurring_source_id=sid("rec-gehalt"),
+        ),
+        Transaction.create(
+            "Spotify",
+            Decimal("10.99"),
+            TransactionType.EXPENSE,
+            cd(8),
+            id=sid("tx-spotify-apr"),
+            tags=["abo", "entertainment"],
+            recurring_source_id=sid("rec-spotify"),
+        ),
+        Transaction.create(
+            "REWE Einkauf",
+            Decimal("67.43"),
+            TransactionType.EXPENSE,
+            cd(5),
+            id=sid("tx-rewe-apr-1"),
+            tags=["lebensmittel"],
+            description="Wocheneinkauf",
+        ),
+        Transaction.create(
+            "REWE Einkauf",
+            Decimal("54.20"),
+            TransactionType.EXPENSE,
+            cd(12),
+            id=sid("tx-rewe-apr-2"),
+            tags=["lebensmittel"],
+        ),
+        Transaction.create(
+            "Restaurant Vapiano",
+            Decimal("38.50"),
+            TransactionType.EXPENSE,
+            cd(19),
+            id=sid("tx-restaurant-apr"),
+            tags=["essen", "freizeit"],
+            description="Essen mit Freunden",
+        ),
+        Transaction.create(
+            "Deutschlandticket",
+            Decimal("49.00"),
+            TransactionType.EXPENSE,
+            cd(1),
+            id=sid("tx-bahn-apr"),
+            tags=["transport", "abo"],
+        ),
+        Transaction.create(
+            "Freelance-Projekt",
+            Decimal("650.00"),
+            TransactionType.INCOME,
+            cd(15),
+            id=sid("tx-freelance-apr"),
+            tags=["arbeit", "freelance"],
+            description="Website-Redesign Kunde X",
+        ),
+        # March 2026 (past month — read-only)
+        Transaction.create(
+            "Miete März",
+            Decimal("1200.00"),
+            TransactionType.EXPENSE,
+            cd(1, -1),
+            id=sid("tx-miete-mar"),
+            tags=["wohnen"],
+            recurring_source_id=sid("rec-miete"),
+        ),
+        Transaction.create(
+            "Gehalt März",
+            Decimal("3500.00"),
+            TransactionType.INCOME,
+            cd(25, -1),
+            id=sid("tx-gehalt-mar"),
+            tags=["arbeit"],
+            recurring_source_id=sid("rec-gehalt"),
+        ),
+        Transaction.create(
+            "REWE Einkauf",
+            Decimal("72.80"),
+            TransactionType.EXPENSE,
+            cd(10, -1),
+            id=sid("tx-rewe-mar"),
+            tags=["lebensmittel"],
+        ),
+        Transaction.create(
+            "Amazon Bestellung",
+            Decimal("89.95"),
+            TransactionType.EXPENSE,
+            cd(18, -1),
+            id=sid("tx-amazon-mar"),
+            tags=["shopping"],
+            description="Büromaterial",
+        ),
+    ]
+    for t in transactions:
+        await cost_repo.save_transaction(t)
+
+    print(f"  Recurring:    {len(recurring)}")
+    print(f"  Transactions: {len(transactions)}  ({len([t for t in transactions if t.date.month == today.month])} current month, {len([t for t in transactions if t.date.month != today.month])} past)")
 
 
 async def main() -> None:

@@ -241,6 +241,33 @@ async def test_add_task_sprint_not_found_raises(
 
 
 # ---------------------------------------------------------------------------
+# CreateSprintUseCase — goal field
+# ---------------------------------------------------------------------------
+
+async def test_create_sprint_with_goal(
+    sprint_repo: InMemorySprintRepository,
+    event_bus: InMemoryEventBus,
+) -> None:
+    use_case = CreateSprintUseCase(sprint_repo, event_bus)
+    sprint = await use_case.execute("Sprint G", _date_range(), goal="Ship the auth flow")
+
+    assert sprint.goal == "Ship the auth flow"
+    saved = await sprint_repo.get_by_id(sprint.id)
+    assert saved is not None
+    assert saved.goal == "Ship the auth flow"
+
+
+async def test_create_sprint_goal_defaults_to_none(
+    sprint_repo: InMemorySprintRepository,
+    event_bus: InMemoryEventBus,
+) -> None:
+    use_case = CreateSprintUseCase(sprint_repo, event_bus)
+    sprint = await use_case.execute("Sprint N", _date_range())
+
+    assert sprint.goal is None
+
+
+# ---------------------------------------------------------------------------
 # UpdateSprintUseCase
 # ---------------------------------------------------------------------------
 
@@ -250,7 +277,7 @@ async def test_update_sprint_name(
     sprint = Sprint("Old Name", _date_range())
     await sprint_repo.save(sprint)
 
-    result = await UpdateSprintUseCase(sprint_repo).execute(sprint.id, "New Name")
+    result = await UpdateSprintUseCase(sprint_repo).execute(sprint.id, name="New Name")
 
     assert result.name == "New Name"
     saved = await sprint_repo.get_by_id(sprint.id)
@@ -258,11 +285,39 @@ async def test_update_sprint_name(
     assert saved.name == "New Name"
 
 
+async def test_update_sprint_goal(
+    sprint_repo: InMemorySprintRepository,
+) -> None:
+    sprint = Sprint("Sprint G", _date_range())
+    await sprint_repo.save(sprint)
+
+    result = await UpdateSprintUseCase(sprint_repo).execute(sprint.id, goal="Zero downtime migration")
+
+    assert result.goal == "Zero downtime migration"
+    saved = await sprint_repo.get_by_id(sprint.id)
+    assert saved is not None
+    assert saved.goal == "Zero downtime migration"
+
+
+async def test_update_sprint_name_and_goal_together(
+    sprint_repo: InMemorySprintRepository,
+) -> None:
+    sprint = Sprint("Old", _date_range())
+    await sprint_repo.save(sprint)
+
+    result = await UpdateSprintUseCase(sprint_repo).execute(
+        sprint.id, name="New", goal="New goal"
+    )
+
+    assert result.name == "New"
+    assert result.goal == "New goal"
+
+
 async def test_update_sprint_not_found_raises(
     sprint_repo: InMemorySprintRepository,
 ) -> None:
     with pytest.raises(ValueError):
-        await UpdateSprintUseCase(sprint_repo).execute(uuid.uuid4(), "X")
+        await UpdateSprintUseCase(sprint_repo).execute(uuid.uuid4(), name="X")
 
 
 # ---------------------------------------------------------------------------

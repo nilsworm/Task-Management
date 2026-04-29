@@ -1,48 +1,56 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { useSprints } from "@/api/hooks/sprints"
 import { SprintCard } from "./SprintCard"
 import { SprintCreateModal } from "./SprintCreateModal"
-import { Skeleton } from "@/components/ui/skeleton"
+
+function CardSkeleton() {
+  return <div className="h-36 animate-pulse rounded-[6px] bg-surface-3" />
+}
 
 export function SprintsPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const { data: sprints = [], isLoading, isError } = useSprints()
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Sprints</h1>
-          <p className="text-sm text-muted-foreground">
-            {isLoading ? "Loading…" : `${sprints.length} sprint${sprints.length !== 1 ? "s" : ""}`}
-          </p>
+        <div className="flex items-center gap-3">
+          <h1 className="text-sm font-semibold text-foreground">Sprints</h1>
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {isLoading ? "…" : sprints.length}
+          </span>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Sprint
-        </Button>
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="flex h-7 items-center gap-1.5 rounded-[5px] border border-border bg-surface-2 px-3 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-surface-3 hover:text-foreground"
+        >
+          <Plus className="h-3 w-3" />
+          New sprint
+        </button>
       </div>
 
       {isError && (
-        <p className="text-sm text-destructive">Failed to load sprints. Is the backend running?</p>
-      )}
-
-      {!isLoading && !isError && sprints.length === 0 && (
-        <p className="py-12 text-center text-sm text-muted-foreground">
-          No sprints yet. Create one to get started.
+        <p className="text-[11px] text-destructive">
+          Failed to load sprints. Is the backend running?
         </p>
       )}
 
       {isLoading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 w-full" />)}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => <CardSkeleton key={i} />)}
         </div>
       )}
 
-      {!isLoading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {!isLoading && !isError && sprints.length === 0 && (
+        <p className="py-12 text-center text-[11px] text-muted-foreground">
+          No sprints yet.
+        </p>
+      )}
+
+      {!isLoading && !isError && sprints.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {sprints.map((sprint) => (
             <SprintCard key={sprint.id} sprint={sprint} />
           ))}

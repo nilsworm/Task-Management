@@ -191,7 +191,8 @@ export interface paths {
         put?: never;
         /** Add Task To Sprint */
         post: operations["add_task_to_sprint_sprints__sprint_id__tasks__task_id__post"];
-        delete?: never;
+        /** Remove Task From Sprint */
+        delete: operations["remove_task_from_sprint_sprints__sprint_id__tasks__task_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -356,6 +357,144 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cost/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Transactions */
+        get: operations["list_transactions_cost_transactions_get"];
+        put?: never;
+        /** Create Transaction */
+        post: operations["create_transaction_cost_transactions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost/transactions/{transaction_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Transaction */
+        delete: operations["delete_transaction_cost_transactions__transaction_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost/recurring": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Recurring */
+        get: operations["list_recurring_cost_recurring_get"];
+        put?: never;
+        /** Create Recurring */
+        post: operations["create_recurring_cost_recurring_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost/recurring/{recurring_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Recurring */
+        delete: operations["delete_recurring_cost_recurring__recurring_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost/generate-monthly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Monthly */
+        post: operations["generate_monthly_cost_generate_monthly_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Cost Summary */
+        get: operations["get_cost_summary_cost_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Cost Tags */
+        get: operations["list_cost_tags_cost_tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Cost Analytics */
+        get: operations["get_cost_analytics_cost_analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -395,6 +534,26 @@ export interface components {
             ideal_line: components["schemas"]["BurndownPoint"][];
             /** Actual Remaining */
             actual_remaining: number;
+        };
+        /** CostAnalyticsResponse */
+        CostAnalyticsResponse: {
+            /** Expenses By Tag */
+            expenses_by_tag: components["schemas"]["TagBreakdownResponse"][];
+            /** Monthly Comparison */
+            monthly_comparison: components["schemas"]["MonthlyComparisonResponse"][];
+        };
+        /** CostSummaryResponse */
+        CostSummaryResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Income */
+            income: string;
+            /** Expenses */
+            expenses: string;
+            /** Balance */
+            balance: string;
         };
         /** DashboardResponse */
         DashboardResponse: {
@@ -577,6 +736,77 @@ export interface components {
             /** Completion Rate */
             completion_rate: number;
         };
+        /** MonthlyComparisonResponse */
+        MonthlyComparisonResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Income */
+            income: string;
+            /** Expenses */
+            expenses: string;
+        };
+        /** RecurringCreateRequest */
+        RecurringCreateRequest: {
+            /** Title */
+            title: string;
+            /** Amount */
+            amount: number | string;
+            /**
+             * Transaction Type
+             * @enum {string}
+             */
+            transaction_type: "income" | "expense";
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "weekly" | "monthly" | "yearly";
+            /** Day Of Month */
+            day_of_month?: number | null;
+            /** Tags */
+            tags?: string[];
+            /** Start Date */
+            start_date?: string | null;
+        };
+        /** RecurringResponse */
+        RecurringResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Amount */
+            amount: string;
+            /** Transaction Type */
+            transaction_type: string;
+            /** Interval */
+            interval: string;
+            /** Day Of Month */
+            day_of_month: number | null;
+            /** Tags */
+            tags: string[];
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** SprintCreateRequest */
         SprintCreateRequest: {
             /** Name */
@@ -591,6 +821,8 @@ export interface components {
              * Format: date
              */
             end_date: string;
+            /** Goal */
+            goal?: string | null;
         };
         /** SprintResponse */
         SprintResponse: {
@@ -613,8 +845,12 @@ export interface components {
              * Format: date
              */
             end_date: string;
+            /** Goal */
+            goal: string | null;
             /** Task Ids */
             task_ids: string[];
+            /** Completion Percent */
+            completion_percent: number;
             /**
              * Created At
              * Format: date-time
@@ -640,6 +876,8 @@ export interface components {
         SprintUpdateRequest: {
             /** Name */
             name?: string | null;
+            /** Goal */
+            goal?: string | null;
         };
         /** SprintVelocity */
         SprintVelocity: {
@@ -652,6 +890,13 @@ export interface components {
             sprint_name: string;
             /** Completed Points */
             completed_points: number;
+        };
+        /** TagBreakdownResponse */
+        TagBreakdownResponse: {
+            /** Tag */
+            tag: string;
+            /** Amount */
+            amount: string;
         };
         /** TaskCreateRequest */
         TaskCreateRequest: {
@@ -767,6 +1012,69 @@ export interface components {
             priority?: ("low" | "medium" | "high" | "critical") | null;
             /** Estimation */
             estimation?: number | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Due Date */
+            due_date?: string | null;
+        };
+        /** TransactionCreateRequest */
+        TransactionCreateRequest: {
+            /** Title */
+            title: string;
+            /** Amount */
+            amount: number | string;
+            /**
+             * Transaction Type
+             * @enum {string}
+             */
+            transaction_type: "income" | "expense";
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+        };
+        /** TransactionResponse */
+        TransactionResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Amount */
+            amount: string;
+            /** Transaction Type */
+            transaction_type: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Tags */
+            tags: string[];
+            /** Description */
+            description: string;
+            /** Recurring Source Id */
+            recurring_source_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -1309,6 +1617,36 @@ export interface operations {
             };
         };
     };
+    remove_task_from_sprint_sprints__sprint_id__tasks__task_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sprint_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_goals_goals_get: {
         parameters: {
             query?: never;
@@ -1739,6 +2077,312 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoalProgressResponse"];
+                };
+            };
+        };
+    };
+    list_transactions_cost_transactions_get: {
+        parameters: {
+            query?: {
+                year?: number | null;
+                month?: number | null;
+                tags?: string[] | null;
+                transaction_type?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_transaction_cost_transactions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransactionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_transaction_cost_transactions__transaction_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transaction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_recurring_cost_recurring_get: {
+        parameters: {
+            query?: {
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_recurring_cost_recurring_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecurringCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_recurring_cost_recurring__recurring_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_monthly_cost_generate_monthly_post: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cost_summary_cost_summary_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostSummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_cost_tags_cost_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+        };
+    };
+    get_cost_analytics_cost_analytics_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+                tags?: string[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostAnalyticsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

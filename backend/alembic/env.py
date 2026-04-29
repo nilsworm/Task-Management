@@ -12,6 +12,7 @@ from src.infrastructure.database import Base
 import src.infrastructure.persistence.models.task_model  # noqa: F401
 import src.infrastructure.persistence.models.sprint_model  # noqa: F401
 import src.infrastructure.persistence.models.goal_model  # noqa: F401
+import src.infrastructure.persistence.models.cost_models  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

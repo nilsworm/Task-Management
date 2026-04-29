@@ -92,6 +92,7 @@ def sprint_to_model(sprint: Sprint) -> SprintModel:
         status=sprint.status.value,
         start_date=sprint.date_range.start,
         end_date=sprint.date_range.end,
+        goal=sprint.goal,
         created_at=sprint.created_at,
     )
 
@@ -103,6 +104,7 @@ def sprint_from_model(model: SprintModel, task_ids: list[uuid.UUID]) -> Sprint:
         id=model.id,
         status=SprintStatus(model.status),
         task_ids=task_ids,
+        goal=model.goal,
         created_at=_utc(model.created_at),
     )
 

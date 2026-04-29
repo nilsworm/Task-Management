@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from src.application.exceptions import EntityNotFoundError, InvalidOperationError
-from src.domain.entities import Task
+from src.domain.entities import Milestone, Task
 from src.domain.events import (
     IEventBus,
     TaskCreatedEvent,
@@ -87,6 +87,8 @@ class UpdateTaskInput:
     description: str | None = None
     priority: Priority | None = None
     estimation: Estimation | None = None
+    tags: frozenset[Tag] | None = None
+    due_date: date | None = None
 
 
 class UpdateTaskUseCase:
@@ -112,6 +114,12 @@ class UpdateTaskUseCase:
         if input.estimation is not None:
             task.set_estimation(input.estimation)
             changed.append("estimation")
+        if input.tags is not None:
+            task.tags = input.tags
+            changed.append("tags")
+        if input.due_date is not None and isinstance(task, Milestone):
+            task.due_date = input.due_date
+            changed.append("due_date")
 
         await self._repo.save(task)
         if changed:

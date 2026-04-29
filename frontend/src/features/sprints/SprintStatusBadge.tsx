@@ -1,27 +1,25 @@
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-
 const LABELS: Record<string, string> = {
-  planned: "Planned",
-  active: "Active",
+  planned:   "Planned",
+  active:    "Active",
   completed: "Completed",
   cancelled: "Cancelled",
 }
 
-const CLASSES: Record<string, string> = {
-  planned: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  active: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  completed: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  cancelled: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500",
+const COLORS: Record<string, string> = {
+  planned:   "#9090b0",
+  active:    "#00d4ff",
+  completed: "#06d6a0",
+  cancelled: "#5a5a7a",
 }
 
 export function SprintStatusBadge({ status }: { status: string }) {
+  const color = COLORS[status] ?? "#9090b0"
   return (
-    <Badge
-      variant="outline"
-      className={cn("border-transparent text-xs font-medium", CLASSES[status])}
+    <span
+      className="inline-flex items-center rounded-[3px] px-1.5 py-0.5 font-mono text-[10px] font-semibold"
+      style={{ background: `${color}22`, color }}
     >
       {LABELS[status] ?? status}
-    </Badge>
+    </span>
   )
 }

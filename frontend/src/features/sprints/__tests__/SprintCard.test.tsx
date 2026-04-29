@@ -23,7 +23,9 @@ const BASE_SPRINT: Sprint = {
   status: "planned",
   start_date: "2026-05-01",
   end_date: "2026-05-14",
+  goal: null,
   task_ids: [],
+  completion_percent: 0,
   created_at: "2026-04-01T00:00:00Z",
 }
 
@@ -44,8 +46,8 @@ describe("SprintCard", () => {
   })
 
   it("renders task count", () => {
-    renderCard({ ...BASE_SPRINT, task_ids: ["t1", "t2"] })
-    expect(screen.getByText("2 tasks")).toBeInTheDocument()
+    const { container } = renderCard({ ...BASE_SPRINT, task_ids: ["t1", "t2"] })
+    expect(container.textContent).toContain("2 tasks")
   })
 
   it("shows Start button for planned sprint", () => {
