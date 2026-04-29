@@ -53,6 +53,7 @@ services:
       - coolify
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
       - "traefik.http.routers.taskmanager.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.taskmanager.entrypoints=websecure"
       - "traefik.http.routers.taskmanager.tls=true"
