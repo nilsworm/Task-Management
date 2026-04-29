@@ -111,19 +111,21 @@
 
 ---
 
-#### Phase 7.2 — Frontend Grundansicht
+#### Phase 7.2 — Frontend Grundansicht ✅
 **Liefergegenstand:** „Cost Management"-Button in der Sidebar, Seite mit Transaktionsliste und Formularen zum Hinzufügen
 
-- [ ] Sidebar-Eintrag „Cost Management" (NavLink, Icon)
-- [ ] `CostManagementPage` mit 3 Tabs: Übersicht | Regelmäßig | Analyse
-- [ ] `TransactionList`: Tabelle (Datum, Titel, Betrag, Typ, Tags)
-- [ ] `TransactionCreateModal`: Titel, Betrag, Typ, Datum, Tags, Beschreibung
-- [ ] `TransactionDeleteDialog`
-- [ ] `RecurringList`: Tabelle mit Interval-Badge
-- [ ] `RecurringCreateModal`: Titel, Betrag, Typ, Interval, Tag-of-month, Tags
-- [ ] TanStack Query Hooks für `/cost/transactions` + `/cost/recurring`
-- [ ] OpenAPI-Types neu generieren
-- [ ] Vitest-Tests für Komponenten
+- [x] Sidebar-Eintrag „Cost Management" (NavLink, Wallet-Icon)
+- [x] `CostManagementPage` mit 3 Tabs: Übersicht | Regelmäßig | Analyse
+- [x] `TransactionList`: Tabelle (Datum, Titel, Betrag, Typ, Tags) + Löschen
+- [x] `TransactionCreateModal`: Titel, Betrag, Typ, Datum, Tags (Autocomplete), Beschreibung
+- [x] `TransactionDeleteDialog` (inkl. Vergangenheits-Schutz-Hinweis)
+- [x] `RecurringList`: Tabelle mit Interval-Badge + Aktiv/Inaktiv-Status
+- [x] `RecurringCreateModal`: Titel, Betrag, Typ, Interval, Tag-of-month, Tags
+- [x] `TransactionTypeBadge` + `formatAmount` (Hilfsfunktionen)
+- [x] TanStack Query Hooks: `useTransactions`, `useCreateTransaction`, `useDeleteTransaction`, `useRecurring`, `useCreateRecurring`, `useDeleteRecurring`, `useCostTags`
+- [x] OpenAPI-Types neu generiert (cost-Endpoints enthalten)
+- [x] 9 neue Vitest-Tests (Badge, formatAmount, CostManagementPage Tab-Navigation) — **80 total passing**
+- [x] `pnpm tsc --noEmit` → 0 Fehler
 
 ---
 

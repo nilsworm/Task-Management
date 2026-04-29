@@ -1,15 +1,16 @@
 import { NavLink, Outlet } from "react-router-dom"
-import { LayoutDashboard, CheckSquare, Zap, Target } from "lucide-react"
+import { LayoutDashboard, CheckSquare, Zap, Target, Wallet } from "lucide-react"
 import { ThemeToggle } from "@/components/shared/ThemeToggle"
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 import { useMetrics } from "@/api/hooks/dashboard"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
-  { to: "/",       label: "Dashboard", icon: LayoutDashboard, end: true  },
-  { to: "/tasks",  label: "Tasks",     icon: CheckSquare,     end: false },
-  { to: "/sprints",label: "Sprints",   icon: Zap,             end: false },
-  { to: "/goals",  label: "Goals",     icon: Target,          end: false },
+  { to: "/",       label: "Dashboard",       icon: LayoutDashboard, end: true  },
+  { to: "/tasks",  label: "Tasks",           icon: CheckSquare,     end: false },
+  { to: "/sprints",label: "Sprints",         icon: Zap,             end: false },
+  { to: "/goals",  label: "Goals",           icon: Target,          end: false },
+  { to: "/cost",   label: "Cost Management", icon: Wallet,          end: false },
 ]
 
 function LogoMark() {
