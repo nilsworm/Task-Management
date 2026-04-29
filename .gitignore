@@ -16,7 +16,7 @@ htmlcov/
 .python-version
 
 # uv
-uv.lock
+# uv.lock muss committed werden — Coolify braucht es für den Docker Build
 
 # Node
 node_modules/
