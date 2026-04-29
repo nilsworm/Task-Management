@@ -10,6 +10,7 @@
 ## Architektur-Referenz
 - Klassendiagramm: `/Excalidraw/class-diagram.excalidraw`
 - Architektur-Übersicht: `/Excalidraw/architecture-overview.excalidraw`
+- Cost Management Architektur: Excalidraw (erstellt 2026-04-29, Branch `feature/cost-management`)
 - Clean Architecture / DDD, keine Authentication (Single-User lokal)
 
 ## Phasenplan
@@ -85,6 +86,84 @@
 - [x] Schritt 6: Dev-Experience (Makefile / justfile, VS Code)
 - [x] Schritt 7: Finale Architektur-Überprüfung
 
+---
+
+### Phase 7 — Cost Management (`feature/cost-management`)
+
+> Ziel: Ein vollständiges Kostenverwaltungs-Modul direkt im Task Manager. Nach jeder Phase ist etwas sichtbar und nutzbar.
+
+#### Phase 7.1 — Domain + API Fundament ✅
+**Liefergegenstand:** Funktionierendes Backend mit CRUD für Transaktionen und wiederkehrende Einträge (testbar via Swagger UI / curl)
+
+- [x] Domain-Entities: `Transaction`, `RecurringTransaction` (dataclasses, pure Python)
+- [x] Value Objects: `TransactionType` (INCOME/EXPENSE), `RecurrenceInterval` (WEEKLY/MONTHLY/YEARLY) — `amount: Decimal` direkt in Entity (YAGNI, kein Money-VO)
+- [x] `ICostRepository` Interface (ABC, konsistent mit restlichem System)
+- [x] Use Cases: `CreateTransactionUC`, `ListTransactionsUC`, `DeleteTransactionUC`, `CreateRecurringUC`, `ListRecurringUC`, `DeleteRecurringUC`, `ListCostTagsUC`
+- [x] SQLAlchemy Models: `TransactionModel`, `RecurringTransactionModel` (Tabellen `cost_transactions`, `cost_recurring`)
+- [x] `PostgresCostRepository` Implementierung
+- [x] Alembic-Migration `a3f2e1d9c8b7` (manuell, FK `cost_transactions → cost_recurring`)
+- [x] API-Router `/cost/transactions` (POST, GET, DELETE) + `/cost/recurring` (POST, GET, DELETE) + `/cost/tags` (GET)
+- [x] Pydantic DTOs mit vollständiger Input-Validierung (amount `gt=0`, tags `max_length=50`, tag-Normalisierung)
+- [x] `COST_CURRENCY` ENV-Variable in `config.py`
+- [x] 49 neue Tests (5 Domain-VO, 13 Domain-Entity, 13 Use Case, 18 API) — **459 total passing**
+
+**Security-Check:** Alle Inputs über Pydantic validiert, amount als `Decimal` mit `gt=0`, tags als `list[str]` mit `max_length` pro Tag, Vergangene-Monat-Schutz in DeleteTransactionUC (409).
+
+---
+
+#### Phase 7.2 — Frontend Grundansicht
+**Liefergegenstand:** „Cost Management"-Button in der Sidebar, Seite mit Transaktionsliste und Formularen zum Hinzufügen
+
+- [ ] Sidebar-Eintrag „Cost Management" (NavLink, Icon)
+- [ ] `CostManagementPage` mit 3 Tabs: Übersicht | Regelmäßig | Analyse
+- [ ] `TransactionList`: Tabelle (Datum, Titel, Betrag, Typ, Tags)
+- [ ] `TransactionCreateModal`: Titel, Betrag, Typ, Datum, Tags, Beschreibung
+- [ ] `TransactionDeleteDialog`
+- [ ] `RecurringList`: Tabelle mit Interval-Badge
+- [ ] `RecurringCreateModal`: Titel, Betrag, Typ, Interval, Tag-of-month, Tags
+- [ ] TanStack Query Hooks für `/cost/transactions` + `/cost/recurring`
+- [ ] OpenAPI-Types neu generieren
+- [ ] Vitest-Tests für Komponenten
+
+---
+
+#### Phase 7.3 — Summary Cards + Tag-Filterung
+**Liefergegenstand:** Monatsübersicht (Einnahmen / Ausgaben / Saldo) als Cards oben, Filterung nach Tags
+
+- [ ] `GetCostSummaryUC`: Summe Einnahmen, Ausgaben, Saldo für laufenden Monat
+- [ ] `GET /cost/summary?month=YYYY-MM` API-Endpoint
+- [ ] `SummaryCards`-Komponente: Einnahmen (grün), Ausgaben (rot), Saldo (blau)
+- [ ] `TagFilterBar` für Transaktionsliste (Multi-Select)
+- [ ] Backend-seitige Tag-Filterung in `ListTransactionsUC`
+- [ ] Tests
+
+---
+
+#### Phase 7.4 — Diagramme & Analyse
+**Liefergegenstand:** Pie Chart (Ausgaben nach Tag) + Gegenüberstellung Einnahmen vs. Ausgaben pro Monat mit Tag-Filter
+
+- [ ] `GET /cost/analytics?month=YYYY-MM&tags=` API-Endpoint
+- [ ] `GetCostAnalyticsUC`: gruppierte Ausgaben nach Tag + Monatsvergleich
+- [ ] `PieChart`-Komponente (Recharts): Ausgaben nach Tag
+- [ ] `ComparisonChart`-Komponente (Recharts BarChart): Einnahmen vs. Ausgaben je Monat (letzte 6 Monate)
+- [ ] Tag-Filter auf Analyse-Tab wirkt auf beide Charts
+- [ ] Skeleton-Loading + Leerzustand-Handling
+- [ ] Tests
+
+---
+
+#### Phase 7.5 — Generierung + Polish
+**Liefergegenstand:** Automatische Übernahme wiederkehrender Einträge in den aktuellen Monat + vollständige UX
+
+- [ ] `GenerateMonthlyUC`: erstellt Transaktionen aus aktiven `RecurringTransaction`-Einträgen für einen Monat (idempotent via `recurring_source_id`)
+- [ ] `POST /cost/generate-monthly?month=YYYY-MM` — Button „Monat laden" in UI
+- [ ] Duplicate-Schutz: zweiter Aufruf überschreibt nicht, zeigt 409 wenn bereits generiert
+- [ ] E2E-Tests (Playwright) für Cost-Management-Flow
+- [ ] OpenAPI-Spec aktualisieren + TypeScript-Types neu generieren
+- [ ] Finale Security-Review: Rate-Limiting auf `/cost`-Routen, Audit-Log für Create/Delete
+
+---
+
 ## Session-Log
 
 ### 2026-04-24 — Phase 7, Interaktions-Ergänzungen B1–B4
@@ -149,6 +228,13 @@
 - Alembic-Migration `7013b7d457bf_add_sprint_goal_field.py`: `ADD COLUMN sprints.goal TEXT NULL`
 - `alembic upgrade head` + `alembic check` ✅
 - **457 Tests, alle grün** (8 neue)
+
+### 2026-04-29 — Phase 7: Planung Cost Management
+
+- Branch `feature/cost-management` angelegt
+- Excalidraw-Architektur- und Klassendiagramm erstellt (5-Layer Clean Architecture, alle Entities/Use Cases/Repos modelliert)
+- `PROGRESS.md` um Phase 7 (7.1–7.5) ergänzt — jede Phase liefert sichtbares Ergebnis
+- Awaiting user approval vor Implementierungsstart
 
 ### 2026-04-24 — Phase 6, Schritt 7: Finale Architektur-Überprüfung
 
