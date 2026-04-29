@@ -54,7 +54,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.taskmanager.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.taskmanager.entrypoints=https"
+      - "traefik.http.routers.taskmanager.entrypoints=websecure"
       - "traefik.http.routers.taskmanager.tls=true"
       - "traefik.http.routers.taskmanager.tls.certresolver=letsencrypt"
       - "traefik.http.services.taskmanager.loadbalancer.server.port=80"
