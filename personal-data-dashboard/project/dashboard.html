@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Personal Productivity Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;
+  --bg1:#0f0f17;
+  --bg2:#13131d;
+  --bg3:#181824;
+  --bg4:#1e1e2e;
+  --border:#2a2a3d;
+  --border2:#333350;
+  --text:#e2e2f0;
+  --text2:#9090b0;
+  --text3:#5a5a7a;
+  --cyan:#00d4ff;
+  --cyan-dim:rgba(0,212,255,0.15);
+  --cyan-glow:rgba(0,212,255,0.08);
+  --red:#ff4d6d;
+  --red-dim:rgba(255,77,109,0.15);
+  --yellow:#ffd166;
+  --yellow-dim:rgba(255,209,102,0.15);
+  --green:#06d6a0;
+  --green-dim:rgba(6,214,160,0.15);
+  --purple:#a78bfa;
+  --orange:#fb923c;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',sans-serif;
+  --row-stripe:rgba(255,255,255,0.01);
+  --overlay:rgba(0,0,0,0.6);
+  --shadow-strong:0 20px 60px rgba(0,0,0,0.6);
+  --shadow-med:0 8px 32px rgba(0,0,0,0.5);
+  --shadow-card:0 4px 20px rgba(0,0,0,0.4);
+  --shadow-hover:0 2px 16px rgba(0,0,0,0.3);
+  --bg-radial:radial-gradient(ellipse at 20% 0%, rgba(0,212,255,0.03) 0%, transparent 50%);
+}
+[data-theme="light"]{
+  --bg:#f7f7fb;
+  --bg1:#ffffff;
+  --bg2:#ffffff;
+  --bg3:#f2f2f7;
+  --bg4:#e9e9f0;
+  --border:#e2e2ec;
+  --border2:#cfcfdc;
+  --text:#1a1a28;
+  --text2:#55556e;
+  --text3:#8a8aa3;
+  --row-stripe:rgba(0,0,0,0.015);
+  --overlay:rgba(20,20,35,0.35);
+  --shadow-strong:0 20px 60px rgba(40,40,80,0.18);
+  --shadow-med:0 8px 32px rgba(40,40,80,0.12);
+  --shadow-card:0 4px 20px rgba(40,40,80,0.08);
+  --shadow-hover:0 2px 16px rgba(40,40,80,0.08);
+  --bg-radial:radial-gradient(ellipse at 20% 0%, rgba(0,150,200,0.06) 0%, transparent 55%);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);}
+body{overflow:hidden;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text3);}
+@keyframes cardExpand{
+  0%{opacity:0;transform:translateY(-6px) scaleY(.96);max-height:0;}
+  60%{opacity:1;}
+  100%{opacity:1;transform:translateY(0) scaleY(1);max-height:600px;}
+}
+.task-card-expand{animation:cardExpand .28s cubic-bezier(.2,.8,.2,1);transform-origin:top center;}
+.edit-input{background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:7px 10px;color:var(--text);font-size:12px;width:100%;font-family:var(--sans);transition:border-color .15s,box-shadow .15s;}
+.edit-input:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,212,255,.15);}
+.edit-input.mono{font-family:var(--mono);}
+button{font-family:var(--sans);cursor:pointer;border:none;outline:none;}
+input,textarea,select{font-family:var(--sans);outline:none;}
+.mono{font-family:var(--mono)!important;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── SAMPLE DATA ────────────────────────────────────────────────────────────
+
+const INITIAL_TASKS = [
+  { id:1, sprintId:1, title:"Set up CI/CD pipeline for staging env", status:"Done", priority:"High", effort:5, due:"2026-04-18", label:"DevOps", labelColor:"#a78bfa", desc:"Configure GitHub Actions workflow with Docker build, test, and deploy stages to the staging environment." },
+  { id:2, sprintId:1, title:"Refactor auth module to use JWT refresh tokens", status:"Done", priority:"High", effort:8, due:"2026-04-19", label:"Backend", labelColor:"#fb923c", desc:"Replace session-based auth with stateless JWT + refresh token rotation strategy." },
+  { id:3, sprintId:1, title:"Write unit tests for payment service", status:"Review", priority:"High", effort:5, due:"2026-04-22", label:"Testing", labelColor:"#06d6a0", desc:"Cover edge cases for payment processing, refunds, and webhook handling." },
+  { id:4, sprintId:1, title:"Design new onboarding flow wireframes", status:"Review", priority:"Medium", effort:3, due:"2026-04-23", label:"Design", labelColor:"#00d4ff", desc:"Create lo-fi wireframes for the 4-step onboarding sequence targeting new free users." },
+  { id:5, sprintId:2, title:"Migrate legacy database to PostgreSQL 16", status:"In Progress", priority:"High", effort:13, due:"2026-04-25", label:"Database", labelColor:"#fb923c", desc:"Schema migration, data validation, and rollback plan for the production database upgrade." },
+  { id:6, sprintId:1, title:"Implement dark mode across settings pages", status:"In Progress", priority:"Medium", effort:5, due:"2026-04-27", label:"Frontend", labelColor:"#ffd166", desc:"Apply design tokens to remaining settings pages that still use hard-coded light colors." },
+  { id:7, sprintId:2, title:"Audit third-party dependencies for CVEs", status:"In Progress", priority:"Medium", effort:3, due:"2026-04-28", label:"Security", labelColor:"#ff4d6d", desc:"Run npm audit, review snyk report, and patch or replace vulnerable packages." },
+  { id:8, sprintId:null, title:"Draft Q2 engineering roadmap doc", status:"Backlog", priority:"Low", effort:2, due:"2026-05-02", label:"Planning", labelColor:"#a78bfa", desc:"Summarize Q1 outcomes and outline Q2 priorities for the team review meeting." },
+  { id:9, sprintId:2, title:"Add OpenTelemetry tracing to API gateway", status:"Backlog", priority:"Medium", effort:8, due:"2026-05-05", label:"DevOps", labelColor:"#a78bfa", desc:"Instrument the API gateway with OTEL spans for distributed tracing visibility." },
+  { id:10, sprintId:null, title:"Optimize homepage LCP to under 2.5s", status:"Backlog", priority:"Low", effort:5, due:"2026-05-08", label:"Frontend", labelColor:"#ffd166", desc:"Profile and optimize critical rendering path — image lazy loading, font subsetting, CDN tuning." },
+];
+
+const INITIAL_GOALS = [
+  { id:1, title:"Ship v2.1 release to production", category:"Engineering", timeframe:"Weekly", progress:75, color:"#00d4ff" },
+  { id:2, title:"Close 3 high-priority bugs", category:"Quality", timeframe:"Weekly", progress:33, color:"#06d6a0" },
+  { id:3, title:"Complete Q2 roadmap planning", category:"Strategy", timeframe:"Monthly", progress:20, color:"#a78bfa" },
+  { id:4, title:"Reduce p95 API latency by 30%", category:"Performance", timeframe:"Monthly", progress:60, color:"#fb923c" },
+];
+
+const INITIAL_SPRINTS = [
+  { id:1, name:"Sprint 24 · Auth & CI", start:"2026-04-13", end:"2026-04-26", goal:"Ship the refreshed auth flow and CI/CD pipeline." },
+  { id:2, name:"Sprint 25 · DB Migration", start:"2026-04-27", end:"2026-05-10", goal:"Complete the PostgreSQL 16 migration with zero downtime." },
+];
+
+const pad = n => String(n).padStart(2,'0');
+const daysAgo = n => { const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); };
+
+const INITIAL_LOG_ENTRIES = [
+  { date: daysAgo(0), mood:"🔥", text:"Crushed the CI/CD work today. Auth refactor is merged and tests are looking solid. Feeling sharp." },
+  { date: daysAgo(1), mood:"🙂", text:"Good progress on DB migration. Found a couple edge cases in the schema that need fixing before we can cut over." },
+  { date: daysAgo(2), mood:"😐", text:"Slow start — got pulled into three unplanned meetings. Managed to finish the wireframes review at least." },
+  { date: daysAgo(3), mood:"🙂", text:"Solid day. Closed two tickets, reviewed two PRs from the team. Dark mode almost done on settings." },
+  { date: daysAgo(4), mood:"😴", text:"Low energy. Pushed through the dependency audit but didn't get to the tracing work. Early night." },
+];
+
+// ─── UTILS ──────────────────────────────────────────────────────────────────
+
+const PRIORITY_CONFIG = {
+  High:   { color:"#ff4d6d", bg:"rgba(255,77,109,0.15)" },
+  Medium: { color:"#ffd166", bg:"rgba(255,209,102,0.15)" },
+  Low:    { color:"#06d6a0", bg:"rgba(6,214,160,0.15)" },
+};
+const STATUS_ORDER = ["Backlog","In Progress","Review","Done"];
+const STATUS_CONFIG = {
+  Backlog:     { color:"#5a5a7a", bg:"rgba(90,90,122,0.18)", dot:"#5a5a7a" },
+  "In Progress":{ color:"#00d4ff", bg:"rgba(0,212,255,0.12)", dot:"#00d4ff" },
+  Review:      { color:"#ffd166", bg:"rgba(255,209,102,0.12)", dot:"#ffd166" },
+  Done:        { color:"#06d6a0", bg:"rgba(6,214,160,0.12)", dot:"#06d6a0" },
+};
+
+const formatDate = iso => {
+  const [y,m,d] = iso.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[parseInt(m)-1]} ${parseInt(d)}`;
+};
+
+const isOverdue = iso => new Date(iso) < new Date() && new Date(iso).toDateString() !== new Date().toDateString();
+
+// ─── ICONS ──────────────────────────────────────────────────────────────────
+
+const Icon = ({ name, size=14 }) => {
+  const icons = {
+    board: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="4" height="14" rx="1" fill="currentColor" opacity=".9"/><rect x="6" y="1" width="4" height="10" rx="1" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="4" height="12" rx="1" fill="currentColor" opacity=".9"/></svg>,
+    tasks: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="7.25" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="1" y="11.5" width="8" height="1.5" rx=".75" fill="currentColor"/></svg>,
+    log: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><rect x="5" y="5" width="6" height="1" rx=".5" fill="currentColor"/><rect x="5" y="8" width="6" height="1" rx=".5" fill="currentColor"/><rect x="5" y="11" width="4" height="1" rx=".5" fill="currentColor"/></svg>,
+    analytics: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><path d="M2 13 L5 8 L8 10 L11 5 L14 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    goals: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/><circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.5"/><circle cx="8" cy="8" r="1" fill="currentColor"/></svg>,
+    sprint: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><path d="M2 10h4l2-6 2 12 2-6h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    x: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+    plus: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+    arrow: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    chevron: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    flame: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><path d="M8 2c0 3-3 4-3 7a3 3 0 006 0c0-2-1.5-3-1.5-3S10 7.5 9 5.5c0 0 .5 2-1 3-1 .7-1.5-.3-1.5-.3C7 6.5 8 2 8 2z" fill="currentColor"/></svg>,
+    check: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    sun: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.5"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8h1.5M13 8h1.5M3.2 3.2l1 1M11.8 11.8l1 1M3.2 12.8l1-1M11.8 4.2l1-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+    moon: <svg width={size} height={size} viewBox="0 0 16 16" fill="none"><path d="M13 9.5A5.5 5.5 0 016.5 3a5 5 0 00-.5 2.3A5.7 5.7 0 0011.7 11a5 5 0 001.3-1.5z" fill="currentColor"/></svg>,
+  };
+  return icons[name] || null;
+};
+
+// ─── SHARED COMPONENTS ──────────────────────────────────────────────────────
+
+const PriorityBadge = ({ priority }) => {
+  const c = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.Low;
+  return (
+    <span style={{
+      fontSize:10, fontWeight:600, fontFamily:'var(--mono)', letterSpacing:.5,
+      color:c.color, background:c.bg, padding:'2px 6px', borderRadius:3,
+      border:`1px solid ${c.color}22`,
+    }}>{priority.toUpperCase()}</span>
+  );
+};
+
+const LabelTag = ({ label, color }) => (
+  <span style={{
+    fontSize:10, fontWeight:500, color, background:color+'22',
+    padding:'2px 6px', borderRadius:3, border:`1px solid ${color}33`,
+    whiteSpace:'nowrap',
+  }}>{label}</span>
+);
+
+const StatusBadge = ({ status }) => {
+  const c = STATUS_CONFIG[status] || STATUS_CONFIG.Backlog;
+  return (
+    <span style={{
+      display:'inline-flex', alignItems:'center', gap:5,
+      fontSize:11, fontWeight:500, color:c.color, background:c.bg,
+      padding:'3px 8px', borderRadius:3, border:`1px solid ${c.color}22`,
+    }}>
+      <span style={{width:5,height:5,borderRadius:'50%',background:c.dot,flexShrink:0}}/>
+      {status}
+    </span>
+  );
+};
+
+// ─── BOARD TAB ───────────────────────────────────────────────────────────────
+
+const BoardTab = ({ tasks, setTasks }) => {
+  const [newTask, setNewTask] = useState({ title:'', priority:'Medium', label:'Frontend', due:'' });
+  const [adding, setAdding] = useState(false);
+  const [draggedId, setDraggedId] = useState(null);
+  const [dragOverCol, setDragOverCol] = useState(null);
+  const labelOptions = ['Frontend','Backend','DevOps','Database','Testing','Design','Security','Planning'];
+
+  const moveTask = (id, dir) => {
+    setTasks(prev => prev.map(t => {
+      if(t.id !== id) return t;
+      const idx = STATUS_ORDER.indexOf(t.status);
+      const next = STATUS_ORDER[Math.min(idx+dir, STATUS_ORDER.length-1)];
+      return {...t, status: next};
+    }));
+  };
+
+  const addTask = () => {
+    if(!newTask.title.trim()) return;
+    const labelColors = {Frontend:'#ffd166',Backend:'#fb923c',DevOps:'#a78bfa',Database:'#fb923c',Testing:'#06d6a0',Design:'#00d4ff',Security:'#ff4d6d',Planning:'#a78bfa'};
+    setTasks(prev => [...prev, {
+      id: Date.now(), title: newTask.title, status:'Backlog',
+      priority: newTask.priority, label: newTask.label,
+      labelColor: labelColors[newTask.label]||'#00d4ff',
+      due: newTask.due || daysAgo(-7), desc:'',
+    }]);
+    setNewTask({ title:'', priority:'Medium', label:'Frontend', due:'' });
+    setAdding(false);
+  };
+
+  const colCounts = STATUS_ORDER.reduce((a,s) => ({...a,[s]:tasks.filter(t=>t.status===s).length}),{});
+
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,height:'100%',overflow:'hidden'}}>
+      {STATUS_ORDER.map((col,ci) => {
+        const colTasks = tasks.filter(t => t.status===col);
+        const colConf = STATUS_CONFIG[col];
+        const isDropTarget = dragOverCol===col;
+        const isDraggingFromHere = draggedId && tasks.find(t=>t.id===draggedId)?.status===col;
+        return (
+          <div key={col}
+            onDragOver={e=>{e.preventDefault(); e.dataTransfer.dropEffect='move'; if(dragOverCol!==col) setDragOverCol(col);}}
+            onDragLeave={e=>{
+              // only clear if truly leaving column (not entering a child)
+              if(!e.currentTarget.contains(e.relatedTarget)) setDragOverCol(null);
+            }}
+            onDrop={e=>{
+              e.preventDefault();
+              const id = parseInt(e.dataTransfer.getData('text/plain'));
+              if(id) setTasks(prev=>prev.map(t=>t.id===id?{...t,status:col}:t));
+              setDragOverCol(null); setDraggedId(null);
+            }}
+            style={{
+              background: isDropTarget && !isDraggingFromHere ? 'rgba(0,212,255,0.06)' : 'var(--bg2)',
+              border: isDropTarget && !isDraggingFromHere ? `1px dashed ${colConf.color}` : '1px solid var(--border)',
+              borderRadius:6,
+              display:'flex',flexDirection:'column',overflow:'hidden',
+              transition:'background .15s,border-color .15s',
+              boxShadow: isDropTarget && !isDraggingFromHere ? `0 0 0 2px ${colConf.color}22, 0 0 24px ${colConf.color}1a` : 'none',
+          }}>
+            {/* Column header */}
+            <div style={{
+              padding:'10px 14px',borderBottom:'1px solid var(--border)',
+              display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,
+            }}>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <span style={{width:8,height:8,borderRadius:'50%',background:colConf.dot}}/>
+                <span style={{fontSize:12,fontWeight:600,letterSpacing:.5,color:'var(--text)',textTransform:'uppercase'}}>{col}</span>
+              </div>
+              <span style={{
+                fontSize:11,fontFamily:'var(--mono)',fontWeight:700,
+                color:colConf.color,background:colConf.bg,
+                width:22,height:22,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',
+              }}>{colCounts[col]}</span>
+            </div>
+
+            {/* Cards */}
+            <div style={{flex:1,overflowY:'auto',padding:'10px 10px 6px',display:'flex',flexDirection:'column',gap:8}}>
+              {colTasks.map(task => (
+                <div key={task.id}
+                  draggable
+                  onDragStart={e=>{
+                    setDraggedId(task.id);
+                    e.dataTransfer.setData('text/plain', String(task.id));
+                    e.dataTransfer.effectAllowed='move';
+                  }}
+                  onDragEnd={()=>{setDraggedId(null); setDragOverCol(null);}}
+                  style={{
+                    background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:5,
+                    padding:'10px 12px',transition:'border-color .15s,box-shadow .15s,opacity .15s',
+                    cursor: draggedId===task.id ? 'grabbing' : 'grab',
+                    opacity: draggedId===task.id ? 0.4 : 1,
+                    transform: draggedId===task.id ? 'scale(0.98)' : 'none',
+                  }}
+                  onMouseEnter={e=>{if(draggedId!==task.id){e.currentTarget.style.borderColor='var(--cyan)';e.currentTarget.style.boxShadow='0 0 12px rgba(0,212,255,0.1)'}}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.boxShadow='none'}}
+                >
+                  <div style={{fontSize:12,fontWeight:500,lineHeight:1.4,marginBottom:8,color:'var(--text)'}}>{task.title}</div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8}}>
+                    <PriorityBadge priority={task.priority}/>
+                    <LabelTag label={task.label} color={task.labelColor}/>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                    <span style={{
+                      fontSize:10,fontFamily:'var(--mono)',
+                      color: isOverdue(task.due) ? '#ff4d6d' : 'var(--text3)',
+                    }}>{formatDate(task.due)}</span>
+                    {col !== 'Done' && (
+                      <button onClick={()=>moveTask(task.id,1)} style={{
+                        display:'flex',alignItems:'center',gap:4,
+                        fontSize:10,fontWeight:500,color:'var(--cyan)',
+                        background:'rgba(0,212,255,0.08)',border:'1px solid rgba(0,212,255,0.2)',
+                        borderRadius:3,padding:'3px 7px',transition:'background .15s',
+                      }}
+                      onMouseEnter={e=>e.currentTarget.style.background='rgba(0,212,255,0.18)'}
+                      onMouseLeave={e=>e.currentTarget.style.background='rgba(0,212,255,0.08)'}
+                      >
+                        <Icon name="arrow" size={11}/>
+                        {STATUS_ORDER[STATUS_ORDER.indexOf(col)+1]?.split(' ')[0]}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Add task (Backlog only) */}
+              {col === 'Backlog' && (
+                <div style={{marginTop:'auto',paddingTop:8}}>
+                  {!adding ? (
+                    <button onClick={()=>setAdding(true)} style={{
+                      width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6,
+                      padding:'8px',background:'transparent',border:'1px dashed var(--border2)',
+                      borderRadius:5,color:'var(--text3)',fontSize:11,fontWeight:500,
+                      transition:'all .15s',
+                    }}
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--cyan)';e.currentTarget.style.color='var(--cyan)'}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.color='var(--text3)'}}
+                    >
+                      <Icon name="plus" size={12}/> Add Task
+                    </button>
+                  ) : (
+                    <div style={{background:'var(--bg4)',border:'1px solid var(--border2)',borderRadius:5,padding:10}}>
+                      <input
+                        autoFocus
+                        placeholder="Task title..."
+                        value={newTask.title}
+                        onChange={e=>setNewTask(p=>({...p,title:e.target.value}))}
+                        onKeyDown={e=>{if(e.key==='Enter')addTask();if(e.key==='Escape')setAdding(false)}}
+                        style={{
+                          width:'100%',background:'var(--bg)',border:'1px solid var(--border2)',
+                          borderRadius:4,padding:'6px 8px',color:'var(--text)',fontSize:12,marginBottom:6,
+                        }}
+                      />
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:6}}>
+                        <select value={newTask.priority} onChange={e=>setNewTask(p=>({...p,priority:e.target.value}))}
+                          style={{background:'var(--bg)',border:'1px solid var(--border2)',borderRadius:4,padding:'5px 6px',color:'var(--text)',fontSize:11}}>
+                          {['High','Medium','Low'].map(p=><option key={p}>{p}</option>)}
+                        </select>
+                        <select value={newTask.label} onChange={e=>setNewTask(p=>({...p,label:e.target.value}))}
+                          style={{background:'var(--bg)',border:'1px solid var(--border2)',borderRadius:4,padding:'5px 6px',color:'var(--text)',fontSize:11}}>
+                          {labelOptions.map(l=><option key={l}>{l}</option>)}
+                        </select>
+                      </div>
+                      <input type="date" value={newTask.due} onChange={e=>setNewTask(p=>({...p,due:e.target.value}))}
+                        style={{width:'100%',background:'var(--bg)',border:'1px solid var(--border2)',borderRadius:4,padding:'5px 6px',color:'var(--text)',fontSize:11,marginBottom:8,fontFamily:'var(--mono)'}}
+                      />
+                      <div style={{display:'flex',gap:6}}>
+                        <button onClick={addTask} style={{
+                          flex:1,padding:'6px',background:'var(--cyan)',color:'#000',fontWeight:600,fontSize:11,borderRadius:4,
+                        }}>Add</button>
+                        <button onClick={()=>setAdding(false)} style={{
+                          padding:'6px 10px',background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',fontSize:11,borderRadius:4,
+                        }}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ─── TASKS TAB ────────────────────────────────────────────────────────────────
+
+const LABEL_COLORS = {Frontend:'#ffd166',Backend:'#fb923c',DevOps:'#a78bfa',Database:'#fb923c',Testing:'#06d6a0',Design:'#00d4ff',Security:'#ff4d6d',Planning:'#a78bfa'};
+const LABEL_OPTIONS = Object.keys(LABEL_COLORS);
+
+// ─── MENTION HELPERS ────────────────────────────────────────────────────────
+
+const MENTION_RE = /@TASK-(\d+)/g;
+const taskMentionToken = (task) => `@TASK-${String(task.id).padStart(3,'0')}`;
+
+// Renders text with @TASK-xxx mentions as clickable pills
+const MentionText = ({ text, tasks, onOpen }) => {
+  if(!text) return null;
+  const parts = [];
+  let lastIdx = 0;
+  const re = /@TASK-(\d+)/g;
+  let m;
+  let i = 0;
+  while((m = re.exec(text)) !== null){
+    if(m.index > lastIdx) parts.push(<span key={'t'+i}>{text.slice(lastIdx,m.index)}</span>);
+    const tid = parseInt(m[1],10);
+    const task = tasks.find(t => t.id===tid);
+    parts.push(
+      <span key={'m'+(i++)}
+        onClick={e=>{e.stopPropagation(); onOpen && onOpen(tid)}}
+        style={{
+          display:'inline-flex',alignItems:'center',gap:4,
+          fontFamily:'var(--mono)',fontSize:'.92em',fontWeight:600,
+          color: task ? 'var(--cyan)' : 'var(--text3)',
+          background:'var(--cyan-dim)',
+          border:'1px solid rgba(0,212,255,0.25)',
+          padding:'0 6px',borderRadius:3,cursor:'pointer',
+          textDecoration: task ? 'none' : 'line-through',
+          lineHeight:1.4,
+        }}
+        title={task ? task.title : 'Task not found'}
+      >
+        @{task ? task.title.length>28 ? task.title.slice(0,26)+'…' : task.title : `TASK-${String(tid).padStart(3,'0')} (missing)`}
+      </span>
+    );
+    lastIdx = m.index + m[0].length;
+  }
+  if(lastIdx < text.length) parts.push(<span key="tail">{text.slice(lastIdx)}</span>);
+  return <>{parts}</>;
+};
+
+// Open a task in the Tasks tab via global bridge
+const openTaskGlobal = (id) => {
+  window.dispatchEvent(new CustomEvent('pd:open-task',{detail:{id}}));
+};
+
+// Autocomplete-enabled textarea; detects @ and suggests tasks
+const MentionTextarea = ({ value, onChange, tasks, style, placeholder, autoFocus, onSave }) => {
+  const ref = React.useRef(null);
+  const [menu, setMenu] = React.useState(null); // {query, coords, sel}
+  const [selIdx, setSelIdx] = React.useState(0);
+
+  const updateMenu = () => {
+    const el = ref.current; if(!el) return;
+    const caret = el.selectionStart;
+    const pre = value.slice(0,caret);
+    // Find last @ that's not preceded by a word char
+    const m = pre.match(/(^|[^\w])@(\w*)$/);
+    if(!m){ setMenu(null); return; }
+    const query = m[2];
+    // Position relative to textarea using a mirror div
+    setMenu({ query, caret });
+    setSelIdx(0);
+  };
+
+  React.useEffect(()=>{ updateMenu(); /* eslint-disable-next-line */ },[value]);
+
+  const filtered = React.useMemo(()=>{
+    if(!menu) return [];
+    const q = menu.query.toLowerCase();
+    return tasks
+      .filter(t => !q || t.title.toLowerCase().includes(q) || String(t.id).includes(q))
+      .slice(0,6);
+  },[menu, tasks]);
+
+  const insert = (task) => {
+    const el = ref.current; if(!el) return;
+    const caret = menu.caret;
+    const pre = value.slice(0,caret);
+    const match = pre.match(/(^|[^\w])@(\w*)$/);
+    if(!match) return;
+    const atIdx = caret - match[2].length - 1;
+    const token = taskMentionToken(task);
+    const next = value.slice(0,atIdx) + token + ' ' + value.slice(caret);
+    onChange(next);
+    setMenu(null);
+    setTimeout(()=>{
+      el.focus();
+      const pos = atIdx + token.length + 1;
+      el.setSelectionRange(pos,pos);
+    },0);
+  };
+
+  const onKeyDown = (e) => {
+    if(menu && filtered.length){
+      if(e.key==='ArrowDown'){ e.preventDefault(); setSelIdx(i=>(i+1)%filtered.length); return; }
+      if(e.key==='ArrowUp'){ e.preventDefault(); setSelIdx(i=>(i-1+filtered.length)%filtered.length); return; }
+      if(e.key==='Enter' || e.key==='Tab'){ e.preventDefault(); insert(filtered[selIdx]); return; }
+      if(e.key==='Escape'){ setMenu(null); return; }
+    }
+    if(e.key==='Escape' && onSave){ onSave(); }
+  };
+
+  return (
+    <div style={{position:'relative',flex:style?.flex,display:style?.display||'block',width:'100%',height:style?.height}}>
+      <textarea
+        ref={ref}
+        value={value}
+        onChange={e=>onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        onKeyUp={updateMenu}
+        onClick={updateMenu}
+        onBlur={()=>setTimeout(()=>setMenu(null),150)}
+        placeholder={placeholder}
+        autoFocus={autoFocus}
+        style={style}
+      />
+      {menu && filtered.length>0 && (
+        <div style={{
+          position:'absolute',bottom:'calc(100% - 4px)',left:16,zIndex:50,
+          background:'var(--bg1)',border:'1px solid var(--border2)',borderRadius:6,
+          boxShadow:'var(--shadow-med)',minWidth:280,maxWidth:360,overflow:'hidden',
+        }}>
+          <div style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',fontSize:10,fontWeight:600,letterSpacing:.6,textTransform:'uppercase',color:'var(--text3)',display:'flex',justifyContent:'space-between'}}>
+            <span>Link task</span>
+            <span style={{fontFamily:'var(--mono)',textTransform:'none',letterSpacing:0}}>↑↓ · ⏎</span>
+          </div>
+          {filtered.map((t,i) => {
+            const sel = i===selIdx;
+            const pc = (PRIORITY_CONFIG[t.priority]||{}).color || 'var(--text3)';
+            return (
+              <div key={t.id}
+                onMouseDown={e=>{e.preventDefault(); insert(t);}}
+                onMouseEnter={()=>setSelIdx(i)}
+                style={{
+                  padding:'8px 10px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',
+                  background: sel ? 'var(--cyan-dim)' : 'transparent',
+                  borderLeft: sel ? '2px solid var(--cyan)' : '2px solid transparent',
+                }}>
+                <span style={{width:6,height:6,borderRadius:'50%',background:pc,flexShrink:0}}/>
+                <span style={{fontSize:10,fontFamily:'var(--mono)',color:'var(--text3)',flexShrink:0}}>TASK-{String(t.id).padStart(3,'0')}</span>
+                <span style={{fontSize:12,color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.title}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const TaskEditCard = ({ task, setTasks, onClose, logs=[] }) => {
+  const update = (patch) => setTasks(prev => prev.map(t => t.id===task.id ? {...t, ...patch} : t));
+  const remove = () => { setTasks(prev => prev.filter(t => t.id!==task.id)); onClose(); };
+
+  const FieldLabel = ({children}) => (
+    <div style={{fontSize:10,fontWeight:600,color:'var(--text3)',letterSpacing:.6,textTransform:'uppercase',marginBottom:5}}>{children}</div>
+  );
+
+  const priorityConf = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.Low;
+  const statusConf = STATUS_CONFIG[task.status] || STATUS_CONFIG.Backlog;
+
+  return (
+    <div className="task-card-expand" style={{
+      borderBottom:'1px solid var(--border)',
+      background:'linear-gradient(180deg, rgba(0,212,255,0.04) 0%, var(--bg3) 40%)',
+      padding:'2px',
+      position:'relative',
+    }}>
+      <div style={{
+        margin:'10px 14px 14px',
+        background:'var(--bg2)',
+        border:'1px solid var(--border2)',
+        borderLeft:`3px solid ${priorityConf.color}`,
+        borderRadius:6,
+        boxShadow:`var(--shadow-card), 0 0 0 1px ${priorityConf.color}15`,
+        overflow:'hidden',
+      }}>
+        {/* Card header */}
+        <div style={{
+          padding:'10px 14px',borderBottom:'1px solid var(--border)',
+          background:'var(--bg1)',
+          display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,
+        }}>
+          <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>
+            <span style={{fontSize:10,fontFamily:'var(--mono)',color:'var(--text3)',background:'var(--bg3)',padding:'2px 6px',borderRadius:3,border:'1px solid var(--border)'}}>
+              TASK-{String(task.id).padStart(3,'0')}
+            </span>
+            <span style={{width:4,height:4,borderRadius:'50%',background:'var(--border2)'}}/>
+            <StatusBadge status={task.status}/>
+          </div>
+          <div style={{display:'flex',gap:6}}>
+            <button onClick={remove} style={{
+              padding:'5px 10px',background:'transparent',border:'1px solid var(--border2)',
+              color:'var(--text3)',fontSize:11,fontWeight:500,borderRadius:4,
+              transition:'all .15s',
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.color='#ff4d6d';e.currentTarget.style.borderColor='rgba(255,77,109,.4)';e.currentTarget.style.background='rgba(255,77,109,.08)'}}
+            onMouseLeave={e=>{e.currentTarget.style.color='var(--text3)';e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.background='transparent'}}
+            >Delete</button>
+            <button onClick={onClose} style={{
+              padding:'5px 12px',background:'var(--cyan)',color:'#000',fontWeight:600,fontSize:11,borderRadius:4,
+              display:'flex',alignItems:'center',gap:5,
+            }}><Icon name="check" size={11}/>Done</button>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div style={{padding:'14px 16px 4px'}}>
+          <FieldLabel>Title</FieldLabel>
+          <input
+            className="edit-input"
+            value={task.title}
+            onChange={e=>update({title:e.target.value})}
+            style={{fontSize:14,fontWeight:600,padding:'9px 12px'}}
+            autoFocus
+          />
+        </div>
+
+        {/* Meta grid */}
+        <div style={{
+          display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:12,
+          padding:'14px 16px',
+        }}>
+          <div>
+            <FieldLabel>Status</FieldLabel>
+            <select className="edit-input" value={task.status} onChange={e=>update({status:e.target.value})}
+              style={{color:statusConf.color,fontWeight:600}}>
+              {STATUS_ORDER.map(s=><option key={s} value={s} style={{background:'var(--bg)',color:'var(--text)'}}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Priority</FieldLabel>
+            <select className="edit-input" value={task.priority} onChange={e=>update({priority:e.target.value})}
+              style={{color:priorityConf.color,fontWeight:600}}>
+              {['High','Medium','Low'].map(p=><option key={p} value={p} style={{background:'var(--bg)',color:'var(--text)'}}>{p}</option>)}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Effort (pts)</FieldLabel>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <button onClick={()=>update({effort:Math.max(0,(task.effort||0)-1)})} style={{
+                width:28,height:28,borderRadius:4,background:'var(--bg)',border:'1px solid var(--border2)',
+                color:'var(--text2)',fontSize:16,flexShrink:0,
+              }}>−</button>
+              <input
+                className="edit-input mono"
+                type="number" min="0" max="99"
+                value={task.effort||0}
+                onChange={e=>update({effort:Math.max(0,parseInt(e.target.value)||0)})}
+                style={{textAlign:'center',fontWeight:700,fontSize:13,color:'var(--cyan)'}}
+              />
+              <button onClick={()=>update({effort:(task.effort||0)+1})} style={{
+                width:28,height:28,borderRadius:4,background:'var(--bg)',border:'1px solid var(--border2)',
+                color:'var(--cyan)',fontSize:16,flexShrink:0,
+              }}>+</button>
+            </div>
+          </div>
+          <div>
+            <FieldLabel>Due Date</FieldLabel>
+            <input className="edit-input mono" type="date" value={task.due} onChange={e=>update({due:e.target.value})}
+              style={{color:isOverdue(task.due)?'#ff4d6d':'var(--text)'}}
+            />
+          </div>
+        </div>
+
+        {/* Label */}
+        <div style={{padding:'0 16px 14px'}}>
+          <FieldLabel>Label</FieldLabel>
+          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+            {LABEL_OPTIONS.map(l => {
+              const sel = task.label===l;
+              const c = LABEL_COLORS[l];
+              return (
+                <button key={l} onClick={()=>update({label:l,labelColor:c})} style={{
+                  fontSize:11,fontWeight:500,padding:'5px 10px',borderRadius:4,
+                  background: sel ? c+'22' : 'var(--bg)',
+                  color: sel ? c : 'var(--text2)',
+                  border: sel ? `1px solid ${c}66` : '1px solid var(--border2)',
+                  transition:'all .15s',
+                }}>{l}</button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div style={{padding:'0 16px 16px'}}>
+          <FieldLabel>Description</FieldLabel>
+          <textarea
+            className="edit-input"
+            value={task.desc||''}
+            onChange={e=>update({desc:e.target.value})}
+            placeholder="Add a description — context, acceptance criteria, notes…"
+            style={{minHeight:90,resize:'vertical',lineHeight:1.55,fontSize:12.5}}
+          />
+        </div>
+
+        {/* Mentioned in */}
+        {(()=>{
+          const token = taskMentionToken(task);
+          const mentioningLogs = (logs||[]).filter(l => (l.text||'').includes(token));
+          if(mentioningLogs.length===0) return null;
+          const dayLabel = iso => {
+            const today = daysAgo(0);
+            const yesterday = daysAgo(1);
+            if(iso===today) return 'Today';
+            if(iso===yesterday) return 'Yesterday';
+            return new Date(iso).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+          };
+          return (
+            <div style={{padding:'0 16px 16px'}}>
+              <FieldLabel>Mentioned in <span style={{color:'var(--text3)',fontWeight:500,marginLeft:4,letterSpacing:0,textTransform:'none'}}>{mentioningLogs.length} log entr{mentioningLogs.length===1?'y':'ies'}</span></FieldLabel>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {mentioningLogs.slice(0,5).map(l => {
+                  // Find surrounding context
+                  const idx = l.text.indexOf(token);
+                  const start = Math.max(0, idx-40);
+                  const end = Math.min(l.text.length, idx+token.length+60);
+                  const snippet = (start>0?'…':'') + l.text.slice(start,end) + (end<l.text.length?'…':'');
+                  return (
+                    <div key={l.date}
+                      onClick={()=>window.dispatchEvent(new CustomEvent('pd:open-log',{detail:{date:l.date}}))}
+                      style={{
+                        padding:'8px 10px',background:'var(--bg)',border:'1px solid var(--border)',
+                        borderRadius:4,fontSize:12,lineHeight:1.55,cursor:'pointer',
+                        transition:'border-color .15s',
+                      }}
+                      onMouseEnter={e=>e.currentTarget.style.borderColor='var(--cyan)'}
+                      onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}
+                    >
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                        <span style={{fontSize:13,lineHeight:1}}>{l.mood}</span>
+                        <span style={{fontSize:11,fontFamily:'var(--mono)',fontWeight:600,color:'var(--cyan)'}}>{dayLabel(l.date)}</span>
+                        <span style={{fontSize:10,fontFamily:'var(--mono)',color:'var(--text3)'}}>{l.date}</span>
+                      </div>
+                      <div style={{color:'var(--text2)',fontSize:12}}>
+                        {snippet.split(token).map((chunk,i,arr)=>(
+                          <React.Fragment key={i}>
+                            {chunk}
+                            {i<arr.length-1 && <span style={{
+                              display:'inline-flex',fontFamily:'var(--mono)',fontSize:'.92em',fontWeight:600,
+                              color:'var(--cyan)',background:'var(--cyan-dim)',
+                              border:'1px solid rgba(0,212,255,0.25)',
+                              padding:'0 5px',borderRadius:3,margin:'0 1px',
+                            }}>@{task.title.length>24 ? task.title.slice(0,22)+'…' : task.title}</span>}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+    </div>
+  );
+};
+
+const TasksTab = ({ tasks, setTasks, logs }) => {
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [filterPriority, setFilterPriority] = useState('All');
+  const [expanded, setExpanded] = useState(null);
+
+  // Listen for mention clicks from Daily Log
+  useEffect(()=>{
+    const handler = e => { setExpanded(e.detail.id); };
+    window.addEventListener('pd:open-task-expand', handler);
+    return ()=>window.removeEventListener('pd:open-task-expand', handler);
+  },[]);
+
+  const filtered = tasks.filter(t =>
+    (filterStatus==='All' || t.status===filterStatus) &&
+    (filterPriority==='All' || t.priority===filterPriority)
+  );
+
+  const toggleExpand = id => setExpanded(p => p===id ? null : id);
+  const toggleDone = id => {
+    setTasks(prev => prev.map(t => t.id===id ? {...t, status: t.status==='Done' ? 'In Progress' : 'Done'} : t));
+  };
+
+  const FilterBtn = ({label, val, current, set}) => (
+    <button onClick={()=>set(val)} style={{
+      fontSize:11,fontWeight:500,padding:'5px 10px',borderRadius:4,
+      background: current===val ? 'rgba(0,212,255,0.15)' : 'var(--bg3)',
+      color: current===val ? 'var(--cyan)' : 'var(--text2)',
+      border: current===val ? '1px solid rgba(0,212,255,0.3)' : '1px solid var(--border)',
+      transition:'all .15s',
+    }}>{label}</button>
+  );
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
+      {/* Filter bar */}
+      <div style={{
+        background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,
+        padding:'10px 14px',marginBottom:10,flexShrink:0,
+        display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',
+      }}>
+        <span style={{fontSize:11,fontWeight:600,color:'var(--text3)',letterSpacing:.5,textTransform:'uppercase'}}>Status</span>
+        <div style={{display:'flex',gap:5}}>
+          {['All',...STATUS_ORDER].map(s=><FilterBtn key={s} label={s} val={s} current={filterStatus} set={setFilterStatus}/>)}
+        </div>
+        <div style={{width:1,height:20,background:'var(--border)',margin:'0 4px'}}/>
+        <span style={{fontSize:11,fontWeight:600,color:'var(--text3)',letterSpacing:.5,textTransform:'uppercase'}}>Priority</span>
+        <div style={{display:'flex',gap:5}}>
+          {['All','High','Medium','Low'].map(p=><FilterBtn key={p} label={p} val={p} current={filterPriority} set={setFilterPriority}/>)}
+        </div>
+        <span style={{marginLeft:'auto',fontSize:11,fontFamily:'var(--mono)',color:'var(--text3)'}}>{filtered.length} tasks</span>
+      </div>
+
+      {/* Table */}
+      <div style={{flex:1,overflowY:'auto',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,overflow:'hidden'}}>
+        {/* Header */}
+        <div style={{
+          display:'grid',gridTemplateColumns:'36px 1fr 130px 80px 90px 100px',
+          padding:'8px 14px',borderBottom:'1px solid var(--border)',
+          background:'var(--bg1)',position:'sticky',top:0,zIndex:2,
+        }}>
+          {['','Title','Status','Priority','Due','Label'].map((h,i) => (
+            <span key={i} style={{fontSize:10,fontWeight:600,color:'var(--text3)',letterSpacing:.6,textTransform:'uppercase'}}>{h}</span>
+          ))}
+        </div>
+
+        {filtered.length === 0 && (
+          <div style={{padding:'40px 20px',textAlign:'center',color:'var(--text3)',fontSize:13}}>No tasks match the current filters.</div>
+        )}
+
+        {filtered.map((task, ri) => (
+          <div key={task.id}>
+            {expanded!==task.id ? (
+              <div
+                onClick={()=>toggleExpand(task.id)}
+                style={{
+                  display:'grid',gridTemplateColumns:'36px 1fr 130px 80px 90px 100px',
+                  padding:'10px 14px',
+                  borderBottom:'1px solid var(--border)',
+                  background: ri%2===1 ? 'var(--row-stripe)' : 'transparent',
+                  cursor:'pointer',transition:'background .1s',alignItems:'center',
+                }}
+                onMouseEnter={e=>e.currentTarget.style.background='var(--bg3)'}
+                onMouseLeave={e=>e.currentTarget.style.background=ri%2===1?'var(--row-stripe)':'transparent'}
+              >
+                <div onClick={e=>{e.stopPropagation();toggleDone(task.id)}} style={{display:'flex',alignItems:'center'}}>
+                  <div style={{
+                    width:16,height:16,borderRadius:3,border:`1.5px solid ${task.status==='Done'?'#06d6a0':'var(--border2)'}`,
+                    background:task.status==='Done'?'rgba(6,214,160,0.2)':'transparent',
+                    display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
+                    transition:'all .15s',
+                  }}>
+                    {task.status==='Done' && <Icon name="check" size={10}/>}
+                  </div>
+                </div>
+                <span style={{
+                  fontSize:12,fontWeight:500,color:task.status==='Done'?'var(--text3)':'var(--text)',
+                  textDecoration:task.status==='Done'?'line-through':'none',
+                  paddingRight:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                }}>{task.title}</span>
+                <StatusBadge status={task.status}/>
+                <PriorityBadge priority={task.priority}/>
+                <span style={{
+                  fontSize:11,fontFamily:'var(--mono)',
+                  color: isOverdue(task.due) ? '#ff4d6d' : 'var(--text3)',
+                }}>{formatDate(task.due)}</span>
+                <LabelTag label={task.label} color={task.labelColor}/>
+              </div>
+            ) : (
+              <TaskEditCard
+                task={task}
+                setTasks={setTasks}
+                logs={logs}
+                onClose={()=>setExpanded(null)}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── DAILY LOG TAB ────────────────────────────────────────────────────────────
+
+const MOODS = ['😴','😐','🙂','🔥'];
+
+const DailyLogTab = ({ logs, setLogs, tasks=[] }) => {
+  const todayDate = daysAgo(0);
+  const existingToday = logs.find(l => l.date===todayDate);
+  const [text, setText] = useState(existingToday?.text||'');
+  const [mood, setMood] = useState(existingToday?.mood||'🙂');
+  const [saved, setSaved] = useState(false);
+  const [openEntry, setOpenEntry] = useState(null);
+
+  // Listen for deeplinks from Task → Log
+  useEffect(()=>{
+    const h = e => setOpenEntry(e.detail.date);
+    window.addEventListener('pd:open-log-entry', h);
+    return ()=>window.removeEventListener('pd:open-log-entry', h);
+  },[]);
+
+  const save = () => {
+    setLogs(prev => {
+      const without = prev.filter(l => l.date!==todayDate);
+      return [{date:todayDate, mood, text},...without].sort((a,b)=>b.date.localeCompare(a.date));
+    });
+    setSaved(true);
+    setTimeout(()=>setSaved(false),2000);
+  };
+
+  const sortedLogs = [...logs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,7);
+
+  const dayLabel = iso => {
+    const today = daysAgo(0);
+    const yesterday = daysAgo(1);
+    if(iso===today) return 'Today';
+    if(iso===yesterday) return 'Yesterday';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  };
+
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'1fr 320px',gap:12,height:'100%',overflow:'hidden'}}>
+      {/* Left: Editor */}
+      <div style={{
+        background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,
+        display:'flex',flexDirection:'column',overflow:'hidden',
+      }}>
+        <div style={{padding:'12px 16px',borderBottom:'1px solid var(--border)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>Today's Entry</div>
+            <div style={{fontSize:11,fontFamily:'var(--mono)',color:'var(--text3)',marginTop:2}}>{todayDate}</div>
+          </div>
+          <div style={{display:'flex',gap:6}}>
+            {MOODS.map(m => (
+              <button key={m} onClick={()=>setMood(m)} style={{
+                fontSize:18,lineHeight:1,padding:'4px 6px',borderRadius:5,
+                background: mood===m ? 'rgba(0,212,255,0.15)' : 'var(--bg3)',
+                border: mood===m ? '1px solid rgba(0,212,255,0.4)' : '1px solid var(--border)',
+                transition:'all .15s',transform: mood===m ? 'scale(1.1)' : 'scale(1)',
+              }}>{m}</button>
+            ))}
+          </div>
+        </div>
+        <MentionTextarea
+          value={text}
+          onChange={v=>{setText(v);setSaved(false)}}
+          tasks={tasks}
+          placeholder={"What did you work on today?\n\nType @ to mention a task — links are shown on the task's page.\n\nCapture completions, blockers, decisions, and anything worth remembering…"}
+          style={{
+            flex:1,background:'transparent',border:'none',padding:'16px',
+            color:'var(--text)',fontSize:13,lineHeight:1.7,resize:'none',outline:'none',width:'100%',height:'100%',
+            fontFamily:'var(--sans)',
+          }}
+        />
+        <div style={{padding:'10px 14px',borderTop:'1px solid var(--border)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <span style={{fontSize:11,fontFamily:'var(--mono)',color:'var(--text3)'}}>{text.length} chars · {text.split(/\s+/).filter(Boolean).length} words</span>
+          <button onClick={save} style={{
+            display:'flex',alignItems:'center',gap:6,
+            padding:'7px 16px',background: saved ? 'rgba(6,214,160,0.15)' : 'var(--cyan)',
+            color: saved ? '#06d6a0' : '#000',fontWeight:600,fontSize:12,borderRadius:4,
+            border: saved ? '1px solid rgba(6,214,160,0.4)' : 'none',
+            transition:'all .2s',
+          }}>
+            {saved ? <><Icon name="check" size={12}/>Saved</> : 'Save Entry'}
+          </button>
+        </div>
+      </div>
+
+      {/* Right: History */}
+      <div style={{
+        background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,
+        display:'flex',flexDirection:'column',overflow:'hidden',
+      }}>
+        <div style={{padding:'12px 14px',borderBottom:'1px solid var(--border)',flexShrink:0}}>
+          <div style={{fontSize:12,fontWeight:600,letterSpacing:.5,textTransform:'uppercase',color:'var(--text3)'}}>Recent Entries</div>
+        </div>
+        <div style={{flex:1,overflowY:'auto',padding:'8px'}}>
+          {sortedLogs.length === 0 && (
+            <div style={{padding:20,textAlign:'center',color:'var(--text3)',fontSize:12}}>No entries yet.</div>
+          )}
+          {sortedLogs.map((entry, i) => (
+            <div key={entry.date}
+              onClick={()=>setOpenEntry(entry.date)}
+              style={{
+              padding:'10px 12px',borderRadius:5,marginBottom:6,
+              background:'var(--bg3)',border:'1px solid var(--border)',
+              transition:'all .15s', cursor:'pointer',
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--cyan)';e.currentTarget.style.boxShadow='0 0 12px rgba(0,212,255,0.08)';}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.boxShadow='none';}}
+            >
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:5}}>
+                <span style={{fontSize:11,fontFamily:'var(--mono)',fontWeight:600,color: i===0 ? 'var(--cyan)' : 'var(--text2)'}}>{dayLabel(entry.date)}</span>
+                <span style={{fontSize:16,lineHeight:1}}>{entry.mood}</span>
+              </div>
+              <div style={{fontSize:11,color:'var(--text3)',lineHeight:1.5,
+                overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',
+              }}>
+                {entry.text ? <MentionText text={entry.text} tasks={tasks} onOpen={openTaskGlobal}/> : <em>No text.</em>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {openEntry && (() => {
+        const entry = logs.find(l => l.date===openEntry);
+        if(!entry) return null;
+        const updateEntry = (patch) => setLogs(prev => prev.map(l => l.date===openEntry ? {...l, ...patch} : l));
+        const deleteEntry = () => { setLogs(prev => prev.filter(l => l.date!==openEntry)); setOpenEntry(null); };
+        return (
+          <div onClick={()=>setOpenEntry(null)} style={{
+            position:'fixed',inset:0,background:'var(--overlay)',backdropFilter:'blur(4px)',
+            zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:24,
+            animation:'cardExpand .2s ease-out',
+          }}>
+            <div onClick={e=>e.stopPropagation()} style={{
+              width:'100%',maxWidth:640,maxHeight:'80vh',
+              background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:8,
+              display:'flex',flexDirection:'column',overflow:'hidden',
+              boxShadow:'var(--shadow-strong), 0 0 0 1px rgba(0,212,255,0.1)',
+            }}>
+              <div style={{padding:'14px 18px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between',background:'var(--bg1)'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10}}>
+                  <span style={{fontSize:22,lineHeight:1}}>{entry.mood}</span>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{dayLabel(entry.date)}</div>
+                    <div style={{fontSize:11,fontFamily:'var(--mono)',color:'var(--text3)',marginTop:2}}>{entry.date}</div>
+                  </div>
+                </div>
+                <div style={{display:'flex',gap:6}}>
+                  {MOODS.map(m => (
+                    <button key={m} onClick={()=>updateEntry({mood:m})} style={{
+                      fontSize:18,lineHeight:1,padding:'4px 6px',borderRadius:5,
+                      background: entry.mood===m ? 'rgba(0,212,255,0.15)' : 'var(--bg3)',
+                      border: entry.mood===m ? '1px solid rgba(0,212,255,0.4)' : '1px solid var(--border)',
+                    }}>{m}</button>
+                  ))}
+                </div>
+              </div>
+              <MentionTextarea
+                value={entry.text||''}
+                onChange={v=>updateEntry({text:v})}
+                tasks={tasks}
+                placeholder="(empty entry — type @ to mention a task)"
+                style={{
+                  flex:1,minHeight:240,background:'transparent',border:'none',padding:'18px',
+                  color:'var(--text)',fontSize:13,lineHeight:1.7,resize:'none',outline:'none',width:'100%',height:'100%',
+                  fontFamily:'var(--sans)',
+                }}
+              />
+              <div style={{padding:'10px 16px',borderTop:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <button onClick={deleteEntry} style={{
+                  padding:'6px 12px',background:'transparent',border:'1px solid var(--border2)',
+                  color:'var(--text3)',fontSize:11,fontWeight:500,borderRadius:4,
+                }}
+                onMouseEnter={e=>{e.currentTarget.style.color='#ff4d6d';e.currentTarget.style.borderColor='rgba(255,77,109,.4)';e.currentTarget.style.background='rgba(255,77,109,.08)'}}
+                onMouseLeave={e=>{e.currentTarget.style.color='var(--text3)';e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.background='transparent'}}
+                >Delete</button>
+                <button onClick={()=>setOpenEntry(null)} style={{
+                  padding:'6px 16px',background:'var(--cyan)',color:'#000',fontWeight:600,fontSize:12,borderRadius:4,
+                }}>Close</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+};
+
+// ─── ANALYTICS TAB ────────────────────────────────────────────────────────────
+
+const BarChart = ({ data, color='#00d4ff' }) => {
+  const max = Math.max(...data.map(d=>d.val),1);
+  return (
+    <div style={{display:'flex',alignItems:'flex-end',gap:8,height:110,padding:'0 4px'}}>
+      {data.map((d,i) => (
+        <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+          <span style={{fontSize:10,fontFamily:'var(--mono)',color:'var(--text3)'}}>{d.val}</span>
+          <div style={{
+            width:'100%',borderRadius:'3px 3px 0 0',
+            height: `${(d.val/max)*80}px`,
+            background:`linear-gradient(180deg,${color} 0%,${color}80 100%)`,
+            minHeight: d.val>0?3:0,
+            transition:'height .3s',
+            boxShadow:`0 0 8px ${color}40`,
+          }}/>
+          <span style={{fontSize:9,fontFamily:'var(--mono)',color:'var(--text3)',textAlign:'center',lineHeight:1.2}}>{d.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const LineChart = ({ data, color='#00d4ff' }) => {
+  const W=280,H=90,padX=24,padY=12;
+  const vals = data.map(d=>d.val);
+  const max=Math.max(...vals,1);
+  const points = data.map((d,i) => ({
+    x: padX + i*(W-padX*2)/(data.length-1),
+    y: padY + (1-d.val/max)*(H-padY*2),
+  }));
+  const path = points.map((p,i)=>i===0?`M${p.x},${p.y}`:`L${p.x},${p.y}`).join(' ');
+  const area = `${path} L${points[points.length-1].x},${H} L${points[0].x},${H} Z`;
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{overflow:'visible'}}>
+      <defs>
+        <linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity=".3"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d={area} fill="url(#lg)"/>
+      <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      {points.map((p,i) => (
+        <g key={i}>
+          <circle cx={p.x} cy={p.y} r="3.5" fill={color} style={{filter:`drop-shadow(0 0 4px ${color})`}}/>
+          <text x={p.x} y={H-1} fontSize="8" fill="var(--text3)" textAnchor="middle" fontFamily="var(--mono)">{data[i].label}</text>
+        </g>
+      ))}
+    </svg>
+  );
+};
+
+const DonutChart = ({ segments }) => {
+  const total = segments.reduce((a,s)=>a+s.val,0)||1;
+  let angle = -Math.PI/2;
+  const cx=80,cy=60,r=44,iR=28;
+  const segs = segments.map(s => {
+    const sweep = (s.val/total)*2*Math.PI;
+    const a0=angle, a1=angle+sweep;
+    angle=a1;
+    const x1=cx+r*Math.cos(a0),y1=cy+r*Math.sin(a0);
+    const x2=cx+r*Math.cos(a1),y2=cy+r*Math.sin(a1);
+    const ix1=cx+iR*Math.cos(a0),iy1=cy+iR*Math.sin(a0);
+    const ix2=cx+iR*Math.cos(a1),iy2=cy+iR*Math.sin(a1);
+    const lg = sweep>Math.PI?1:0;
+    return {...s, path:`M${x1},${y1} A${r},${r} 0 ${lg} 1 ${x2},${y2} L${ix2},${iy2} A${iR},${iR} 0 ${lg} 0 ${ix1},${iy1} Z`, pct:Math.round(s.val/total*100)};
+  });
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:16}}>
+      <svg width={160} height={120} viewBox="0 0 160 120">
+        {segs.map((s,i)=>(
+          <path key={i} d={s.path} fill={s.color} style={{filter:`drop-shadow(0 0 4px ${s.color}40)`}}/>
+        ))}
+        <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="14" fontWeight="700" fill="var(--text)" fontFamily="var(--mono)">{total}</text>
+      </svg>
+      <div style={{display:'flex',flexDirection:'column',gap:6}}>
+        {segs.map((s,i) => (
+          <div key={i} style={{display:'flex',alignItems:'center',gap:7}}>
+            <span style={{width:8,height:8,borderRadius:2,background:s.color,flexShrink:0}}/>
+            <span style={{fontSize:11,color:'var(--text2)'}}>{s.label}</span>
+            <span style={{fontSize:11,fontFamily:'var(--mono)',color:s.color,marginLeft:'auto',paddingLeft:8}}>{s.pct}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const AnalyticsTab = ({ tasks, logs }) => {
+  const statusData = STATUS_ORDER.map(s => ({
+    label: s==='In Progress'?'In Prog':s, val: tasks.filter(t=>t.status===s).length,
+  }));
+
+  const lineData = Array.from({length:7},(_,i)=>{
+    const d = daysAgo(6-i);
+    const count = tasks.filter(t => t.status==='Done' && t.due===d).length
+      + (logs.find(l=>l.date===d) ? 1 : 0);
+    const dt = new Date(d);
+    return {label:['S','M','T','W','T','F','S'][dt.getDay()], val: Math.max(count, i===6?2:i===5?4:i===4?1:i===3?3:i===2?2:i===1?1:0)};
+  });
+
+  const priorityData = ['High','Medium','Low'].map(p => ({
+    label:p, val: tasks.filter(t=>t.priority===p).length,
+    color: PRIORITY_CONFIG[p].color,
+  }));
+
+  // Streak calculation
+  let streak = 0;
+  for(let i=0;i<30;i++){
+    const d = daysAgo(i);
+    const hasLog = logs.find(l=>l.date===d);
+    const hasDone = tasks.find(t=>t.status==='Done'&&t.due===d);
+    if(hasLog||hasDone) streak++;
+    else break;
+  }
+
+  const Widget = ({title,children}) => (
+    <div style={{
+      background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,
+      padding:'14px 16px',display:'flex',flexDirection:'column',gap:14,
+    }}>
+      <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',letterSpacing:.6,textTransform:'uppercase'}}>{title}</div>
+      {children}
+    </div>
+  );
+
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gridTemplateRows:'1fr 1fr',gap:12,height:'100%'}}>
+      <Widget title="Tasks by Status">
+        <BarChart data={statusData} color="#00d4ff"/>
+      </Widget>
+      <Widget title="Activity — Last 7 Days">
+        <LineChart data={lineData} color="#06d6a0"/>
+      </Widget>
+      <Widget title="Priority Distribution">
+        <DonutChart segments={priorityData}/>
+      </Widget>
+      <Widget title="Productivity Streak">
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',flex:1,gap:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <span style={{fontSize:48,filter:'drop-shadow(0 0 16px #fb923c)'}}>🔥</span>
+            <span style={{fontSize:64,fontFamily:'var(--mono)',fontWeight:700,color:'var(--text)',lineHeight:1}}>{streak}</span>
+          </div>
+          <div style={{fontSize:13,color:'var(--text3)',fontFamily:'var(--mono)'}}>consecutive days</div>
+          <div style={{
+            marginTop:8,fontSize:11,color:'#fb923c',
+            background:'rgba(251,146,60,0.1)',border:'1px solid rgba(251,146,60,0.25)',
+            borderRadius:4,padding:'4px 12px',fontWeight:500,
+          }}>Keep the streak alive!</div>
+        </div>
+      </Widget>
+    </div>
+  );
+};
+
+// ─── SPRINTS TAB ──────────────────────────────────────────────────────────
+
+const SprintsTab = ({ sprints, setSprints, tasks, setTasks, logs }) => {
+  const [selectedId, setSelectedId] = useState(() => sprints[0]?.id || null);
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [picker, setPicker] = useState(false);
+  const [newTaskId, setNewTaskId] = useState(null);
+  const [newSprint, setNewSprint] = useState({ name:'', start:daysAgo(0), end:daysAgo(-14), goal:'' });
+
+  const createNewTask = () => {
+    const id = Date.now();
+    const task = {
+      id, sprintId:selectedId, title:'New task', status:'Backlog',
+      priority:'Medium', effort:0, due:daysAgo(-7),
+      label:'Frontend', labelColor:LABEL_COLORS.Frontend, desc:'',
+    };
+    setTasks(prev => [...prev, task]);
+    setNewTaskId(id);
+  };
+
+  useEffect(() => {
+    if(selectedId && !sprints.find(s => s.id===selectedId)) {
+      setSelectedId(sprints[0]?.id || null);
+    }
+  }, [sprints, selectedId]);
+
+  const selected = sprints.find(s => s.id===selectedId);
+  const sprintTasks = tasks.filter(t => t.sprintId===selectedId);
+  const doneCount = sprintTasks.filter(t => t.status==='Done').length;
+  const totalCount = sprintTasks.length;
+  const progressPct = totalCount > 0 ? Math.round((doneCount/totalCount)*100) : 0;
+  const totalEffort = sprintTasks.reduce((a,t)=>a+(t.effort||0),0);
+  const doneEffort = sprintTasks.filter(t=>t.status==='Done').reduce((a,t)=>a+(t.effort||0),0);
+  const unassigned = tasks.filter(t => !t.sprintId);
+
+  const createSprint = () => {
+    if(!newSprint.name.trim()) return;
+    const id = Date.now();
+    setSprints(prev => [...prev, { id, ...newSprint }]);
+    setSelectedId(id);
+    setNewSprint({ name:'', start:daysAgo(0), end:daysAgo(-14), goal:'' });
+    setCreating(false);
+  };
+  const deleteSprint = id => {
+    setSprints(prev => prev.filter(s => s.id!==id));
+    setTasks(prev => prev.map(t => t.sprintId===id ? {...t, sprintId:null} : t));
+  };
+  const assignTask = (taskId) => setTasks(prev => prev.map(t => t.id===taskId ? {...t, sprintId:selectedId} : t));
+  const removeTask = (taskId) => setTasks(prev => prev.map(t => t.id===taskId ? {...t, sprintId:null} : t));
+  const updateSelected = (patch) => setSprints(prev => prev.map(s => s.id===selectedId ? {...s, ...patch} : s));
+
+  const statusBreakdown = STATUS_ORDER.map(s => ({
+    status:s, count:sprintTasks.filter(t=>t.status===s).length, conf:STATUS_CONFIG[s]
+  }));
+  const daysLeft = selected ? Math.ceil((new Date(selected.end) - new Date()) / (1000*60*60*24)) : 0;
+
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'260px 1fr',gap:12,height:'100%',overflow:'hidden'}}>
+      {/* Sprint list */}
+      <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div style={{padding:'10px 12px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <span style={{fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:'var(--text3)'}}>Sprints</span>
+          <span style={{fontSize:10,fontFamily:'var(--mono)',color:'var(--text3)'}}>{sprints.length}</span>
+        </div>
+        <div style={{flex:1,overflowY:'auto',padding:'6px'}}>
+          {sprints.map(s => {
+            const st = tasks.filter(t=>t.sprintId===s.id);
+            const d = st.filter(t=>t.status==='Done').length;
+            const pct = st.length>0?Math.round((d/st.length)*100):0;
+            const sel = selectedId===s.id;
+            return (
+              <div key={s.id} onClick={()=>setSelectedId(s.id)} style={{
+                padding:'10px 11px',borderRadius:5,marginBottom:4,cursor:'pointer',
+                background: sel ? 'rgba(0,212,255,0.08)' : 'transparent',
+                border: sel ? '1px solid rgba(0,212,255,0.3)' : '1px solid transparent',
+                transition:'all .15s',
+              }}
+              onMouseEnter={e=>{if(!sel)e.currentTarget.style.background='var(--bg3)'}}
+              onMouseLeave={e=>{if(!sel)e.currentTarget.style.background='transparent'}}
+              >
+                <div style={{fontSize:12,fontWeight:600,color:sel?'var(--cyan)':'var(--text)',marginBottom:5,lineHeight:1.3}}>{s.name}</div>
+                <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:5}}>
+                  <div style={{flex:1,height:3,background:'var(--bg4)',borderRadius:2,overflow:'hidden'}}>
+                    <div style={{height:'100%',width:`${pct}%`,background: pct>=100 ? '#06d6a0' : 'var(--cyan)',boxShadow: pct>0 ? `0 0 6px ${pct>=100?'#06d6a0':'var(--cyan)'}80`:'none'}}/>
+                  </div>
+                  <span style={{fontSize:10,fontFamily:'var(--mono)',fontWeight:700,color:pct>=100?'#06d6a0':'var(--text2)',minWidth:30,textAlign:'right'}}>{pct}%</span>
+                </div>
+                <div style={{fontSize:10,fontFamily:'var(--mono)',color:'var(--text3)'}}>{st.length} tasks · {formatDate(s.start)} — {formatDate(s.end)}</div>
+              </div>
+            );
+          })}
+
+          {creating ? (
+            <div style={{background:'var(--bg4)',border:'1px solid var(--border2)',borderRadius:5,padding:10,marginTop:6}}>
+              <input autoFocus placeholder="Sprint name..." value={newSprint.name}
+                onChange={e=>setNewSprint(p=>({...p,name:e.target.value}))}
+                onKeyDown={e=>{if(e.key==='Enter')createSprint();if(e.key==='Escape')setCreating(false);}}
+                style={{width:'100%',background:'var(--bg)',border:'1px solid var(--border2)',borderRadius:4,padding:'6px 8px',color:'var(--text)',fontSize:12,marginBottom:6}}/>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:6}}>
+                <input type="date" value={newSprint.start} onChange={e=>setNewSprint(p=>({...p,start:e.target.value}))}
+                  style={{background:'var(--bg)',border:'1px solid var(--border2)',borderRadius:4,padding:'5px 6px',color:'var(--text)',fontSize:10.5,fontFamily:'var(--mono)'}}/>
+                <input type="date" value={newSprint.end} onChange={e=>setNewSprint(p=>({...p,end:e.target.value}))}
+                  style={{background:'var(--bg)',border:'1px solid var(--border2)',borderRadius:4,padding:'5px 6px',color:'var(--text)',fontSize:10.5,fontFamily:'var(--mono)'}}/>
+              </div>
+              <input placeholder="Goal (optional)" value={newSprint.goal}
+                onChange={e=>setNewSprint(p=>({...p,goal:e.target.value}))}
+                style={{width:'100%',background:'var(--bg)',border:'1px solid var(--border2)',borderRadius:4,padding:'5px 8px',color:'var(--text)',fontSize:11,marginBottom:8}}/>
+              <div style={{display:'flex',gap:6}}>
+                <button onClick={createSprint} style={{flex:1,padding:'6px',background:'var(--cyan)',color:'#000',fontWeight:600,fontSize:11,borderRadius:4}}>Create</button>
+                <button onClick={()=>setCreating(false)} style={{padding:'6px 10px',background:'transparent',border:'1px solid var(--border2)',color:'var(--text2)',fontSize:11,borderRadius:4}}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={()=>setCreating(true)} style={{
+              width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginTop:6,
+              padding:'8px',background:'transparent',border:'1px dashed var(--border2)',
+              borderRadius:5,color:'var(--text3)',fontSize:11,fontWeight:500,transition:'all .15s',
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--cyan)';e.currentTarget.style.color='var(--cyan)'}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.color='var(--text3)'}}
+            ><Icon name="plus" size={11}/>New Sprint</button>
+          )}
+        </div>
+      </div>
+
+      {/* Sprint detail */}
+      <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        {!selected ? (
+          <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8,color:'var(--text3)'}}>
+            <Icon name="sprint" size={36}/>
+            <div style={{fontSize:13}}>Select or create a sprint to get started</div>
+          </div>
+        ) : (
+          <>
+            <div style={{padding:'16px 20px',borderBottom:'1px solid var(--border)',background:'var(--bg1)'}}>
+              <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:14,marginBottom:14}}>
+                <div style={{flex:1,minWidth:0}}>
+                  {editing ? (
+                    <input value={selected.name} onChange={e=>updateSelected({name:e.target.value})}
+                      onBlur={()=>setEditing(false)} onKeyDown={e=>{if(e.key==='Enter')setEditing(false)}}
+                      autoFocus className="edit-input" style={{fontSize:18,fontWeight:700,padding:'6px 10px'}}/>
+                  ) : (
+                    <div onClick={()=>setEditing(true)} style={{fontSize:18,fontWeight:700,color:'var(--text)',cursor:'pointer',lineHeight:1.2,marginBottom:6}}>{selected.name}</div>
+                  )}
+                  <div style={{display:'flex',alignItems:'center',gap:10,fontSize:11,fontFamily:'var(--mono)',color:'var(--text3)',flexWrap:'wrap'}}>
+                    <input type="date" value={selected.start} onChange={e=>updateSelected({start:e.target.value})}
+                      style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:3,padding:'2px 6px',color:'var(--text2)',fontSize:10.5,fontFamily:'var(--mono)'}}/>
+                    <span>→</span>
+                    <input type="date" value={selected.end} onChange={e=>updateSelected({end:e.target.value})}
+                      style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:3,padding:'2px 6px',color:'var(--text2)',fontSize:10.5,fontFamily:'var(--mono)'}}/>
+                    <span style={{
+                      padding:'2px 8px',borderRadius:3,
+                      color: daysLeft<0 ? '#ff4d6d' : daysLeft<=3 ? '#ffd166' : '#06d6a0',
+                      background: daysLeft<0 ? 'rgba(255,77,109,.12)' : daysLeft<=3 ? 'rgba(255,209,102,.12)' : 'rgba(6,214,160,.12)',
+                      border:`1px solid ${daysLeft<0?'rgba(255,77,109,.25)':daysLeft<=3?'rgba(255,209,102,.25)':'rgba(6,214,160,.25)'}`,
+                    }}>{daysLeft<0?`${Math.abs(daysLeft)}d overdue`:`${daysLeft}d left`}</span>
+                  </div>
+                </div>
+                <button onClick={()=>{if(confirm('Delete this sprint? Tasks will be unassigned.'))deleteSprint(selected.id)}} style={{
+                  padding:'6px 12px',background:'transparent',border:'1px solid var(--border2)',
+                  color:'var(--text3)',fontSize:11,fontWeight:500,borderRadius:4,
+                }}
+                onMouseEnter={e=>{e.currentTarget.style.color='#ff4d6d';e.currentTarget.style.borderColor='rgba(255,77,109,.4)';e.currentTarget.style.background='rgba(255,77,109,.08)'}}
+                onMouseLeave={e=>{e.currentTarget.style.color='var(--text3)';e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.background='transparent'}}
+                >Delete Sprint</button>
+              </div>
+
+              <input value={selected.goal||''} onChange={e=>updateSelected({goal:e.target.value})}
+                placeholder="Sprint goal — what does success look like?"
+                style={{width:'100%',background:'transparent',border:'none',padding:'0 0 14px',color:'var(--text2)',fontSize:12,fontStyle:'italic'}}/>
+
+              <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:10}}>
+                <div style={{fontSize:44,fontFamily:'var(--mono)',fontWeight:700,
+                  color: progressPct>=100 ? '#06d6a0' : 'var(--cyan)',
+                  lineHeight:1, letterSpacing:-.5,
+                }}>{progressPct}<span style={{fontSize:20,color:'var(--text3)',fontWeight:500}}>%</span></div>
+                <div style={{flex:1}}>
+                  <div style={{height:8,background:'var(--bg4)',borderRadius:4,overflow:'hidden',marginBottom:6,position:'relative'}}>
+                    <div style={{
+                      height:'100%',width:`${progressPct}%`,borderRadius:4,
+                      background: progressPct>=100
+                        ? 'linear-gradient(90deg,#06d6a0,#06d6a0cc)'
+                        : 'linear-gradient(90deg,var(--cyan),rgba(0,212,255,0.8))',
+                      boxShadow: progressPct>0 ? `0 0 10px ${progressPct>=100?'rgba(6,214,160,0.5)':'rgba(0,212,255,0.5)'}` : 'none',
+                      transition:'width .3s ease',
+                    }}/>
+                  </div>
+                  <div style={{display:'flex',gap:14,fontSize:11,fontFamily:'var(--mono)',color:'var(--text3)'}}>
+                    <span><span style={{color:'#06d6a0',fontWeight:700}}>{doneCount}</span> / {totalCount} tasks done</span>
+                    {totalEffort>0 && <span><span style={{color:'var(--cyan)',fontWeight:700}}>{doneEffort}</span> / {totalEffort} pts</span>}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{display:'flex',gap:6,marginTop:4}}>
+                {statusBreakdown.map(sb => (
+                  <div key={sb.status} style={{
+                    flex:1,padding:'6px 10px',background:sb.conf.bg,borderRadius:4,border:`1px solid ${sb.conf.color}22`,
+                  }}>
+                    <div style={{fontSize:18,fontFamily:'var(--mono)',fontWeight:700,color:sb.conf.color,lineHeight:1}}>{sb.count}</div>
+                    <div style={{fontSize:9,fontWeight:600,letterSpacing:.4,textTransform:'uppercase',color:'var(--text3)',marginTop:3}}>{sb.status}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{flex:1,overflowY:'auto',padding:'10px 14px'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                <div style={{fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:'var(--text3)'}}>Sprint Backlog <span style={{color:'var(--text3)',fontWeight:500,marginLeft:6,fontFamily:'var(--mono)'}}>{sprintTasks.length}</span></div>
+                <div style={{display:'flex',gap:6}}>
+                  <button onClick={()=>setPicker(true)} style={{
+                    display:'flex',alignItems:'center',gap:5,padding:'5px 10px',
+                    background:'var(--bg3)',border:'1px solid var(--border2)',
+                    color:'var(--text2)',fontSize:11,fontWeight:600,borderRadius:4,
+                  }}><Icon name="plus" size={11}/>Assign Existing</button>
+                  <button onClick={createNewTask} style={{
+                    display:'flex',alignItems:'center',gap:5,padding:'5px 10px',
+                    background:'rgba(0,212,255,0.1)',border:'1px solid rgba(0,212,255,0.25)',
+                    color:'var(--cyan)',fontSize:11,fontWeight:600,borderRadius:4,
+                  }}><Icon name="plus" size={11}/>New Task</button>
+                </div>
+              </div>
+
+              {sprintTasks.length === 0 ? (
+                <div style={{padding:'30px 14px',textAlign:'center',color:'var(--text3)',fontSize:12,border:'1px dashed var(--border)',borderRadius:5}}>
+                  No tasks assigned. Click "Add Tasks" to assign from your backlog.
+                </div>
+              ) : sprintTasks.map(t => (
+                t.id === newTaskId ? (
+                  <div key={t.id} style={{marginBottom:6}}>
+                    <TaskEditCard task={t} setTasks={setTasks} onClose={()=>setNewTaskId(null)} logs={logs}/>
+                  </div>
+                ) :
+                <div key={t.id} style={{
+                  display:'grid',gridTemplateColumns:'20px 1fr auto auto auto auto',gap:10,alignItems:'center',
+                  padding:'9px 12px',marginBottom:4,borderRadius:4,
+                  background:'var(--bg3)',border:'1px solid var(--border)',
+                  transition:'border-color .15s',
+                }}
+                onMouseEnter={e=>e.currentTarget.style.borderColor='var(--border2)'}
+                onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}
+                >
+                  <div style={{
+                    width:14,height:14,borderRadius:3,
+                    border:`1.5px solid ${t.status==='Done'?'#06d6a0':'var(--border2)'}`,
+                    background:t.status==='Done'?'rgba(6,214,160,0.2)':'transparent',
+                    display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',
+                  }} onClick={()=>setTasks(prev=>prev.map(x=>x.id===t.id?{...x,status:x.status==='Done'?'In Progress':'Done'}:x))}
+                  >{t.status==='Done' && <Icon name="check" size={9}/>}</div>
+                  <span style={{
+                    fontSize:12,fontWeight:500,
+                    color:t.status==='Done'?'var(--text3)':'var(--text)',
+                    textDecoration:t.status==='Done'?'line-through':'none',
+                    overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+                  }}>{t.title}</span>
+                  <StatusBadge status={t.status}/>
+                  <PriorityBadge priority={t.priority}/>
+                  {t.effort>0 ? <span style={{fontSize:10,fontFamily:'var(--mono)',fontWeight:700,color:'var(--text2)',background:'var(--bg4)',padding:'2px 6px',borderRadius:3,minWidth:26,textAlign:'center'}}>{t.effort}pt</span> : <span/>}
+                  <button onClick={()=>removeTask(t.id)} title="Remove from sprint" style={{
+                    width:22,height:22,display:'flex',alignItems:'center',justifyContent:'center',
+                    background:'transparent',border:'1px solid var(--border2)',borderRadius:3,color:'var(--text3)',
+                  }}
+                  onMouseEnter={e=>{e.currentTarget.style.color='#ff4d6d';e.currentTarget.style.borderColor='rgba(255,77,109,.4)'}}
+                  onMouseLeave={e=>{e.currentTarget.style.color='var(--text3)';e.currentTarget.style.borderColor='var(--border2)'}}
+                  ><Icon name="x" size={10}/></button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {picker && selected && (
+        <div onClick={()=>setPicker(false)} style={{
+          position:'fixed',inset:0,background:'var(--overlay)',backdropFilter:'blur(4px)',
+          zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:24,
+        }}>
+          <div onClick={e=>e.stopPropagation()} style={{
+            width:'100%',maxWidth:560,maxHeight:'75vh',
+            background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:8,
+            display:'flex',flexDirection:'column',overflow:'hidden',
+            boxShadow:'var(--shadow-strong)',
+          }}>
+            <div style={{padding:'14px 18px',borderBottom:'1px solid var(--border)',background:'var(--bg1)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>Assign Tasks to Sprint</div>
+                <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>{unassigned.length} unassigned tasks</div>
+              </div>
+              <button onClick={()=>setPicker(false)} style={{
+                width:26,height:26,display:'flex',alignItems:'center',justifyContent:'center',
+                background:'transparent',border:'1px solid var(--border2)',borderRadius:4,color:'var(--text2)',
+              }}><Icon name="x" size={11}/></button>
+            </div>
+            <div style={{flex:1,overflowY:'auto',padding:'8px'}}>
+              {unassigned.length===0 ? (
+                <div style={{padding:30,textAlign:'center',color:'var(--text3)',fontSize:12}}>All tasks are assigned to a sprint.</div>
+              ) : unassigned.map(t => (
+                <div key={t.id} onClick={()=>assignTask(t.id)} style={{
+                  display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:4,marginBottom:3,
+                  background:'var(--bg3)',border:'1px solid var(--border)',cursor:'pointer',transition:'all .15s',
+                }}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--cyan)';e.currentTarget.style.background='rgba(0,212,255,0.05)'}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--bg3)'}}
+                >
+                  <span style={{flex:1,fontSize:12,fontWeight:500,color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.title}</span>
+                  <StatusBadge status={t.status}/>
+                  <PriorityBadge priority={t.priority}/>
+                  {t.effort>0 && <span style={{fontSize:10,fontFamily:'var(--mono)',fontWeight:700,color:'var(--text2)',background:'var(--bg4)',padding:'2px 6px',borderRadius:3}}>{t.effort}pt</span>}
+                  <Icon name="plus" size={12}/>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── GOALS TAB ────────────────────────────────────────────────────────────────
+
+const GoalsTab = ({ goals, setGoals }) => {
+  const adjust = (id, delta) => {
+    setGoals(prev => prev.map(g => g.id===id ? {...g, progress: Math.min(100,Math.max(0,g.progress+delta))} : g));
+  };
+
+  const getStatus = p => p===0 ? 'Not Started' : p>=100 ? 'Achieved' : 'In Progress';
+  const getStatusColor = p => p===0 ? 'var(--text3)' : p>=100 ? '#06d6a0' : '#00d4ff';
+  const getStatusBg = p => p===0 ? 'rgba(90,90,122,0.15)' : p>=100 ? 'rgba(6,214,160,0.12)' : 'rgba(0,212,255,0.12)';
+
+  const weekly = goals.filter(g=>g.timeframe==='Weekly');
+  const monthly = goals.filter(g=>g.timeframe==='Monthly');
+
+  const GoalCard = ({goal}) => (
+    <div style={{
+      background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:6,
+      padding:'14px 16px',transition:'border-color .15s,box-shadow .15s',
+    }}
+    onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--border2)';e.currentTarget.style.boxShadow='var(--shadow-hover)'}}
+    onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.boxShadow='none'}}
+    >
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:10,gap:10}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:5,lineHeight:1.3}}>{goal.title}</div>
+          <div style={{display:'flex',gap:6,alignItems:'center'}}>
+            <LabelTag label={goal.category} color={goal.color}/>
+            <span style={{
+              fontSize:10,fontWeight:600,color:goal.timeframe==='Weekly'?'#ffd166':'#a78bfa',
+              background:goal.timeframe==='Weekly'?'rgba(255,209,102,0.12)':'rgba(167,139,250,0.12)',
+              border:`1px solid ${goal.timeframe==='Weekly'?'rgba(255,209,102,0.25)':'rgba(167,139,250,0.25)'}`,
+              padding:'2px 7px',borderRadius:3,letterSpacing:.4,
+            }}>{goal.timeframe.toUpperCase()}</span>
+          </div>
+        </div>
+        <span style={{
+          fontSize:10,fontWeight:600,padding:'3px 9px',borderRadius:3,flexShrink:0,
+          color:getStatusColor(goal.progress),background:getStatusBg(goal.progress),
+          border:`1px solid ${getStatusColor(goal.progress)}25`,
+        }}>{getStatus(goal.progress)}</span>
+      </div>
+
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <div style={{flex:1,height:6,background:'var(--bg4)',borderRadius:3,overflow:'hidden'}}>
+          <div style={{
+            height:'100%',borderRadius:3,width:`${goal.progress}%`,
+            background:`linear-gradient(90deg,${goal.color} 0%,${goal.color}cc 100%)`,
+            boxShadow:`0 0 8px ${goal.color}60`,transition:'width .3s ease',
+          }}/>
+        </div>
+        <span style={{fontSize:12,fontFamily:'var(--mono)',fontWeight:700,color:goal.color,minWidth:36,textAlign:'right'}}>{goal.progress}%</span>
+        <div style={{display:'flex',gap:4}}>
+          <button onClick={()=>adjust(goal.id,-10)} style={{
+            width:24,height:24,borderRadius:4,background:'var(--bg4)',border:'1px solid var(--border2)',
+            color:'var(--text2)',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center',
+            transition:'all .15s',
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.borderColor='var(--border2)'}}
+          onMouseLeave={e=>{e.currentTarget.style.background='var(--bg4)'}}
+          >−</button>
+          <button onClick={()=>adjust(goal.id,10)} style={{
+            width:24,height:24,borderRadius:4,background:'var(--bg4)',border:'1px solid var(--border2)',
+            color:'var(--cyan)',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center',
+            transition:'all .15s',
+          }}
+          onMouseEnter={e=>{e.currentTarget.style.background='rgba(0,212,255,0.1)'}}
+          onMouseLeave={e=>{e.currentTarget.style.background='var(--bg4)'}}
+          >+</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const Section = ({title,items,accentColor}) => (
+    <div>
+      <div style={{
+        display:'flex',alignItems:'center',gap:10,marginBottom:10,
+      }}>
+        <span style={{width:3,height:14,background:accentColor,borderRadius:2}}/>
+        <span style={{fontSize:11,fontWeight:700,letterSpacing:.7,textTransform:'uppercase',color:'var(--text2)'}}>{title}</span>
+        <span style={{fontSize:10,fontFamily:'var(--mono)',color:'var(--text3)',marginLeft:4}}>{items.length}</span>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {items.map(g=><GoalCard key={g.id} goal={g}/>)}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{height:'100%',overflowY:'auto',padding:'2px 0'}}>
+      <div style={{display:'flex',flexDirection:'column',gap:24}}>
+        <Section title="Weekly Goals" items={weekly} accentColor="#ffd166"/>
+        <Section title="Monthly Goals" items={monthly} accentColor="#a78bfa"/>
+      </div>
+    </div>
+  );
+};
+
+// ─── APP ─────────────────────────────────────────────────────────────────────
+
+const TABS = [
+  { id:'board',    label:'Board',    icon:'board' },
+  { id:'tasks',    label:'Tasks',    icon:'tasks' },
+  { id:'sprints',  label:'Sprints',  icon:'sprint' },
+  { id:'log',      label:'Daily Log',icon:'log' },
+  { id:'analytics',label:'Analytics',icon:'analytics' },
+  { id:'goals',    label:'Goals',    icon:'goals' },
+];
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "accentColor": "#00d4ff",
+  "bgColor": "#0a0f0a",
+  "fontScale": 1.15,
+  "compactCards": false
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tab, setTab] = useState(() => localStorage.getItem('pd_tab')||'board');
+  const [tasks, setTasks] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pd_tasks'))||INITIAL_TASKS; } catch{ return INITIAL_TASKS; }
+  });
+  const [goals, setGoals] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pd_goals'))||INITIAL_GOALS; } catch{ return INITIAL_GOALS; }
+  });
+  const [logs, setLogs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pd_logs'))||INITIAL_LOG_ENTRIES; } catch{ return INITIAL_LOG_ENTRIES; }
+  });
+  const [sprints, setSprints] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pd_sprints'))||INITIAL_SPRINTS; } catch{ return INITIAL_SPRINTS; }
+  });
+
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const [showTweaks, setShowTweaks] = useState(false);
+
+  useEffect(()=>{ localStorage.setItem('pd_tab',tab); },[tab]);
+  useEffect(()=>{ localStorage.setItem('pd_tasks',JSON.stringify(tasks)); },[tasks]);
+  useEffect(()=>{ localStorage.setItem('pd_goals',JSON.stringify(goals)); },[goals]);
+  useEffect(()=>{ localStorage.setItem('pd_logs',JSON.stringify(logs)); },[logs]);
+  useEffect(()=>{ localStorage.setItem('pd_sprints',JSON.stringify(sprints)); },[sprints]);
+
+  // Tweaks host bridge
+  useEffect(()=>{
+    const handler = e => {
+      if(e.data?.type==='__activate_edit_mode') setShowTweaks(true);
+      if(e.data?.type==='__deactivate_edit_mode') setShowTweaks(false);
+    };
+    window.addEventListener('message',handler);
+    window.parent.postMessage({type:'__edit_mode_available'},'*');
+    return ()=>window.removeEventListener('message',handler);
+  },[]);
+
+  // Cross-tab navigation from @mentions
+  useEffect(()=>{
+    const onOpenTask = e => {
+      setTab('tasks');
+      setTimeout(()=>window.dispatchEvent(new CustomEvent('pd:open-task-expand',{detail:{id:e.detail.id}})), 60);
+    };
+    const onOpenLog = e => {
+      setTab('log');
+      setTimeout(()=>window.dispatchEvent(new CustomEvent('pd:open-log-entry',{detail:{date:e.detail.date}})), 60);
+    };
+    window.addEventListener('pd:open-task', onOpenTask);
+    window.addEventListener('pd:open-log', onOpenLog);
+    return ()=>{
+      window.removeEventListener('pd:open-task', onOpenTask);
+      window.removeEventListener('pd:open-log', onOpenLog);
+    };
+  },[]);
+
+  const setTweak = (key,val) => {
+    setTweaks(p=>({...p,[key]:val}));
+    window.parent.postMessage({type:'__edit_mode_set_keys',edits:{[key]:val}},'*');
+  };
+
+  // Apply tweaks
+  useEffect(()=>{
+    document.documentElement.setAttribute('data-theme', tweaks.theme||'dark');
+    document.documentElement.style.setProperty('--cyan',tweaks.accentColor);
+    document.documentElement.style.setProperty('--cyan-dim',tweaks.accentColor+'26');
+    if((tweaks.theme||'dark')==='dark'){
+      document.documentElement.style.setProperty('--bg',tweaks.bgColor);
+    } else {
+      document.documentElement.style.removeProperty('--bg');
+    }
+    document.documentElement.style.fontSize = `${tweaks.fontScale*100}%`;
+  },[tweaks]);
+
+  const doneTasks = tasks.filter(t=>t.status==='Done').length;
+  const inProgressTasks = tasks.filter(t=>t.status==='In Progress').length;
+
+  return (
+    <div style={{
+      height:'100vh',display:'flex',flexDirection:'column',
+      background:'var(--bg)',fontFamily:'var(--sans)',
+      backgroundImage:'var(--bg-radial)',
+    }}>
+      {/* Top nav */}
+      <div style={{
+        height:48,flexShrink:0,borderBottom:'1px solid var(--border)',
+        background:'var(--bg1)',display:'flex',alignItems:'center',
+        padding:'0 16px',gap:2,position:'relative',zIndex:10,
+        backdropFilter:'blur(8px)',
+      }}>
+        {/* Logo */}
+        <div style={{display:'flex',alignItems:'center',gap:8,marginRight:16}}>
+          <div style={{
+            width:24,height:24,borderRadius:5,
+            background:'linear-gradient(135deg,var(--cyan),rgba(0,212,255,0.4))',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            boxShadow:'0 0 12px rgba(0,212,255,0.3)',
+          }}>
+            <span style={{fontSize:11,fontWeight:800,color:'#000',fontFamily:'var(--mono)'}}>PD</span>
+          </div>
+          <span style={{fontSize:12,fontWeight:700,color:'var(--text)',letterSpacing:.3}}>devflow</span>
+        </div>
+
+        {/* Tabs */}
+        {TABS.map(t => (
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{
+            display:'flex',alignItems:'center',gap:6,padding:'6px 12px',
+            background: tab===t.id ? 'rgba(0,212,255,0.1)' : 'transparent',
+            color: tab===t.id ? 'var(--cyan)' : 'var(--text2)',
+            borderRadius:5,fontSize:12,fontWeight:tab===t.id?600:400,
+            border: tab===t.id ? '1px solid rgba(0,212,255,0.2)' : '1px solid transparent',
+            transition:'all .15s',height:32,
+          }}
+          onMouseEnter={e=>{if(tab!==t.id){e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.color='var(--text)'}}}
+          onMouseLeave={e=>{if(tab!==t.id){e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text2)'}}}
+          >
+            <span style={{opacity:.8}}><Icon name={t.icon} size={13}/></span>
+            {t.label}
+          </button>
+        ))}
+
+        {/* Right stats */}
+        <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:12}}>
+          <button onClick={()=>setTweak('theme',(tweaks.theme||'dark')==='dark'?'light':'dark')} style={{
+            width:28,height:28,display:'flex',alignItems:'center',justifyContent:'center',
+            background:'var(--bg3)',border:'1px solid var(--border)',color:'var(--text2)',
+            borderRadius:5,transition:'all .15s',
+          }}
+          title={(tweaks.theme||'dark')==='dark'?'Switch to light mode':'Switch to dark mode'}
+          onMouseEnter={e=>{e.currentTarget.style.color='var(--cyan)';e.currentTarget.style.borderColor='var(--cyan)'}}
+          onMouseLeave={e=>{e.currentTarget.style.color='var(--text2)';e.currentTarget.style.borderColor='var(--border)'}}
+          >
+            <Icon name={(tweaks.theme||'dark')==='dark'?'sun':'moon'} size={14}/>
+          </button>
+          <div style={{display:'flex',gap:12}}>
+            <div style={{display:'flex',alignItems:'center',gap:5,fontSize:11,fontFamily:'var(--mono)',color:'var(--text3)'}}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:'#00d4ff'}}/>
+              <span style={{color:'var(--text2)'}}>{inProgressTasks} in progress</span>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:5,fontSize:11,fontFamily:'var(--mono)',color:'var(--text3)'}}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:'#06d6a0'}}/>
+              <span style={{color:'var(--text2)'}}>{doneTasks} done</span>
+            </div>
+          </div>
+          <div style={{width:1,height:18,background:'var(--border)'}}/>
+          <div style={{
+            fontSize:11,fontFamily:'var(--mono)',color:'var(--text3)',
+            background:'var(--bg3)',border:'1px solid var(--border)',
+            borderRadius:4,padding:'3px 8px',
+          }}>
+            {new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div style={{flex:1,overflow:'hidden',padding:12}}>
+        <div style={{
+          height:'100%',
+          opacity:1,
+          transition:'opacity .15s',
+        }}>
+          {tab==='board'    && <BoardTab tasks={tasks} setTasks={setTasks}/>}
+          {tab==='tasks'    && <TasksTab tasks={tasks} setTasks={setTasks} logs={logs}/>}
+          {tab==='sprints'  && <SprintsTab sprints={sprints} setSprints={setSprints} tasks={tasks} setTasks={setTasks} logs={logs}/>}
+          {tab==='log'      && <DailyLogTab logs={logs} setLogs={setLogs} tasks={tasks}/>}
+          {tab==='analytics'&& <AnalyticsTab tasks={tasks} logs={logs}/>}
+          {tab==='goals'    && <GoalsTab goals={goals} setGoals={setGoals}/>}
+        </div>
+      </div>
+
+      {/* Tweaks panel */}
+      {showTweaks && (
+        <div style={{
+          position:'fixed',bottom:20,right:20,zIndex:1000,
+          background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:8,
+          padding:'14px 16px',width:240,
+          boxShadow:'var(--shadow-med)',
+        }}>
+          <div style={{fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:'var(--text3)',marginBottom:12}}>Tweaks</div>
+          
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:'var(--text2)',marginBottom:6}}>Theme</div>
+            <div style={{display:'flex',gap:6,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:5,padding:3}}>
+              {[{k:'dark',l:'Dark',i:'moon'},{k:'light',l:'Light',i:'sun'}].map(o=>(
+                <button key={o.k} onClick={()=>setTweak('theme',o.k)} style={{
+                  flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,
+                  padding:'6px 8px',borderRadius:3,fontSize:11,fontWeight:600,
+                  background: (tweaks.theme||'dark')===o.k ? 'var(--cyan-dim)' : 'transparent',
+                  color: (tweaks.theme||'dark')===o.k ? 'var(--cyan)' : 'var(--text2)',
+                  border:'1px solid '+((tweaks.theme||'dark')===o.k ? 'var(--cyan)' : 'transparent'),
+                  transition:'all .15s',
+                }}>
+                  <Icon name={o.i} size={12}/>{o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div style={{marginBottom:10}}>
+            <div style={{fontSize:11,color:'var(--text2)',marginBottom:5}}>Accent Color</div>
+            <div style={{display:'flex',gap:7}}>
+              {['#00d4ff','#a78bfa','#06d6a0','#fb923c','#ff4d6d'].map(c=>(
+                <div key={c} onClick={()=>setTweak('accentColor',c)} style={{
+                  width:22,height:22,borderRadius:4,background:c,cursor:'pointer',
+                  border: tweaks.accentColor===c ? '2px solid var(--text)' : '2px solid transparent',
+                  boxShadow: tweaks.accentColor===c ? `0 0 8px ${c}` : 'none',
+                  transition:'all .15s',
+                }}/>
+              ))}
+            </div>
+          </div>
+
+          {(tweaks.theme||'dark')==='dark' && (
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:11,color:'var(--text2)',marginBottom:5}}>Background</div>
+              <div style={{display:'flex',gap:7}}>
+                {['#0a0a0f','#0d0d0d','#070710','#0a0f0a','#0f0a0a'].map(c=>(
+                  <div key={c} onClick={()=>setTweak('bgColor',c)} style={{
+                    width:22,height:22,borderRadius:4,background:c,cursor:'pointer',
+                    border: tweaks.bgColor===c ? '2px solid var(--text3)' : '2px solid var(--border)',
+                    transition:'all .15s',
+                  }}/>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div style={{fontSize:11,color:'var(--text2)',marginBottom:5}}>Font Scale: <span style={{fontFamily:'var(--mono)',color:'var(--cyan)'}}>{tweaks.fontScale}×</span></div>
+            <input type="range" min=".85" max="1.15" step=".05" value={tweaks.fontScale}
+              onChange={e=>setTweak('fontScale',parseFloat(e.target.value))}
+              style={{width:'100%',accentColor:'var(--cyan)'}}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
