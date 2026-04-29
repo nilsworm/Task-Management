@@ -6,6 +6,8 @@ from fastapi import APIRouter, Query
 
 from src.api.dependencies import CostRepoDep
 from src.api.schemas.cost_schemas import (
+    CostAnalyticsResponse,
+    CostSummaryResponse,
     RecurringCreateRequest,
     RecurringResponse,
     TransactionCreateRequest,
@@ -17,6 +19,9 @@ from src.application.use_cases.cost_use_cases import (
     CreateTransactionUseCase,
     DeleteRecurringUseCase,
     DeleteTransactionUseCase,
+    GenerateMonthlyUseCase,
+    GetCostAnalyticsUseCase,
+    GetCostSummaryUseCase,
     ListCostTagsUseCase,
     ListRecurringUseCase,
     ListTransactionsUseCase,
@@ -98,6 +103,42 @@ async def delete_recurring(
 
 
 # ---------------------------------------------------------------------------
+# Generate Monthly
+# ---------------------------------------------------------------------------
+
+
+@router.post("/generate-monthly", response_model=list[TransactionResponse], status_code=201)
+async def generate_monthly(
+    repo: CostRepoDep,
+    year: int = Query(..., ge=2000, le=2100),
+    month: int = Query(..., ge=1, le=12),
+) -> list[TransactionResponse]:
+    created = await GenerateMonthlyUseCase(repo).execute(year=year, month=month)
+    return [TransactionResponse.from_domain(t) for t in created]
+
+
+# ---------------------------------------------------------------------------
+# Summary
+# ---------------------------------------------------------------------------
+
+
+@router.get("/summary", response_model=CostSummaryResponse)
+async def get_cost_summary(
+    repo: CostRepoDep,
+    year: int = Query(..., ge=2000, le=2100),
+    month: int = Query(..., ge=1, le=12),
+) -> CostSummaryResponse:
+    summary = await GetCostSummaryUseCase(repo).execute(year=year, month=month)
+    return CostSummaryResponse(
+        year=summary.year,
+        month=summary.month,
+        income=summary.income,
+        expenses=summary.expenses,
+        balance=summary.balance,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Tags
 # ---------------------------------------------------------------------------
 
@@ -105,3 +146,19 @@ async def delete_recurring(
 @router.get("/tags", response_model=list[str])
 async def list_cost_tags(repo: CostRepoDep) -> list[str]:
     return await ListCostTagsUseCase(repo).execute()
+
+
+# ---------------------------------------------------------------------------
+# Analytics
+# ---------------------------------------------------------------------------
+
+
+@router.get("/analytics", response_model=CostAnalyticsResponse)
+async def get_cost_analytics(
+    repo: CostRepoDep,
+    year: int = Query(..., ge=2000, le=2100),
+    month: int = Query(..., ge=1, le=12),
+    tags: list[str] | None = Query(None),
+) -> CostAnalyticsResponse:
+    analytics = await GetCostAnalyticsUseCase(repo).execute(year=year, month=month, tags=tags)
+    return CostAnalyticsResponse.from_domain(analytics)

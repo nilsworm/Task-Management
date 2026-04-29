@@ -72,4 +72,19 @@ test.describe("Navigation smoke test", () => {
     await page.getByRole("button", { name: "Cancel" }).click()
     await expect(page.getByRole("dialog")).not.toBeVisible()
   })
+
+  test("Cost Management page loads", async ({ page }) => {
+    await page.goto("/cost")
+    await expect(page.getByRole("heading", { name: "Cost Management" })).toBeVisible()
+    await expect(page.getByText("Übersicht")).toBeVisible()
+    await expect(page.getByText("Regelmäßig")).toBeVisible()
+    await expect(page.getByText("Analyse")).toBeVisible()
+  })
+
+  test("sidebar navigates to Cost Management", async ({ page }) => {
+    await page.goto("/")
+    await page.getByRole("link", { name: "Cost Management" }).click()
+    await expect(page).toHaveURL("/cost")
+    await expect(page.getByRole("heading", { name: "Cost Management" })).toBeVisible()
+  })
 })

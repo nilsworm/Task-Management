@@ -256,6 +256,81 @@ def test_delete_recurring_not_found(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
+# POST /cost/generate-monthly
+# ---------------------------------------------------------------------------
+
+
+def test_generate_monthly_requires_params(client: TestClient) -> None:
+    resp = client.post("/cost/generate-monthly")
+    assert resp.status_code == 422
+
+
+def test_generate_monthly_no_recurring_returns_empty(client: TestClient) -> None:
+    resp = client.post("/cost/generate-monthly?year=2026&month=5")
+    assert resp.status_code == 201
+    assert resp.json() == []
+
+
+def test_generate_monthly_creates_transactions(client: TestClient) -> None:
+    client.post("/cost/recurring", json={
+        "title": "Miete", "amount": "800.00",
+        "transaction_type": "expense", "interval": "monthly", "day_of_month": 1,
+    })
+    resp = client.post("/cost/generate-monthly?year=2026&month=5")
+    assert resp.status_code == 201
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Miete"
+    assert data[0]["date"] == "2026-05-01"
+
+
+def test_generate_monthly_409_on_duplicate(client: TestClient) -> None:
+    client.post("/cost/recurring", json={
+        "title": "Miete", "amount": "800.00",
+        "transaction_type": "expense", "interval": "monthly",
+    })
+    client.post("/cost/generate-monthly?year=2026&month=5")
+    resp = client.post("/cost/generate-monthly?year=2026&month=5")
+    assert resp.status_code == 409
+
+
+# ---------------------------------------------------------------------------
+# GET /cost/summary
+# ---------------------------------------------------------------------------
+
+
+def test_summary_requires_year_and_month(client: TestClient) -> None:
+    resp = client.get("/cost/summary")
+    assert resp.status_code == 422
+
+
+def test_summary_empty_month(client: TestClient) -> None:
+    resp = client.get("/cost/summary?year=2026&month=4")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["income"] == "0"
+    assert data["expenses"] == "0"
+    assert data["balance"] == "0"
+
+
+def test_summary_calculates_correctly(client: TestClient) -> None:
+    today = str(date.today())
+    now = date.today()
+    client.post("/cost/transactions", json={
+        "title": "Gehalt", "amount": "3000.00", "transaction_type": "income", "date": today,
+    })
+    client.post("/cost/transactions", json={
+        "title": "Miete", "amount": "800.00", "transaction_type": "expense", "date": today,
+    })
+    resp = client.get(f"/cost/summary?year={now.year}&month={now.month}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert Decimal(data["income"]) == Decimal("3000.00")
+    assert Decimal(data["expenses"]) == Decimal("800.00")
+    assert Decimal(data["balance"]) == Decimal("2200.00")
+
+
+# ---------------------------------------------------------------------------
 # GET /cost/tags
 # ---------------------------------------------------------------------------
 
@@ -276,3 +351,53 @@ def test_list_tags_combines_all_sources(client: TestClient) -> None:
     tags = resp.json()
     assert "lebensmittel" in tags
     assert "versicherung" in tags
+
+
+# ---------------------------------------------------------------------------
+# GET /cost/analytics
+# ---------------------------------------------------------------------------
+
+
+def test_analytics_requires_year_and_month(client: TestClient) -> None:
+    resp = client.get("/cost/analytics")
+    assert resp.status_code == 422
+
+
+def test_analytics_empty_returns_structure(client: TestClient) -> None:
+    resp = client.get("/cost/analytics?year=2026&month=4")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "expenses_by_tag" in data
+    assert "monthly_comparison" in data
+    assert len(data["monthly_comparison"]) == 6
+
+
+def test_analytics_expenses_by_tag(client: TestClient) -> None:
+    today = str(date.today())
+    now = date.today()
+    client.post("/cost/transactions", json={
+        "title": "Einkauf", "amount": "120.00", "transaction_type": "expense",
+        "date": today, "tags": ["lebensmittel"],
+    })
+    client.post("/cost/transactions", json={
+        "title": "Benzin", "amount": "60.00", "transaction_type": "expense",
+        "date": today, "tags": ["transport"],
+    })
+    resp = client.get(f"/cost/analytics?year={now.year}&month={now.month}")
+    assert resp.status_code == 200
+    by_tag = {item["tag"]: Decimal(item["amount"]) for item in resp.json()["expenses_by_tag"]}
+    assert by_tag["lebensmittel"] == Decimal("120.00")
+    assert by_tag["transport"] == Decimal("60.00")
+
+
+def test_analytics_income_not_in_by_tag(client: TestClient) -> None:
+    today = str(date.today())
+    now = date.today()
+    client.post("/cost/transactions", json={
+        "title": "Gehalt", "amount": "3000.00", "transaction_type": "income",
+        "date": today, "tags": ["gehalt"],
+    })
+    resp = client.get(f"/cost/analytics?year={now.year}&month={now.month}")
+    assert resp.status_code == 200
+    tags = [item["tag"] for item in resp.json()["expenses_by_tag"]]
+    assert "gehalt" not in tags

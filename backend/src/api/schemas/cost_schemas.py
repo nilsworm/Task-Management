@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from src.application.use_cases.cost_use_cases import CreateRecurringInput, CreateTransactionInput
+from src.application.use_cases.cost_use_cases import CreateRecurringInput, CreateTransactionInput, CostAnalytics
 from src.domain.cost.entities import RecurringTransaction, Transaction
 from src.domain.cost.value_objects import RecurrenceInterval, TransactionType
 
@@ -107,6 +107,14 @@ class RecurringCreateRequest(BaseModel):
         )
 
 
+class CostSummaryResponse(BaseModel):
+    year: int
+    month: int
+    income: Decimal
+    expenses: Decimal
+    balance: Decimal
+
+
 class RecurringResponse(BaseModel):
     id: uuid.UUID
     title: str
@@ -136,4 +144,34 @@ class RecurringResponse(BaseModel):
             start_date=r.start_date,
             created_at=r.created_at,
             updated_at=r.updated_at,
+        )
+
+
+class TagBreakdownResponse(BaseModel):
+    tag: str
+    amount: Decimal
+
+
+class MonthlyComparisonResponse(BaseModel):
+    year: int
+    month: int
+    income: Decimal
+    expenses: Decimal
+
+
+class CostAnalyticsResponse(BaseModel):
+    expenses_by_tag: list[TagBreakdownResponse]
+    monthly_comparison: list[MonthlyComparisonResponse]
+
+    @classmethod
+    def from_domain(cls, analytics: CostAnalytics) -> CostAnalyticsResponse:
+        return cls(
+            expenses_by_tag=[
+                TagBreakdownResponse(tag=tb.tag, amount=tb.amount)
+                for tb in analytics.expenses_by_tag
+            ],
+            monthly_comparison=[
+                MonthlyComparisonResponse(year=mc.year, month=mc.month, income=mc.income, expenses=mc.expenses)
+                for mc in analytics.monthly_comparison
+            ],
         )

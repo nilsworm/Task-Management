@@ -427,6 +427,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cost/generate-monthly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Monthly */
+        post: operations["generate_monthly_cost_generate_monthly_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Cost Summary */
+        get: operations["get_cost_summary_cost_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cost/tags": {
         parameters: {
             query?: never;
@@ -436,6 +470,23 @@ export interface paths {
         };
         /** List Cost Tags */
         get: operations["list_cost_tags_cost_tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Cost Analytics */
+        get: operations["get_cost_analytics_cost_analytics_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -483,6 +534,26 @@ export interface components {
             ideal_line: components["schemas"]["BurndownPoint"][];
             /** Actual Remaining */
             actual_remaining: number;
+        };
+        /** CostAnalyticsResponse */
+        CostAnalyticsResponse: {
+            /** Expenses By Tag */
+            expenses_by_tag: components["schemas"]["TagBreakdownResponse"][];
+            /** Monthly Comparison */
+            monthly_comparison: components["schemas"]["MonthlyComparisonResponse"][];
+        };
+        /** CostSummaryResponse */
+        CostSummaryResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Income */
+            income: string;
+            /** Expenses */
+            expenses: string;
+            /** Balance */
+            balance: string;
         };
         /** DashboardResponse */
         DashboardResponse: {
@@ -665,6 +736,17 @@ export interface components {
             /** Completion Rate */
             completion_rate: number;
         };
+        /** MonthlyComparisonResponse */
+        MonthlyComparisonResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Income */
+            income: string;
+            /** Expenses */
+            expenses: string;
+        };
         /** RecurringCreateRequest */
         RecurringCreateRequest: {
             /** Title */
@@ -808,6 +890,13 @@ export interface components {
             sprint_name: string;
             /** Completed Points */
             completed_points: number;
+        };
+        /** TagBreakdownResponse */
+        TagBreakdownResponse: {
+            /** Tag */
+            tag: string;
+            /** Amount */
+            amount: string;
         };
         /** TaskCreateRequest */
         TaskCreateRequest: {
@@ -2181,6 +2270,70 @@ export interface operations {
             };
         };
     };
+    generate_monthly_cost_generate_monthly_post: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cost_summary_cost_summary_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostSummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_cost_tags_cost_tags_get: {
         parameters: {
             query?: never;
@@ -2197,6 +2350,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": string[];
+                };
+            };
+        };
+    };
+    get_cost_analytics_cost_analytics_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+                tags?: string[] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostAnalyticsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

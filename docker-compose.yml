@@ -50,8 +50,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        VITE_API_URL: http://localhost:${BACKEND_PORT:-8000}
     container_name: taskmanager-frontend
     ports:
       - "${FRONTEND_PORT:-5174}:80"

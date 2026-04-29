@@ -14,6 +14,8 @@ from src.application.use_cases.cost_use_cases import (
     CreateTransactionUseCase,
     DeleteRecurringUseCase,
     DeleteTransactionUseCase,
+    GenerateMonthlyUseCase,
+    GetCostSummaryUseCase,
     ListCostTagsUseCase,
     ListRecurringUseCase,
     ListTransactionsUseCase,
@@ -271,6 +273,121 @@ async def test_delete_recurring_success(repo: InMemoryCostRepository) -> None:
 
 
 # ---------------------------------------------------------------------------
+# GenerateMonthly
+# ---------------------------------------------------------------------------
+
+
+def _recurring_input(title: str = "Miete", day: int | None = 1) -> CreateRecurringInput:
+    return CreateRecurringInput(
+        title=title,
+        amount=Decimal("800.00"),
+        transaction_type=TransactionType.EXPENSE,
+        interval=RecurrenceInterval.MONTHLY,
+        day_of_month=day,
+    )
+
+
+@pytest.mark.asyncio
+async def test_generate_monthly_creates_transactions(repo: InMemoryCostRepository) -> None:
+    await CreateRecurringUseCase(repo).execute(_recurring_input("Miete", day=1))
+    await CreateRecurringUseCase(repo).execute(_recurring_input("Strom", day=15))
+
+    created = await GenerateMonthlyUseCase(repo).execute(year=2026, month=5)
+    assert len(created) == 2
+    titles = {t.title for t in created}
+    assert titles == {"Miete", "Strom"}
+
+
+@pytest.mark.asyncio
+async def test_generate_monthly_uses_day_of_month(repo: InMemoryCostRepository) -> None:
+    await CreateRecurringUseCase(repo).execute(_recurring_input("Miete", day=3))
+    created = await GenerateMonthlyUseCase(repo).execute(year=2026, month=5)
+    assert created[0].date == date(2026, 5, 3)
+
+
+@pytest.mark.asyncio
+async def test_generate_monthly_falls_back_to_day_1(repo: InMemoryCostRepository) -> None:
+    await CreateRecurringUseCase(repo).execute(_recurring_input("Strom", day=None))
+    created = await GenerateMonthlyUseCase(repo).execute(year=2026, month=5)
+    assert created[0].date == date(2026, 5, 1)
+
+
+@pytest.mark.asyncio
+async def test_generate_monthly_sets_recurring_source_id(repo: InMemoryCostRepository) -> None:
+    r = await CreateRecurringUseCase(repo).execute(_recurring_input())
+    created = await GenerateMonthlyUseCase(repo).execute(year=2026, month=5)
+    assert created[0].recurring_source_id == r.id
+
+
+@pytest.mark.asyncio
+async def test_generate_monthly_idempotent_no_duplicate(repo: InMemoryCostRepository) -> None:
+    await CreateRecurringUseCase(repo).execute(_recurring_input())
+    await GenerateMonthlyUseCase(repo).execute(year=2026, month=5)
+
+    with pytest.raises(InvalidOperationError, match="bereits generiert"):
+        await GenerateMonthlyUseCase(repo).execute(year=2026, month=5)
+
+    transactions = await repo.list_transactions(year=2026, month=5)
+    assert len(transactions) == 1
+
+
+@pytest.mark.asyncio
+async def test_generate_monthly_skips_already_generated(repo: InMemoryCostRepository) -> None:
+    r1 = await CreateRecurringUseCase(repo).execute(_recurring_input("Miete"))
+    await CreateRecurringUseCase(repo).execute(_recurring_input("Strom"))
+
+    # Manually create only the Miete transaction
+    await repo.save_transaction(Transaction.create(
+        "Miete", Decimal("800.00"), TransactionType.EXPENSE,
+        date(2026, 5, 1), recurring_source_id=r1.id,
+    ))
+
+    created = await GenerateMonthlyUseCase(repo).execute(year=2026, month=5)
+    assert len(created) == 1
+    assert created[0].title == "Strom"
+
+
+@pytest.mark.asyncio
+async def test_generate_monthly_empty_recurring_returns_empty(repo: InMemoryCostRepository) -> None:
+    result = await GenerateMonthlyUseCase(repo).execute(year=2026, month=5)
+    assert result == []
+
+
+# ---------------------------------------------------------------------------
+# Summary
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_summary_empty_month(repo: InMemoryCostRepository) -> None:
+    summary = await GetCostSummaryUseCase(repo).execute(year=2026, month=4)
+    assert summary.income == Decimal("0")
+    assert summary.expenses == Decimal("0")
+    assert summary.balance == Decimal("0")
+
+
+@pytest.mark.asyncio
+async def test_summary_calculates_totals(repo: InMemoryCostRepository) -> None:
+    create = CreateTransactionUseCase(repo)
+    await create.execute(_income_input(amount="3000.00"))
+    await create.execute(_expense_input(amount="800.00"))
+    today = date.today()
+    summary = await GetCostSummaryUseCase(repo).execute(year=today.year, month=today.month)
+    assert summary.income == Decimal("3000.00")
+    assert summary.expenses == Decimal("800.00")
+    assert summary.balance == Decimal("2200.00")
+
+
+@pytest.mark.asyncio
+async def test_summary_only_counts_given_month(repo: InMemoryCostRepository) -> None:
+    create = CreateTransactionUseCase(repo)
+    await create.execute(_expense_input(amount="500.00", tx_date=date(2026, 4, 1)))
+    await create.execute(_expense_input(amount="999.00", tx_date=date(2026, 3, 1)))
+    summary = await GetCostSummaryUseCase(repo).execute(year=2026, month=4)
+    assert summary.expenses == Decimal("500.00")
+
+
+# ---------------------------------------------------------------------------
 # Tags
 # ---------------------------------------------------------------------------
 
@@ -291,3 +408,74 @@ async def test_list_all_tags_union(repo: InMemoryCostRepository) -> None:
     assert "miete" in tags
     assert "versicherung" in tags
     assert tags == sorted(tags)
+
+
+# ---------------------------------------------------------------------------
+# Analytics
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_analytics_expenses_by_tag(repo: InMemoryCostRepository) -> None:
+    now = date.today()
+    create = CreateTransactionUseCase(repo)
+    await create.execute(_expense_input(amount="100.00", tags=["lebensmittel"], tx_date=now))
+    await create.execute(_expense_input(amount="200.00", tags=["miete"], tx_date=now))
+    await create.execute(_expense_input(amount="50.00", tags=["lebensmittel"], tx_date=now))
+
+    from src.application.use_cases.cost_use_cases import GetCostAnalyticsUseCase
+    analytics = await GetCostAnalyticsUseCase(repo).execute(year=now.year, month=now.month)
+
+    by_tag = {tb.tag: tb.amount for tb in analytics.expenses_by_tag}
+    assert by_tag["lebensmittel"] == Decimal("150.00")
+    assert by_tag["miete"] == Decimal("200.00")
+    # sorted descending by amount
+    amounts = [tb.amount for tb in analytics.expenses_by_tag]
+    assert amounts == sorted(amounts, reverse=True)
+
+
+@pytest.mark.asyncio
+async def test_analytics_excludes_income_from_by_tag(repo: InMemoryCostRepository) -> None:
+    now = date.today()
+    create = CreateTransactionUseCase(repo)
+    await create.execute(_expense_input(amount="100.00", tags=["kosten"], tx_date=now))
+    # income should not appear in expenses_by_tag
+    await create.execute(
+        CreateTransactionInput(
+            title="Gehalt", amount=Decimal("3000.00"),
+            transaction_type=TransactionType.INCOME,
+            date=now, tags=["gehalt"],
+        )
+    )
+    from src.application.use_cases.cost_use_cases import GetCostAnalyticsUseCase
+    analytics = await GetCostAnalyticsUseCase(repo).execute(year=now.year, month=now.month)
+    tags = [tb.tag for tb in analytics.expenses_by_tag]
+    assert "gehalt" not in tags
+    assert "kosten" in tags
+
+
+@pytest.mark.asyncio
+async def test_analytics_monthly_comparison_has_six_entries(repo: InMemoryCostRepository) -> None:
+    from src.application.use_cases.cost_use_cases import GetCostAnalyticsUseCase
+    analytics = await GetCostAnalyticsUseCase(repo).execute(year=2026, month=4)
+    assert len(analytics.monthly_comparison) == 6
+    # last entry is the requested month
+    assert analytics.monthly_comparison[-1].year == 2026
+    assert analytics.monthly_comparison[-1].month == 4
+
+
+@pytest.mark.asyncio
+async def test_analytics_monthly_comparison_sums_correctly(repo: InMemoryCostRepository) -> None:
+    create = CreateTransactionUseCase(repo)
+    await create.execute(_expense_input(amount="400.00", tx_date=date(2026, 4, 10)))
+    await create.execute(
+        CreateTransactionInput(
+            title="Gehalt", amount=Decimal("3000.00"),
+            transaction_type=TransactionType.INCOME, date=date(2026, 4, 1), tags=[],
+        )
+    )
+    from src.application.use_cases.cost_use_cases import GetCostAnalyticsUseCase
+    analytics = await GetCostAnalyticsUseCase(repo).execute(year=2026, month=4)
+    april = analytics.monthly_comparison[-1]
+    assert april.expenses == Decimal("400.00")
+    assert april.income == Decimal("3000.00")

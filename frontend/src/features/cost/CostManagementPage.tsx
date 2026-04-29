@@ -1,9 +1,13 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { ApiError } from "@/api/client"
+import { useCostSummary, useCostTags, useGenerateMonthly } from "@/api/hooks/cost"
 import { TransactionList } from "./TransactionList"
 import { RecurringList } from "./RecurringList"
-import type { TransactionFilters } from "@/api/hooks/cost"
+import { SummaryCards } from "./SummaryCards"
+import { TagFilterBar } from "./TagFilterBar"
+import { AnalyticsTab } from "./AnalyticsTab"
 
 type Tab = "overview" | "recurring" | "analytics"
 
@@ -21,7 +25,32 @@ function currentYearMonth() {
 export function CostManagementPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview")
   const { year, month } = currentYearMonth()
-  const [filters] = useState<TransactionFilters>({ year, month })
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [generateMsg, setGenerateMsg] = useState<string | null>(null)
+
+  const { data: summary, isLoading: summaryLoading } = useCostSummary(year, month)
+  const { data: availableTags = [] } = useCostTags()
+  const generateMonthly = useGenerateMonthly()
+
+  const filters = { year, month, tags: selectedTags.length > 0 ? selectedTags : undefined }
+
+  async function handleGenerate() {
+    setGenerateMsg(null)
+    try {
+      const created = await generateMonthly.mutateAsync({ year, month })
+      setGenerateMsg(
+        created.length === 0
+          ? "Keine aktiven Wiederholungseinträge vorhanden."
+          : `${created.length} Buchung${created.length !== 1 ? "en" : ""} generiert.`,
+      )
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setGenerateMsg("Monat wurde bereits generiert.")
+      } else {
+        setGenerateMsg("Fehler beim Generieren.")
+      }
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -53,13 +82,32 @@ export function CostManagementPage() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "overview" && <TransactionList filters={filters} />}
-      {activeTab === "recurring" && <RecurringList />}
-      {activeTab === "analytics" && (
-        <div className="py-16 text-center text-sm text-muted-foreground">
-          Analyse-Diagramme folgen in Phase 7.4.
+      {activeTab === "overview" && (
+        <div className="flex flex-col gap-4">
+          <SummaryCards summary={summary} isLoading={summaryLoading} />
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerate}
+              disabled={generateMonthly.isPending}
+            >
+              {generateMonthly.isPending ? "Wird geladen…" : "Monat laden"}
+            </Button>
+            {generateMsg && (
+              <span className="text-xs text-muted-foreground">{generateMsg}</span>
+            )}
+          </div>
+          <TagFilterBar
+            availableTags={availableTags}
+            selectedTags={selectedTags}
+            onChange={setSelectedTags}
+          />
+          <TransactionList filters={filters} />
         </div>
       )}
+      {activeTab === "recurring" && <RecurringList />}
+      {activeTab === "analytics" && <AnalyticsTab />}
     </div>
   )
 }

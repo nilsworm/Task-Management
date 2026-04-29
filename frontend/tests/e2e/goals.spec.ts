@@ -14,7 +14,7 @@ test.describe("Goals", () => {
     await dialog.getByRole("button", { name: "Create" }).click()
 
     await expect(dialog).not.toBeVisible()
-    await expect(page.getByText("E2E Goal")).toBeVisible()
+    await expect(page.getByText("E2E Goal", { exact: true })).toBeVisible()
   })
 
   test("navigates to seeded goal detail and shows key results section", async ({ page }) => {
@@ -62,7 +62,7 @@ test.describe("Goals", () => {
     await expect(page.getByText("E2E Goal — delete me")).toBeVisible()
 
     // Find the card and click its Delete button (footer stops propagation)
-    const card = page.locator("div").filter({ has: page.getByText("E2E Goal — delete me", { exact: true }) }).last()
+    const card = page.locator("div.rounded-lg").filter({ has: page.getByText("E2E Goal — delete me", { exact: true }) })
     await card.getByRole("button", { name: "Delete" }).click()
 
     await expect(page.getByText("E2E Goal — delete me")).not.toBeVisible()

@@ -129,40 +129,42 @@
 
 ---
 
-#### Phase 7.3 — Summary Cards + Tag-Filterung
+#### Phase 7.3 — Summary Cards + Tag-Filterung ✅
 **Liefergegenstand:** Monatsübersicht (Einnahmen / Ausgaben / Saldo) als Cards oben, Filterung nach Tags
 
-- [ ] `GetCostSummaryUC`: Summe Einnahmen, Ausgaben, Saldo für laufenden Monat
-- [ ] `GET /cost/summary?month=YYYY-MM` API-Endpoint
-- [ ] `SummaryCards`-Komponente: Einnahmen (grün), Ausgaben (rot), Saldo (blau)
-- [ ] `TagFilterBar` für Transaktionsliste (Multi-Select)
-- [ ] Backend-seitige Tag-Filterung in `ListTransactionsUC`
-- [ ] Tests
+- [x] `GetCostSummaryUC`: Summe Einnahmen, Ausgaben, Saldo für laufenden Monat
+- [x] `GET /cost/summary?year=YYYY&month=MM` API-Endpoint
+- [x] `SummaryCards`-Komponente: Einnahmen (grün), Ausgaben (rot), Saldo (blau/rot je Vorzeichen)
+- [x] `TagFilterBar` für Transaktionsliste (Multi-Select, Zurücksetzen-Button)
+- [x] Backend-seitige Tag-Filterung bereits in `ListTransactionsUC` + Repo
+- [x] Tests: 3 UC-Tests, 3 Router-Tests, 6 Vitest-Tests (SummaryCards)
 
 ---
 
-#### Phase 7.4 — Diagramme & Analyse
+#### Phase 7.4 — Diagramme & Analyse ✅
 **Liefergegenstand:** Pie Chart (Ausgaben nach Tag) + Gegenüberstellung Einnahmen vs. Ausgaben pro Monat mit Tag-Filter
 
-- [ ] `GET /cost/analytics?month=YYYY-MM&tags=` API-Endpoint
-- [ ] `GetCostAnalyticsUC`: gruppierte Ausgaben nach Tag + Monatsvergleich
-- [ ] `PieChart`-Komponente (Recharts): Ausgaben nach Tag
-- [ ] `ComparisonChart`-Komponente (Recharts BarChart): Einnahmen vs. Ausgaben je Monat (letzte 6 Monate)
-- [ ] Tag-Filter auf Analyse-Tab wirkt auf beide Charts
-- [ ] Skeleton-Loading + Leerzustand-Handling
-- [ ] Tests
+- [x] `GET /cost/analytics?year=YYYY&month=MM&tags=` API-Endpoint
+- [x] `GetCostAnalyticsUseCase`: gruppierte Ausgaben nach Tag (sortiert nach Betrag) + Monatsvergleich letzte 6 Monate
+- [x] `AnalyticsTab`-Komponente: PieChart (Donut, Ausgaben nach Tag) + BarChart (Einnahmen vs. Ausgaben je Monat)
+- [x] Tag-Filter (TagFilterBar) auf Analyse-Tab wirkt auf beide Charts
+- [x] Skeleton-Loading + Leerzustand-Handling (je Chart separat)
+- [x] 8 neue Tests (4 UC, 4 API) — **584 Backend, 87 Frontend passing**
 
 ---
 
-#### Phase 7.5 — Generierung + Polish
+#### Phase 7.5 — Generierung + Polish ✅
 **Liefergegenstand:** Automatische Übernahme wiederkehrender Einträge in den aktuellen Monat + vollständige UX
 
-- [ ] `GenerateMonthlyUC`: erstellt Transaktionen aus aktiven `RecurringTransaction`-Einträgen für einen Monat (idempotent via `recurring_source_id`)
-- [ ] `POST /cost/generate-monthly?month=YYYY-MM` — Button „Monat laden" in UI
-- [ ] Duplicate-Schutz: zweiter Aufruf überschreibt nicht, zeigt 409 wenn bereits generiert
-- [ ] E2E-Tests (Playwright) für Cost-Management-Flow
-- [ ] OpenAPI-Spec aktualisieren + TypeScript-Types neu generieren
-- [ ] Finale Security-Review: Rate-Limiting auf `/cost`-Routen, Audit-Log für Create/Delete
+- [x] `GenerateMonthlyUC`: erstellt Transaktionen aus aktiven `RecurringTransaction`-Einträgen für einen Monat (idempotent via `recurring_source_id`)
+- [x] `POST /cost/generate-monthly?year=YYYY&month=MM` — Button „Monat laden" in UI
+- [x] Duplicate-Schutz: zweiter Aufruf überschreibt nicht, zeigt 409 wenn bereits generiert
+- [x] E2E-Tests (Playwright): 6 Cost-Tests (serial mode), alle 33 E2E-Tests grün
+- [x] Smoke-Tests: 2 neue Cost-Navigation-Tests, alle 10 Smoke-Tests grün
+- [x] OpenAPI-Spec aktualisiert + TypeScript-Types neu generiert
+- [x] Infrastruktur-Tests: `test_cost_repository.py` (13 Tests gegen echtes Postgres)
+- [x] Vorhandene E2E-Bugs gefixt: dashboard strict-mode, goals delete-locator
+- [ ] Rate-Limiting + Audit-Log: zurückgestellt bis Auth-System steht
 
 ---
 
@@ -231,12 +233,18 @@
 - `alembic upgrade head` + `alembic check` ✅
 - **457 Tests, alle grün** (8 neue)
 
-### 2026-04-29 — Phase 7: Planung Cost Management
+### 2026-04-29 — Phase 7: Cost Management (7.1–7.3 + 7.5 abgeschlossen)
 
-- Branch `feature/cost-management` angelegt
-- Excalidraw-Architektur- und Klassendiagramm erstellt (5-Layer Clean Architecture, alle Entities/Use Cases/Repos modelliert)
-- `PROGRESS.md` um Phase 7 (7.1–7.5) ergänzt — jede Phase liefert sichtbares Ergebnis
-- Awaiting user approval vor Implementierungsstart
+- Branch `feature/cost-management` → `feature/coolify-nginx-proxy` (nginx-Proxy für Coolify)
+- Domain: `Transaction`, `RecurringTransaction`, `ICostRepository`, Value Objects
+- Application: 8 Use Cases inkl. `GenerateMonthlyUC` (idempotent), `GetCostSummaryUC`
+- Infrastructure: `PostgresCostRepository`, Alembic-Migration `a3f2e1d9c8b7`
+- API: 8 Endpoints (`/cost/transactions`, `/cost/recurring`, `/cost/tags`, `/cost/summary`, `/cost/generate-monthly`)
+- Frontend: `CostManagementPage` (3 Tabs), `SummaryCards`, `TagFilterBar`, `TransactionList/Modal/Delete`, `RecurringList/Modal`
+- nginx-Proxy: `VITE_API_URL=/api`, `/api/` → `backend:8000` intern; Vite-Proxy für lokale Dev
+- Seed-Script um Cost-Daten erweitert (6 Recurring, 12 Transaktionen)
+- Tests: 528 Backend (davon 13 Infrastruktur-Integration), 18 Frontend-Unit, 33 E2E alle grün
+- Phase 7.4 (Analyse-Charts) noch offen
 
 ### 2026-04-24 — Phase 6, Schritt 7: Finale Architektur-Überprüfung
 

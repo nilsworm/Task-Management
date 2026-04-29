@@ -1698,6 +1698,120 @@
         }
       }
     },
+    "/cost/generate-monthly": {
+      "post": {
+        "tags": [
+          "cost"
+        ],
+        "summary": "Generate Monthly",
+        "operationId": "generate_monthly_cost_generate_monthly_post",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransactionResponse"
+                  },
+                  "title": "Response Generate Monthly Cost Generate Monthly Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cost/summary": {
+      "get": {
+        "tags": [
+          "cost"
+        ],
+        "summary": "Get Cost Summary",
+        "operationId": "get_cost_summary_cost_summary_get",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostSummaryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/cost/tags": {
       "get": {
         "tags": [
@@ -1716,6 +1830,80 @@
                   },
                   "type": "array",
                   "title": "Response List Cost Tags Cost Tags Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cost/analytics": {
+      "get": {
+        "tags": [
+          "cost"
+        ],
+        "summary": "Get Cost Analytics",
+        "operationId": "get_cost_analytics_cost_analytics_get",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tags"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CostAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -1793,6 +1981,66 @@
           "actual_remaining"
         ],
         "title": "BurndownResponse"
+      },
+      "CostAnalyticsResponse": {
+        "properties": {
+          "expenses_by_tag": {
+            "items": {
+              "$ref": "#/components/schemas/TagBreakdownResponse"
+            },
+            "type": "array",
+            "title": "Expenses By Tag"
+          },
+          "monthly_comparison": {
+            "items": {
+              "$ref": "#/components/schemas/MonthlyComparisonResponse"
+            },
+            "type": "array",
+            "title": "Monthly Comparison"
+          }
+        },
+        "type": "object",
+        "required": [
+          "expenses_by_tag",
+          "monthly_comparison"
+        ],
+        "title": "CostAnalyticsResponse"
+      },
+      "CostSummaryResponse": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "month": {
+            "type": "integer",
+            "title": "Month"
+          },
+          "income": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income"
+          },
+          "expenses": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Expenses"
+          },
+          "balance": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Balance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "month",
+          "income",
+          "expenses",
+          "balance"
+        ],
+        "title": "CostSummaryResponse"
       },
       "DashboardResponse": {
         "properties": {
@@ -2294,6 +2542,36 @@
         ],
         "title": "MetricsResponse"
       },
+      "MonthlyComparisonResponse": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "month": {
+            "type": "integer",
+            "title": "Month"
+          },
+          "income": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Income"
+          },
+          "expenses": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Expenses"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "month",
+          "income",
+          "expenses"
+        ],
+        "title": "MonthlyComparisonResponse"
+      },
       "RecurringCreateRequest": {
         "properties": {
           "title": {
@@ -2651,6 +2929,25 @@
           "completed_points"
         ],
         "title": "SprintVelocity"
+      },
+      "TagBreakdownResponse": {
+        "properties": {
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tag",
+          "amount"
+        ],
+        "title": "TagBreakdownResponse"
       },
       "TaskCreateRequest": {
         "properties": {
