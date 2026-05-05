@@ -58,7 +58,7 @@ services:
       - "traefik.http.routers.taskmanager.tls=true"
       - "traefik.http.routers.taskmanager.tls.certresolver=letsencrypt"
       - "traefik.http.services.taskmanager.loadbalancer.server.port=80"
-      - 'traefik.http.middlewares.mybasicauth.basicauth.users=test:$2y$05$Hywf820036me104f.4dSv.tZcf93w9gIQ3jy8txVEuWhnJdnuUqCK'
+      - "traefik.http.middlewares.mybasicauth.basicauth.users=test:\$2y\$05\$Hywf820036me104f.4dSv.tZcf93w9gIQ3jy8txVEuWhnJdnuUqCK"
       - "traefik.http.routers.taskmanager.middlewares=mybasicauth"
     restart: unless-stopped
 
