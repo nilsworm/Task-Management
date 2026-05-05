@@ -52,15 +52,7 @@ services:
       - internal
       - coolify
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=coolify"
-      - "traefik.http.routers.taskmanager.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.taskmanager.entrypoints=websecure"
-      - "traefik.http.routers.taskmanager.tls=true"
-      - "traefik.http.routers.taskmanager.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.taskmanager.middlewares=taskmanager-auth"
-      - "traefik.http.middlewares.taskmanager-auth.basicauth.users=${TRAEFIK_BASICAUTH_USERS}"
-      - "traefik.http.services.taskmanager.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.taskmanager.basicauth.users=${TRAEFIK_BASICAUTH_USERS}"
     restart: unless-stopped
 
 networks:
