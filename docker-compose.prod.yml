@@ -53,6 +53,8 @@ services:
       - coolify
     labels:
       - "traefik.enable=true"
+      - 'traefik.http.middlewares.taskauth.basicauth.users=test:$2y$05$Hywf820036me104f.4dSv.tZcf93w9gIQ3jy8txVEuWhnJdnuUqCK'
+      - "coolify.traefik.middlewares=taskauth"
     restart: unless-stopped
 
 networks:
