@@ -53,7 +53,7 @@ services:
       - coolify
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.taskmanager.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.taskmanager.rule=Host(`management.madebynils.com`)"
       - "traefik.http.routers.taskmanager.entrypoints=https"
       - "traefik.http.routers.taskmanager.tls=true"
       - "traefik.http.routers.taskmanager.tls.certresolver=letsencrypt"
