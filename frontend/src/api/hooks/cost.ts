@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { apiDelete, apiGet, apiPost } from "@/api/client"
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/api/client"
 import type { components } from "@/api/types"
 
 export type Transaction = components["schemas"]["TransactionResponse"]
