@@ -256,6 +256,39 @@ def test_delete_recurring_not_found(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
+# PATCH /cost/recurring/{id}
+# ---------------------------------------------------------------------------
+
+
+def test_patch_recurring_deactivate(client: TestClient) -> None:
+    created = client.post(
+        "/cost/recurring",
+        json={"title": "Netflix", "amount": "17.99", "transaction_type": "expense", "interval": "monthly"},
+    )
+    rec_id = created.json()["id"]
+    resp = client.patch(f"/cost/recurring/{rec_id}", json={"is_active": False})
+    assert resp.status_code == 200
+    assert resp.json()["is_active"] is False
+
+
+def test_patch_recurring_reactivate(client: TestClient) -> None:
+    created = client.post(
+        "/cost/recurring",
+        json={"title": "Strom", "amount": "80.00", "transaction_type": "expense", "interval": "monthly"},
+    )
+    rec_id = created.json()["id"]
+    client.patch(f"/cost/recurring/{rec_id}", json={"is_active": False})
+    resp = client.patch(f"/cost/recurring/{rec_id}", json={"is_active": True})
+    assert resp.status_code == 200
+    assert resp.json()["is_active"] is True
+
+
+def test_patch_recurring_not_found(client: TestClient) -> None:
+    resp = client.patch(f"/cost/recurring/{uuid.uuid4()}", json={"is_active": False})
+    assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
 # POST /cost/generate-monthly
 # ---------------------------------------------------------------------------
 

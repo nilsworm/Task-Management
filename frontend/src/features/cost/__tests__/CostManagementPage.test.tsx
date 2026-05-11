@@ -20,6 +20,7 @@ vi.mock("@/api/hooks/cost", () => ({
   useDeleteTransaction: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateRecurring: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteRecurring: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useToggleRecurring: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
 
 describe("CostManagementPage", () => {

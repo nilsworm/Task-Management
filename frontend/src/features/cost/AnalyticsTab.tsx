@@ -12,9 +12,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
-import { useCostAnalytics } from "@/api/hooks/cost"
+import { useCostAnalytics, useCostTags } from "@/api/hooks/cost"
 import { TagFilterBar } from "./TagFilterBar"
-import { useCostTags } from "@/api/hooks/cost"
 
 const TOOLTIP_STYLE = {
   background: "var(--color-surface-1)",
@@ -32,30 +31,29 @@ const TICK_STYLE = {
 }
 
 const PIE_COLORS = [
-  "#00d4ff", // cyan
-  "#06d6a0", // green
-  "#ffd166", // yellow
-  "#ff4d6d", // red
-  "#c77dff", // purple
-  "#f4a261", // orange
+  "#00d4ff",
+  "#06d6a0",
+  "#ffd166",
+  "#ff4d6d",
+  "#c77dff",
+  "#f4a261",
   "#4cc9f0",
   "#7bf1a8",
 ]
 
 const MONTH_NAMES = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
 
-function currentYearMonth() {
-  const now = new Date()
-  return { year: now.getFullYear(), month: now.getMonth() + 1 }
-}
-
 function SkeletonBlock({ h }: { h: string }) {
   return <div className={`animate-pulse rounded bg-surface-3 ${h}`} />
 }
 
-export function AnalyticsTab() {
+interface Props {
+  year: number
+  month: number
+}
+
+export function AnalyticsTab({ year, month }: Props) {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const { year, month } = currentYearMonth()
   const { data: availableTags = [] } = useCostTags()
   const { data: analytics, isLoading } = useCostAnalytics(
     year,

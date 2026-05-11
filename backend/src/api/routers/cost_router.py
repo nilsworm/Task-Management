@@ -10,6 +10,7 @@ from src.api.schemas.cost_schemas import (
     CostSummaryResponse,
     RecurringCreateRequest,
     RecurringResponse,
+    RecurringUpdateRequest,
     TransactionCreateRequest,
     TransactionResponse,
 )
@@ -25,6 +26,7 @@ from src.application.use_cases.cost_use_cases import (
     ListCostTagsUseCase,
     ListRecurringUseCase,
     ListTransactionsUseCase,
+    UpdateRecurringUseCase,
 )
 from src.domain.cost.value_objects import TransactionType
 
@@ -92,6 +94,16 @@ async def list_recurring(
 ) -> list[RecurringResponse]:
     entries = await ListRecurringUseCase(repo).execute(active_only=active_only)
     return [RecurringResponse.from_domain(r) for r in entries]
+
+
+@router.patch("/recurring/{recurring_id}", response_model=RecurringResponse)
+async def update_recurring(
+    recurring_id: uuid.UUID,
+    body: RecurringUpdateRequest,
+    repo: CostRepoDep,
+) -> RecurringResponse:
+    recurring = await UpdateRecurringUseCase(repo).execute(body.to_use_case_input(recurring_id))
+    return RecurringResponse.from_domain(recurring)
 
 
 @router.delete("/recurring/{recurring_id}", status_code=204)

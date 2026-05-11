@@ -424,7 +424,8 @@ export interface paths {
         delete: operations["delete_recurring_cost_recurring__recurring_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update Recurring */
+        patch: operations["update_recurring_cost_recurring__recurring_id__patch"];
         trace?: never;
     };
     "/cost/generate-monthly": {
@@ -806,6 +807,11 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** RecurringUpdateRequest */
+        RecurringUpdateRequest: {
+            /** Is Active */
+            is_active: boolean;
         };
         /** SprintCreateRequest */
         SprintCreateRequest: {
@@ -2258,6 +2264,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_recurring_cost_recurring__recurring_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecurringUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

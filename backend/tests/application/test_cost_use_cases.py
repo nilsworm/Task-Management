@@ -19,6 +19,8 @@ from src.application.use_cases.cost_use_cases import (
     ListCostTagsUseCase,
     ListRecurringUseCase,
     ListTransactionsUseCase,
+    UpdateRecurringInput,
+    UpdateRecurringUseCase,
 )
 from src.domain.cost.entities import RecurringTransaction, Transaction
 from src.domain.cost.repository import ICostRepository
@@ -37,6 +39,10 @@ class InMemoryCostRepository(ICostRepository):
 
     async def save_transaction(self, transaction: Transaction) -> None:
         self._transactions[transaction.id] = transaction
+
+    async def save_transactions_bulk(self, transactions: list[Transaction]) -> None:
+        for transaction in transactions:
+            self._transactions[transaction.id] = transaction
 
     async def get_transaction(self, transaction_id: uuid.UUID) -> Transaction | None:
         return self._transactions.get(transaction_id)
@@ -479,3 +485,46 @@ async def test_analytics_monthly_comparison_sums_correctly(repo: InMemoryCostRep
     april = analytics.monthly_comparison[-1]
     assert april.expenses == Decimal("400.00")
     assert april.income == Decimal("3000.00")
+
+
+# ---------------------------------------------------------------------------
+# UpdateRecurring
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_update_recurring_deactivates(repo: InMemoryCostRepository) -> None:
+    r = await CreateRecurringUseCase(repo).execute(_recurring_input())
+    assert r.is_active is True
+    updated = await UpdateRecurringUseCase(repo).execute(
+        UpdateRecurringInput(recurring_id=r.id, is_active=False)
+    )
+    assert updated.is_active is False
+    assert repo._recurring[r.id].is_active is False
+
+
+@pytest.mark.asyncio
+async def test_update_recurring_reactivates(repo: InMemoryCostRepository) -> None:
+    r = await CreateRecurringUseCase(repo).execute(_recurring_input())
+    repo._recurring[r.id].is_active = False
+    updated = await UpdateRecurringUseCase(repo).execute(
+        UpdateRecurringInput(recurring_id=r.id, is_active=True)
+    )
+    assert updated.is_active is True
+
+
+@pytest.mark.asyncio
+async def test_update_recurring_not_found(repo: InMemoryCostRepository) -> None:
+    with pytest.raises(EntityNotFoundError):
+        await UpdateRecurringUseCase(repo).execute(
+            UpdateRecurringInput(recurring_id=uuid.uuid4(), is_active=False)
+        )
+
+
+@pytest.mark.asyncio
+async def test_generate_monthly_uses_bulk_save(repo: InMemoryCostRepository) -> None:
+    await CreateRecurringUseCase(repo).execute(_recurring_input("Miete", day=1))
+    await CreateRecurringUseCase(repo).execute(_recurring_input("Strom", day=15))
+    created = await GenerateMonthlyUseCase(repo).execute(year=2026, month=6)
+    assert len(created) == 2
+    assert len(repo._transactions) == 2

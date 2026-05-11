@@ -20,8 +20,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Trash2, Plus } from "lucide-react"
-import { useRecurring, useDeleteRecurring } from "@/api/hooks/cost"
+import { Trash2, Plus, Pause, Play } from "lucide-react"
+import { useRecurring, useDeleteRecurring, useToggleRecurring } from "@/api/hooks/cost"
 import type { Recurring } from "@/api/hooks/cost"
 import { TransactionTypeBadge, formatAmount } from "./TransactionBadge"
 import { RecurringCreateModal } from "./RecurringCreateModal"
@@ -79,6 +79,16 @@ export function RecurringList() {
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Recurring | null>(null)
   const { data: entries = [], isLoading, isError } = useRecurring()
+  const toggle = useToggleRecurring()
+
+  async function handleToggle(r: Recurring) {
+    try {
+      await toggle.mutateAsync({ id: r.id, is_active: !r.is_active })
+      toast.success(r.is_active ? "Eintrag pausiert" : "Eintrag aktiviert")
+    } catch {
+      toast.error("Fehler beim Ändern des Status")
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -120,7 +130,7 @@ export function RecurringList() {
               <TableHead className="text-right">Betrag</TableHead>
               <TableHead>Tags</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -166,14 +176,26 @@ export function RecurringList() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => setDeleteTarget(r)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      onClick={() => handleToggle(r)}
+                      disabled={toggle.isPending}
+                      title={r.is_active ? "Pausieren" : "Aktivieren"}
+                    >
+                      {r.is_active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => setDeleteTarget(r)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

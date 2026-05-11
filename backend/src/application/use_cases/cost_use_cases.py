@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from src.application.exceptions import EntityNotFoundError, InvalidOperationError
@@ -177,21 +177,44 @@ class GenerateMonthlyUseCase:
         if not to_create:
             raise InvalidOperationError("Monat wurde bereits generiert")
 
-        created: list[Transaction] = []
-        for r in to_create:
-            day = r.day_of_month or 1
-            tx = Transaction.create(
+        created: list[Transaction] = [
+            Transaction.create(
                 title=r.title,
                 amount=r.amount,
                 transaction_type=r.transaction_type,
-                transaction_date=date(year, month, day),
+                transaction_date=date(year, month, r.day_of_month or 1),
                 tags=r.tags,
                 recurring_source_id=r.id,
             )
-            await self._repo.save_transaction(tx)
-            created.append(tx)
-
+            for r in to_create
+        ]
+        await self._repo.save_transactions_bulk(created)
         return created
+
+
+# ---------------------------------------------------------------------------
+# Update Recurring (is_active toggle)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class UpdateRecurringInput:
+    recurring_id: uuid.UUID
+    is_active: bool
+
+
+class UpdateRecurringUseCase:
+    def __init__(self, repository: ICostRepository) -> None:
+        self._repo = repository
+
+    async def execute(self, input: UpdateRecurringInput) -> RecurringTransaction:
+        recurring = await self._repo.get_recurring(input.recurring_id)
+        if recurring is None:
+            raise EntityNotFoundError("RecurringTransaction", str(input.recurring_id))
+        recurring.is_active = input.is_active
+        recurring.updated_at = datetime.now(timezone.utc)
+        await self._repo.save_recurring(recurring)
+        return recurring
 
 
 # ---------------------------------------------------------------------------

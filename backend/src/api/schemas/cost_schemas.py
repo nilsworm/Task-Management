@@ -7,7 +7,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from src.application.use_cases.cost_use_cases import CreateRecurringInput, CreateTransactionInput, CostAnalytics
+from src.application.use_cases.cost_use_cases import (
+    CostAnalytics,
+    CreateRecurringInput,
+    CreateTransactionInput,
+    UpdateRecurringInput,
+)
 from src.domain.cost.entities import RecurringTransaction, Transaction
 from src.domain.cost.value_objects import RecurrenceInterval, TransactionType
 
@@ -105,6 +110,13 @@ class RecurringCreateRequest(BaseModel):
             tags=self.tags,
             start_date=self.start_date,
         )
+
+
+class RecurringUpdateRequest(BaseModel):
+    is_active: bool
+
+    def to_use_case_input(self, recurring_id: uuid.UUID) -> UpdateRecurringInput:
+        return UpdateRecurringInput(recurring_id=recurring_id, is_active=self.is_active)
 
 
 class CostSummaryResponse(BaseModel):

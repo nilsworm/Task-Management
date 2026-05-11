@@ -88,6 +88,35 @@
 
 ---
 
+### Phase 8 — Cost Management Refactoring (`feature/cost-refactoring`)
+
+> Ziel: Code klein und effizient halten — Bulk-Save für atomare Monatsgenerierung, vollständiger Recurring-Lifecycle via is_active-Toggle, Monat-Navigation im Frontend.
+
+#### Phase 8.1 — Backend: Bulk-Save + is_active-Toggle + Query-Optimierung
+**Liefergegenstand:** Atomare Monatsgenerierung (ein Commit statt N), deaktivierbare Recurring-Einträge, schnellere Tag-Abfrage
+
+- [x] `ICostRepository.save_transactions_bulk(transactions: list[Transaction]) -> None`
+- [x] `PostgresCostRepository.save_transactions_bulk`: merge-Loop + ein Commit
+- [x] `GenerateMonthlyUseCase`: N einzelne `save_transaction`-Calls → `save_transactions_bulk`
+- [x] `list_all_tags` in `PostgresCostRepository`: 2 sequentielle Queries → ein SQL-UNION
+- [x] `UpdateRecurringUseCase` + `UpdateRecurringInput(is_active: bool)`
+- [x] `PATCH /cost/recurring/{id}`: `RecurringUpdateRequest` + Router-Endpoint
+- [x] Tests: `UpdateRecurringUseCase` (UC) + `PATCH /cost/recurring/{id}` (API) — 503 BE passing
+- [x] OpenAPI-Spec aktualisiert + TypeScript-Types neu generiert
+
+#### Phase 8.2 — Frontend: Monat-Navigation + Code-Qualität
+**Liefergegenstand:** Monat frei wählbar (Übersicht + Analyse), saubererer Code, konsistente Toast-Nutzung
+
+- [x] `currentYearMonth()` → `src/lib/utils.ts` extrahieren (war in 2 Dateien dupliziert)
+- [x] `CostManagementPage`: `generateMsg`-State → Sonner toast (konsistent mit restlichen Mutations)
+- [x] `AnalyticsTab.tsx`: doppelten `useCostTags`-Import zusammengeführt
+- [x] Monat-Navigation: Prev/Next-Buttons, State `{ year, month }` in `CostManagementPage`
+- [x] `AnalyticsTab` bekommt `year`/`month` als Props statt eigenem `currentYearMonth()`
+- [x] `RecurringList`: Pause/Play-Toggle-Button für `is_active` + `useToggleRecurring`-Hook
+- [x] Vitest-Tests aktualisiert — 87 FE passing
+
+---
+
 ### Phase 7 — Cost Management (`feature/cost-management`)
 
 > Ziel: Ein vollständiges Kostenverwaltungs-Modul direkt im Task Manager. Nach jeder Phase ist etwas sichtbar und nutzbar.

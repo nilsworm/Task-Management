@@ -12,6 +12,9 @@ class ICostRepository(ABC):
     async def save_transaction(self, transaction: Transaction) -> None: ...
 
     @abstractmethod
+    async def save_transactions_bulk(self, transactions: list[Transaction]) -> None: ...
+
+    @abstractmethod
     async def get_transaction(self, transaction_id: uuid.UUID) -> Transaction | None: ...
 
     @abstractmethod

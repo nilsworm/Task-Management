@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import delete, extract, select
+from sqlalchemy import delete, extract, func, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.cost.entities import RecurringTransaction, Transaction
@@ -27,6 +27,11 @@ class PostgresCostRepository(ICostRepository):
     async def save_transaction(self, transaction: Transaction) -> None:
         model = transaction_to_model(transaction)
         await self._session.merge(model)
+        await self._session.commit()
+
+    async def save_transactions_bulk(self, transactions: list[Transaction]) -> None:
+        for transaction in transactions:
+            await self._session.merge(transaction_to_model(transaction))
         await self._session.commit()
 
     async def get_transaction(self, transaction_id: uuid.UUID) -> Transaction | None:
@@ -95,11 +100,10 @@ class PostgresCostRepository(ICostRepository):
         await self._session.commit()
 
     async def list_all_tags(self) -> list[str]:
-        result_tx = await self._session.execute(select(TransactionModel.tags))
-        result_rec = await self._session.execute(select(RecurringTransactionModel.tags))
-        all_tags: set[str] = set()
-        for row in result_tx.scalars().all():
-            all_tags.update(row or [])
-        for row in result_rec.scalars().all():
-            all_tags.update(row or [])
-        return sorted(all_tags)
+        tx_tags = select(func.unnest(TransactionModel.tags).label("tag"))
+        rec_tags = select(func.unnest(RecurringTransactionModel.tags).label("tag"))
+        stmt = union(tx_tags, rec_tags).subquery()
+        result = await self._session.execute(
+            select(stmt.c.tag).where(stmt.c.tag.isnot(None)).order_by(stmt.c.tag)
+        )
+        return list(result.scalars().all())

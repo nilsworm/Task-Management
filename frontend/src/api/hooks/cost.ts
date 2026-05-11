@@ -79,6 +79,15 @@ export function useDeleteRecurring() {
   })
 }
 
+export function useToggleRecurring() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
+      apiPatch<Recurring>(`/cost/recurring/${id}`, { is_active }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: RECURRING_KEY }),
+  })
+}
+
 export function useCostTags() {
   return useQuery({
     queryKey: TAGS_KEY,

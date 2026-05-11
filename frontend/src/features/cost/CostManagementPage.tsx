@@ -1,6 +1,8 @@
 import { useState } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { currentYearMonth } from "@/lib/utils"
 import { ApiError } from "@/api/client"
 import { useCostSummary, useCostTags, useGenerateMonthly } from "@/api/hooks/cost"
 import { TransactionList } from "./TransactionList"
@@ -17,16 +19,21 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "analytics", label: "Analyse" },
 ]
 
-function currentYearMonth() {
-  const now = new Date()
-  return { year: now.getFullYear(), month: now.getMonth() + 1 }
+const MONTH_NAMES = [
+  "Januar", "Februar", "März", "April", "Mai", "Juni",
+  "Juli", "August", "September", "Oktober", "November", "Dezember",
+]
+
+function clampYearMonth(year: number, month: number): { year: number; month: number } {
+  if (month < 1) return { year: year - 1, month: 12 }
+  if (month > 12) return { year: year + 1, month: 1 }
+  return { year, month }
 }
 
 export function CostManagementPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview")
-  const { year, month } = currentYearMonth()
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [generateMsg, setGenerateMsg] = useState<string | null>(null)
+  const [{ year, month }, setYearMonth] = useState(currentYearMonth)
 
   const { data: summary, isLoading: summaryLoading } = useCostSummary(year, month)
   const { data: availableTags = [] } = useCostTags()
@@ -34,31 +41,41 @@ export function CostManagementPage() {
 
   const filters = { year, month, tags: selectedTags.length > 0 ? selectedTags : undefined }
 
+  function navigate(delta: number) {
+    setYearMonth(({ year: y, month: m }) => clampYearMonth(y, m + delta))
+  }
+
   async function handleGenerate() {
-    setGenerateMsg(null)
     try {
       const created = await generateMonthly.mutateAsync({ year, month })
-      setGenerateMsg(
-        created.length === 0
-          ? "Keine aktiven Wiederholungseinträge vorhanden."
-          : `${created.length} Buchung${created.length !== 1 ? "en" : ""} generiert.`,
-      )
+      if (created.length === 0) {
+        toast.info("Keine aktiven Wiederholungseinträge vorhanden.")
+      } else {
+        toast.success(`${created.length} Buchung${created.length !== 1 ? "en" : ""} generiert.`)
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setGenerateMsg("Monat wurde bereits generiert.")
+        toast.info("Monat wurde bereits generiert.")
       } else {
-        setGenerateMsg("Fehler beim Generieren.")
+        toast.error("Fehler beim Generieren.")
       }
     }
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold">Cost Management</h1>
-        <p className="text-sm text-muted-foreground">
-          Einnahmen und Ausgaben verwalten
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Cost Management</h1>
+          <p className="text-sm text-muted-foreground">Einnahmen und Ausgaben verwalten</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>‹</Button>
+          <span className="min-w-[120px] text-center text-sm font-medium tabular-nums">
+            {MONTH_NAMES[month - 1]} {year}
+          </span>
+          <Button variant="ghost" size="sm" onClick={() => navigate(1)}>›</Button>
+        </div>
       </div>
 
       {/* Tab Bar */}
@@ -85,19 +102,15 @@ export function CostManagementPage() {
       {activeTab === "overview" && (
         <div className="flex flex-col gap-4">
           <SummaryCards summary={summary} isLoading={summaryLoading} />
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerate}
-              disabled={generateMonthly.isPending}
-            >
-              {generateMonthly.isPending ? "Wird geladen…" : "Monat laden"}
-            </Button>
-            {generateMsg && (
-              <span className="text-xs text-muted-foreground">{generateMsg}</span>
-            )}
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="self-start"
+            onClick={handleGenerate}
+            disabled={generateMonthly.isPending}
+          >
+            {generateMonthly.isPending ? "Wird geladen…" : "Monat laden"}
+          </Button>
           <TagFilterBar
             availableTags={availableTags}
             selectedTags={selectedTags}
@@ -107,7 +120,7 @@ export function CostManagementPage() {
         </div>
       )}
       {activeTab === "recurring" && <RecurringList />}
-      {activeTab === "analytics" && <AnalyticsTab />}
+      {activeTab === "analytics" && <AnalyticsTab year={year} month={month} />}
     </div>
   )
 }
