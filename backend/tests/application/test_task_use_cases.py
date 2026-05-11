@@ -6,6 +6,7 @@ from datetime import date
 import pytest
 
 from src.application.use_cases.task_use_cases import (
+    UNSET,
     CreateTaskInput,
     CreateTaskUseCase,
     DeleteTaskUseCase,
@@ -348,3 +349,50 @@ async def test_delete_task_not_found_raises(
     use_case = DeleteTaskUseCase(task_repo, event_bus)
     with pytest.raises(ValueError):
         await use_case.execute(uuid.uuid4())
+
+
+# ---------------------------------------------------------------------------
+# UpdateTaskUseCase — due_date sentinel
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_update_task_due_date_not_provided_leaves_unchanged(
+    task_repo: InMemoryTaskRepository,
+    event_bus: InMemoryEventBus,
+    factory: TaskFactory,
+) -> None:
+    task = factory.create_milestone("M", due_date=date(2026, 12, 31))
+    await task_repo.save(task)
+    updated = await UpdateTaskUseCase(task_repo, event_bus).execute(
+        UpdateTaskInput(task_id=task.id, title="Updated")
+    )
+    from src.domain.entities import Milestone
+    assert isinstance(updated, Milestone)
+    assert updated.due_date == date(2026, 12, 31)
+
+
+@pytest.mark.asyncio
+async def test_update_task_due_date_explicit_none_clears_it(
+    task_repo: InMemoryTaskRepository,
+    event_bus: InMemoryEventBus,
+    factory: TaskFactory,
+) -> None:
+    task = factory.create_milestone("M", due_date=date(2026, 12, 31))
+    await task_repo.save(task)
+    updated = await UpdateTaskUseCase(task_repo, event_bus).execute(
+        UpdateTaskInput(task_id=task.id, due_date=None)
+    )
+    from src.domain.entities import Milestone
+    assert isinstance(updated, Milestone)
+    assert updated.due_date is None
+
+
+@pytest.mark.asyncio
+async def test_update_task_due_date_unset_default(
+    task_repo: InMemoryTaskRepository,
+    event_bus: InMemoryEventBus,
+    factory: TaskFactory,
+) -> None:
+    inp = UpdateTaskInput(task_id=uuid.uuid4())
+    assert inp.due_date is UNSET

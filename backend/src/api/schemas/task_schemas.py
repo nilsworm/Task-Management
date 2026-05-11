@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from src.api.schemas.common import PriorityLiteral, StatusLiteral
-from src.application.use_cases.task_use_cases import CreateTaskInput, UpdateTaskInput
+from src.application.use_cases.task_use_cases import UNSET, CreateTaskInput, UpdateTaskInput
 from src.domain.entities import DailyTask, LongTermGoal, Milestone, SprintTask, Task
 from src.domain.value_objects import DateRange, Estimation, Priority, Tag, TaskStatus
 
@@ -65,7 +65,7 @@ class TaskUpdateRequest(BaseModel):
             priority=Priority(self.priority) if self.priority else None,
             estimation=Estimation(self.estimation) if self.estimation else None,
             tags=frozenset(Tag(t) for t in self.tags) if self.tags is not None else None,
-            due_date=self.due_date,
+            due_date=self.due_date if "due_date" in self.model_fields_set else UNSET,
         )
 
 

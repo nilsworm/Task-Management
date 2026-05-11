@@ -3,6 +3,17 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from datetime import date
+from typing import Any
+
+
+class _Unset:
+    """Sentinel: field was not included in the request — do not change."""
+    __slots__ = ()
+    def __repr__(self) -> str:
+        return "UNSET"
+
+
+UNSET: Any = _Unset()
 
 from src.application.exceptions import EntityNotFoundError, InvalidOperationError
 from src.domain.entities import Milestone, Task
@@ -88,7 +99,7 @@ class UpdateTaskInput:
     priority: Priority | None = None
     estimation: Estimation | None = None
     tags: frozenset[Tag] | None = None
-    due_date: date | None = None
+    due_date: date | None | _Unset = UNSET  # UNSET = not provided; None = clear
 
 
 class UpdateTaskUseCase:
@@ -117,8 +128,8 @@ class UpdateTaskUseCase:
         if input.tags is not None:
             task.tags = input.tags
             changed.append("tags")
-        if input.due_date is not None and isinstance(task, Milestone):
-            task.due_date = input.due_date
+        if not isinstance(input.due_date, _Unset) and isinstance(task, Milestone):
+            task.due_date = input.due_date  # None clears it
             changed.append("due_date")
 
         await self._repo.save(task)

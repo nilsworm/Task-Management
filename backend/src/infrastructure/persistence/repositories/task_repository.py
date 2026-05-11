@@ -58,3 +58,17 @@ class PostgresTaskRepository(ITaskRepository):
         result = await self._session.execute(select(TaskModel).where(*conditions))
         tasks = [task_from_model(m) for m in result.scalars().all()]
         return [t for t in tasks if isinstance(t, SprintTask)]
+
+    async def list_by_sprint_ids(
+        self, sprint_ids: list[uuid.UUID]
+    ) -> list[SprintTask]:
+        if not sprint_ids:
+            return []
+        result = await self._session.execute(
+            select(TaskModel).where(
+                TaskModel.task_type == "sprint",
+                TaskModel.sprint_id.in_(sprint_ids),
+            )
+        )
+        tasks = [task_from_model(m) for m in result.scalars().all()]
+        return [t for t in tasks if isinstance(t, SprintTask)]

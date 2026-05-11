@@ -55,6 +55,14 @@ class InMemoryTaskRepository(ITaskRepository):
             tasks = [t for t in tasks if t.status == status_filter]
         return tasks
 
+    async def list_by_sprint_ids(
+        self, sprint_ids: list[uuid.UUID]
+    ) -> list[SprintTask]:
+        return [
+            t for t in self._store.values()
+            if isinstance(t, SprintTask) and t.sprint_id in sprint_ids
+        ]
+
 
 class InMemorySprintRepository(ISprintRepository):
     def __init__(self) -> None:
@@ -98,6 +106,9 @@ class InMemoryGoalRepository(IGoalRepository):
 
     async def list_key_results(self, goal_id: uuid.UUID) -> list[Any]:
         return [kr for kr in self._key_results.values() if kr.goal_id == goal_id]
+
+    async def list_all_key_results(self) -> list[Any]:
+        return list(self._key_results.values())
 
     async def get_key_result(self, key_result_id: uuid.UUID) -> Any | None:
         return self._key_results.get(key_result_id)

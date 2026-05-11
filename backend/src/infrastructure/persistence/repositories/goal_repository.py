@@ -48,6 +48,10 @@ class PostgresGoalRepository(IGoalRepository):
         )
         return [key_result_from_model(m) for m in result.scalars().all()]
 
+    async def list_all_key_results(self) -> list[KeyResult]:
+        result = await self._session.execute(select(KeyResultModel))
+        return [key_result_from_model(m) for m in result.scalars().all()]
+
     async def get_key_result(self, key_result_id: uuid.UUID) -> KeyResult | None:
         result = await self._session.execute(
             select(KeyResultModel).where(KeyResultModel.id == key_result_id)

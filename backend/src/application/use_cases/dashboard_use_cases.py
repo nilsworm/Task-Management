@@ -234,12 +234,17 @@ class GetVelocityUseCase:
     async def execute(self, last_n: int = 5) -> VelocityData:
         all_sprints = await self._sprint_repo.list_all()
         completed = [s for s in all_sprints if s.status is SprintStatus.COMPLETED]
-        # Most recent N completed sprints (by creation date)
         recent = sorted(completed, key=lambda s: s.created_at, reverse=True)[:last_n]
+
+        all_tasks = await self._task_repo.list_by_sprint_ids([s.id for s in recent])
+        tasks_by_sprint: dict[uuid.UUID, list] = {}
+        for t in all_tasks:
+            if t.sprint_id is not None:
+                tasks_by_sprint.setdefault(t.sprint_id, []).append(t)
 
         results: list[SprintVelocityData] = []
         for sprint in recent:
-            sprint_tasks = await self._task_repo.list_by_sprint(sprint.id)
+            sprint_tasks = tasks_by_sprint.get(sprint.id, [])
             points = sum(
                 t.estimation.story_points
                 for t in sprint_tasks
@@ -281,15 +286,17 @@ class GetGoalProgressUseCase:
 
     async def execute(self) -> GoalProgressData:
         goals = await self._goal_repo.list_all()
+        all_krs = await self._goal_repo.list_all_key_results()
+        krs_by_goal: dict[uuid.UUID, list] = {}
+        for kr in all_krs:
+            krs_by_goal.setdefault(kr.goal_id, []).append(kr)
+
         items: list[GoalProgressItemData] = []
         for goal in goals:
-            krs = await self._goal_repo.list_key_results(goal.id)
-            if krs:
-                avg_progress = round(
-                    sum(kr.progress_percent for kr in krs) / len(krs), 1
-                )
-            else:
-                avg_progress = 0.0
+            krs = krs_by_goal.get(goal.id, [])
+            avg_progress = round(
+                sum(kr.progress_percent for kr in krs) / len(krs), 1
+            ) if krs else 0.0
             items.append(GoalProgressItemData(
                 goal_id=goal.id,
                 goal_title=goal.title,

@@ -88,6 +88,35 @@
 
 ---
 
+### Phase 9 — Code-Optimierungen (`feature/code-optimizations`)
+
+> Ziel: Bestehende N+1-Queries und sequentielle DB-Calls beseitigen, `UpdateTaskUseCase` um Feld-Leer-Funktion erweitern.
+
+#### Phase 9.1 — N+1 in SprintRepository
+**Liefergegenstand:** `list_all` lädt Task-IDs in einem Batch statt N Einzelabfragen
+
+- [x] `PostgresSprintRepository._load_task_ids_bulk(sprint_ids)` — ein Query für alle Sprints
+- [x] `list_all` nutzt Bulk-Methode statt Schleife mit `_load_task_ids`
+- [x] Tests unverändert grün
+
+#### Phase 9.2 — Batch-Queries in Dashboard Use Cases ✅
+**Liefergegenstand:** Velocity und GoalProgress machen je einen DB-Call statt N
+
+- [x] `ITaskRepository.list_by_sprint_ids(sprint_ids)` + Implementierung in `PostgresTaskRepository`
+- [x] `GetVelocityUseCase`: Loop mit `list_by_sprint` → `list_by_sprint_ids`
+- [x] `IGoalRepository.list_all_key_results()` + Implementierung in `PostgresGoalRepository`
+- [x] `GetGoalProgressUseCase`: Loop mit `list_key_results` → `list_all_key_results` + Python-Gruppierung
+- [x] Tests für neue Repo-Methoden + UC-Tests weiterhin grün
+
+#### Phase 9.3 — UpdateTaskUseCase: Felder leeren ✅
+**Liefergegenstand:** `due_date` lässt sich explizit auf `None` setzen
+
+- [x] `UNSET`-Sentinel in `task_use_cases.py` — unterscheidet "nicht angegeben" von "explizit null"
+- [x] `TaskUpdateRequest.to_use_case_input()` nutzt `model_fields_set` für `due_date`
+- [x] 3 neue Tests — **506 passing**
+
+---
+
 ### Phase 8 — Cost Management Refactoring (`feature/cost-refactoring`)
 
 > Ziel: Code klein und effizient halten — Bulk-Save für atomare Monatsgenerierung, vollständiger Recurring-Lifecycle via is_active-Toggle, Monat-Navigation im Frontend.

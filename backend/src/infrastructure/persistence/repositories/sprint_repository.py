@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.repositories.sprint_repository import ISprintRepository
@@ -39,11 +39,11 @@ class PostgresSprintRepository(ISprintRepository):
 
     async def list_all(self) -> list[Sprint]:
         result = await self._session.execute(select(SprintModel))
-        sprints = []
-        for model in result.scalars().all():
-            task_ids = await self._load_task_ids(model.id)
-            sprints.append(sprint_from_model(model, task_ids))
-        return sprints
+        models = result.scalars().all()
+        if not models:
+            return []
+        task_id_map = await self._load_task_ids_bulk([m.id for m in models])
+        return [sprint_from_model(m, task_id_map.get(m.id, [])) for m in models]
 
     async def get_active(self) -> Sprint | None:
         result = await self._session.execute(
@@ -63,3 +63,17 @@ class PostgresSprintRepository(ISprintRepository):
             )
         )
         return list(result.scalars().all())
+
+    async def _load_task_ids_bulk(
+        self, sprint_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, list[uuid.UUID]]:
+        result = await self._session.execute(
+            select(TaskModel.id, TaskModel.sprint_id).where(
+                TaskModel.sprint_id.in_(sprint_ids),
+                TaskModel.task_type == "sprint",
+            )
+        )
+        mapping: dict[uuid.UUID, list[uuid.UUID]] = {}
+        for task_id, sprint_id in result.all():
+            mapping.setdefault(sprint_id, []).append(task_id)
+        return mapping

@@ -23,6 +23,9 @@ class IGoalRepository(ABC):
     async def list_key_results(self, goal_id: uuid.UUID) -> list[KeyResult]: ...
 
     @abstractmethod
+    async def list_all_key_results(self) -> list[KeyResult]: ...
+
+    @abstractmethod
     async def get_key_result(self, key_result_id: uuid.UUID) -> KeyResult | None: ...
 
     @abstractmethod
