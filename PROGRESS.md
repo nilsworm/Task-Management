@@ -88,6 +88,69 @@
 
 ---
 
+### Phase 11 — CSV Import (`feature/features`)
+
+> Ziel: Importiere Bank-Transaktionen aus Consorsbank und Trade Republic CSV-Exporten in das Cost Management System.
+
+#### Phase 11.1 — CSVParser Implementation ✅
+**Liefergegenstand:** Utility-Modul zum Parsen von Consorsbank- und Trade Republic-CSV-Formaten
+
+- [x] `InvalidCSVFormatError` und `InvalidTransactionDataError` Exception-Klassen
+- [x] `CSVParser.parse_consorsbank(file_path)` — parst Consorsbank-Format
+- [x] `CSVParser.parse_trade_republic(file_path)` — parst Trade Republic-Format
+- [x] Handling von +/− Prefixen und Komma-Dezimaltrennzeichen
+- [x] Standardisierte Dict-Struktur: `{date, amount, type, description}`
+- [x] 6 Unit-Tests (Gültige CSVs, fehlende Spalten, ungültige Beträge) — alle grün
+- [x] 565 Backend-Tests gesamt ✅
+
+#### Phase 11.2 — CSV-Upload Endpoint (TODO)
+**Liefergegenstand:** `POST /cost/import` akzeptiert hochgeladene CSV-Datei
+
+- [ ] `ImportTransactionsUseCase` — orchestriert Parse + Batch-Save via `CSVParser`
+- [ ] Endpoint `POST /cost/import` mit `file: UploadFile`
+- [ ] Error-Handling: ungültige Formate, Duplikat-Warnung
+- [ ] 409-Antwort wenn Transaktionen für Datum bereits existieren
+
+#### Phase 11.3 — Frontend Import Dialog (TODO)
+**Liefergegenstand:** UI zum Uploaden einer CSV-Datei mit Vorschau vor dem Importieren
+
+- [ ] `CostImportDialog`: Datei-Upload, Trockentest-Vorschau (erste 5 Zeilen)
+- [ ] Bestätigungsmodal mit importierten Transaktionsanzahl
+- [ ] Toast-Feedback bei Erfolg/Fehler
+
+---
+
+### Phase 10 — Features (`feature/features`)
+
+#### Phase 10.1 — Task-Textsuche
+**Liefergegenstand:** Freitext-Suche über Titel im /tasks-View
+
+- [ ] `ITaskRepository.list_by_search(query: str) -> list[Task]` + `PostgresTaskRepository` mit `ILIKE`
+- [ ] `GET /tasks?search=` Query-Parameter im Router
+- [ ] `TaskFilterBar`: debounced Texteingabe, steuert `search`-Filter
+- [ ] `useTasks`-Hook: `search`-Parameter ergänzen
+- [ ] Tests (UC/API/Vitest)
+
+#### Phase 10.2 — Überfällige Tasks hervorheben
+**Liefergegenstand:** Tasks mit `due_date < heute` und Status ≠ Done/Cancelled werden visuell markiert
+
+- [ ] `GET /tasks?overdue=true` Backend-Filter (`due_date < today AND status NOT IN done/cancelled`)
+- [ ] `ITaskRepository`: `overdue`-Filter in `list_all` oder neue `list_overdue`-Methode
+- [ ] Frontend: roter visueller Indikator in `TaskTable` + `TaskBoardView`
+- [ ] Optionaler Filter-Toggle in `TaskFilterBar`
+- [ ] Tests
+
+#### Phase 10.3 — Sprint-Abschluss-Zusammenfassung
+**Liefergegenstand:** Modal vor "Complete" zeigt Velocity + erlaubt Backlog-Move für unfertige Tasks
+
+- [ ] `CompleteSprintUseCase`: optionaler Parameter `move_incomplete_to_backlog: bool`
+- [ ] `POST /sprints/{id}/complete` akzeptiert Body `{"move_incomplete_to_backlog": bool}`
+- [ ] `SprintCompleteModal`: Zusammenfassung (done/offen, Velocity) + Checkbox für Backlog-Move
+- [ ] `SprintDetailPage` / `SprintCard`: Button öffnet Modal statt direktem Aufruf
+- [ ] Tests
+
+---
+
 ### Phase 9 — Code-Optimierungen (`feature/code-optimizations`)
 
 > Ziel: Bestehende N+1-Queries und sequentielle DB-Calls beseitigen, `UpdateTaskUseCase` um Feld-Leer-Funktion erweitern.
@@ -227,6 +290,24 @@
 ---
 
 ## Session-Log
+
+### 2026-05-14 — Phase 11.1: CSVParser Implementation ✅
+
+- **CSVParser module:** `src/infrastructure/import_/csv_parser.py` mit 2 statischen Methoden
+  - `parse_consorsbank(file_path)` — parst Consorsbank-Exporte (7-spaltig)
+  - `parse_trade_republic(file_path)` — parst Trade Republic-Exporte (4-spaltig)
+- **Exception-Handling:** `InvalidCSVFormatError` (fehlende Spalten), `InvalidTransactionDataError` (Parse-Fehler)
+- **Features:**
+  - +/− Prefix-Handling (Betrag mit Vorzeichen → absolut + type INCOME/EXPENSE)
+  - Komma-Dezimaltrennzeichen-Support (EUR-Format)
+  - `Decimal` für exakte Geldbeträge
+  - Standardisierte Rückgabe: `[{"date": DATE, "amount": DECIMAL, "type": str, "description": str}]`
+- **Tests:** 6 Unit-Tests, alle grün
+  - Gültige CSVs (Consorsbank + Trade Republic)
+  - Fehlende Spalten
+  - Ungültige Beträge (InvalidOperation → InvalidTransactionDataError)
+- **Commits:** 1 (feat: implement CSVParser for Consorsbank and Trade Republic formats)
+- **Status:** 565 Backend-Tests gesamt, alle grün ✅
 
 ### 2026-04-24 — Phase 7, Interaktions-Ergänzungen B1–B4
 
