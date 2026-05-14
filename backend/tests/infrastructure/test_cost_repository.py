@@ -25,6 +25,7 @@ def _tx(
     tx_date: date = date(2026, 4, 1),
     tags: list[str] | None = None,
     recurring_source_id: uuid.UUID | None = None,
+    import_source: str | None = None,
 ) -> Transaction:
     return Transaction.create(
         title=title,
@@ -33,6 +34,7 @@ def _tx(
         transaction_date=tx_date,
         tags=tags or [],
         recurring_source_id=recurring_source_id,
+        import_source=import_source,
     )
 
 
@@ -115,6 +117,15 @@ async def test_transaction_preserves_recurring_source_id(repo: PostgresCostRepos
     result = await repo.get_transaction(tx.id)
     assert result is not None
     assert result.recurring_source_id == r.id
+
+
+async def test_transaction_preserves_import_source(repo: PostgresCostRepository) -> None:
+    """Verify import_source field is persisted and retrieved correctly."""
+    tx = _tx(import_source="consorsbank")
+    await repo.save_transaction(tx)
+    result = await repo.get_transaction(tx.id)
+    assert result is not None
+    assert result.import_source == "consorsbank"
 
 
 # ---------------------------------------------------------------------------
