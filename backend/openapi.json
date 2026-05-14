@@ -110,6 +110,24 @@
               ],
               "title": "Sprint Id"
             }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
           }
         ],
         "responses": {
@@ -1955,6 +1973,30 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cost/import-status": {
+      "get": {
+        "tags": [
+          "cost"
+        ],
+        "summary": "Get Import Status",
+        "description": "Get last CSV import status: date and transaction count.",
+        "operationId": "get_import_status_cost_import_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Import Status Cost Import Status Get"
                 }
               }
             }
