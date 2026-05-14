@@ -10,9 +10,13 @@ class TestCSVParserConsorsbank:
 
     def test_parse_valid_consorsbank_csv(self):
         """Parse valid Consorsbank CSV with income + expense transactions."""
-        csv_content = """Buchungstag,Wertstellung,Umsatzart,Begünstigter / Auftraggeber,Verwendungszweck,Betrag,Saldo
-2026-05-01,2026-05-01,UEBERWEISUNG,John Doe,Salary May,+5000.00,10000.00
-2026-05-02,2026-05-02,KARTENZAHLUNG,Amazon,Laptop,−250.50,9749.50"""
+        csv_content = """Konto
+Allgemeine Informationen
+Kontostand
+Kontoumsätze
+Buchung;Valuta;Sender / Empfänger;IBAN;BIC;Buchungstext;Verwendungszweck;Kategorie;Stichwörter;Umsatz geteilt;Betrag;Währung
+01.05.2026;01.05.2026;John Doe;DE123;BIC123;UEBERWEISUNG;Salary May;n/a;n/a;n/a;5.000,00;EUR
+02.05.2026;02.05.2026;Amazon;DE456;BIC456;KARTENZAHLUNG;Laptop;n/a;n/a;n/a;−250,50;EUR"""
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=True, encoding='utf-8') as f:
             f.write(csv_content)
@@ -24,16 +28,16 @@ class TestCSVParserConsorsbank:
         assert result[0]["date"] == date(2026, 5, 1)
         assert result[0]["amount"] == Decimal("5000.00")
         assert result[0]["type"] == "INCOME"
-        assert result[0]["description"] == "John Doe - Salary May"
+        assert result[0]["description"] == "John Doe"
 
         assert result[1]["date"] == date(2026, 5, 2)
         assert result[1]["amount"] == Decimal("250.50")
         assert result[1]["type"] == "EXPENSE"
-        assert result[1]["description"] == "Amazon - Laptop"
+        assert result[1]["description"] == "Amazon"
 
     def test_parse_consorsbank_missing_columns(self):
         """Raise InvalidCSVFormatError if expected columns are missing."""
-        csv_content = "Datum,Betrag\n2026-05-01,1000"
+        csv_content = "Buchung;Betrag\n01.05.2026;1000"
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=True, encoding='utf-8') as f:
             f.write(csv_content)
@@ -44,8 +48,12 @@ class TestCSVParserConsorsbank:
 
     def test_parse_consorsbank_invalid_amount(self):
         """Raise InvalidTransactionDataError if amount is not parseable."""
-        csv_content = """Buchungstag,Wertstellung,Umsatzart,Begünstigter / Auftraggeber,Verwendungszweck,Betrag,Saldo
-2026-05-01,2026-05-01,UEBERWEISUNG,John Doe,Salary,INVALID,10000.00"""
+        csv_content = """Konto
+Allgemeine Informationen
+Kontostand
+Kontoumsätze
+Buchung;Valuta;Sender / Empfänger;IBAN;BIC;Buchungstext;Verwendungszweck;Kategorie;Stichwörter;Umsatz geteilt;Betrag;Währung
+01.05.2026;01.05.2026;John Doe;DE123;BIC123;UEBERWEISUNG;Salary;n/a;n/a;n/a;INVALID;EUR"""
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=True, encoding='utf-8') as f:
             f.write(csv_content)
