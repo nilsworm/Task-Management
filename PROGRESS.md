@@ -312,6 +312,19 @@
 
 ## Session-Log
 
+### 2026-05-14 — Phase 11.5: APScheduler Registration ✅
+
+- **APScheduler Integration:** `backend/pyproject.toml` + `backend/src/main.py`
+  - Added `apscheduler>=3.10.4` dependency
+  - Registered AsyncIOScheduler in FastAPI startup event
+  - Configures weekly job: Monday 9:00 AM (UTC)
+  - Job invokes `ImportScheduler.run_weekly_import()` async method
+  - Graceful shutdown of scheduler on app termination
+  - Error logging if scheduler fails to start
+- **Testing:** All 575 Backend-Tests passing ✅
+- **Deprecation Note:** FastAPI `on_event` decorators are deprecated (should use lifespan context manager in future), but functional
+- **Next Step:** Phase 11.6 (CSV-Upload Endpoint via POST /cost/import)
+
 ### 2026-05-14 — Phase 11.4: ImportScheduler for Weekly Execution ✅
 
 - **ImportScheduler Service:** `src/application/services/import_scheduler.py` — Orchestrierung von CSV-Import
