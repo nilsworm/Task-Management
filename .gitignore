@@ -49,3 +49,6 @@ dist-ssr/
 # Playwright
 /frontend/playwright-report/
 /frontend/test-results/
+
+# CSV Imports
+/imports
