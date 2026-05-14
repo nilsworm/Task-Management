@@ -103,6 +103,15 @@
 - [x] 6 Unit-Tests (Gültige CSVs, fehlende Spalten, ungültige Beträge) — alle grün
 - [x] 565 Backend-Tests gesamt ✅
 
+#### Phase 11.3 — Repository Extension for CSV Imports ✅
+**Liefergegenstand:** CostRepository-Methode zum Persistieren geparster CSV-Zeilen
+
+- [x] `ICostRepository.create_transaction_from_import(parsed_row, import_source)` Interface-Methode
+- [x] `PostgresCostRepository.create_transaction_from_import()` Implementierung mit Typ-Konvertierung
+- [x] `InMemoryCostRepository` Stub für Test-Kompatibilität ergänzt
+- [x] 2 Integration-Tests (Consorsbank + Trade Republic Quellen)
+- [x] 567 Backend-Tests gesamt ✅ (2 neue Tests, alle grün)
+
 #### Phase 11.2 — CSV-Upload Endpoint (TODO)
 **Liefergegenstand:** `POST /cost/import` akzeptiert hochgeladene CSV-Datei
 
@@ -290,6 +299,20 @@
 ---
 
 ## Session-Log
+
+### 2026-05-14 — Phase 11.3: Repository Extension for CSV Imports ✅
+
+- **CostRepository Extension:** `ICostRepository.create_transaction_from_import()` + `PostgresCostRepository` Implementierung
+  - Konvertiert geparste CSV-Zeilen (uppercase Typ) zu `Transaction`-Entities
+  - Setzt `import_source` automatisch für Audit-Trail
+  - Persistiert via existierende `save_transaction()`-Methode
+- **Tests:** 2 neue Integration-Tests
+  - `test_create_transaction_from_import_consorsbank`: Consorsbank-Quelle
+  - `test_create_transaction_from_import_trade_republic`: Trade Republic-Quelle
+- **Test-Infrastruktur:** `InMemoryCostRepository` um neue Methode erweitert (für Unit-Tests)
+- **Status:** 567 Backend-Tests gesamt, alle grün ✅
+- **Commit:** feat: add create_transaction_from_import method to CostRepository
+- **Nächster Schritt:** Phase 11.2 (CSV-Upload Endpoint)
 
 ### 2026-05-14 — Phase 11.1: CSVParser Implementation ✅
 
