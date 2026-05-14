@@ -312,6 +312,26 @@
 
 ## Session-Log
 
+### 2026-05-14 — Task 9: ImportStatusCard Component for Frontend ✅
+
+- **Component:** `src/features/cost/ImportStatusCard.tsx`
+  - Displays last import date (formatted via `Intl.DateTimeFormat`)
+  - Shows transaction count from most recent import
+  - Shows loading skeleton (`Skeleton` component) while fetching
+  - Shows empty state when no imports exist (dashed border, helpful text)
+  - Uses design tokens: `border-border`, `bg-surface-2`, `bg-surface-3`, `text-secondary/tertiary`
+- **Tests:** `src/features/cost/__tests__/ImportStatusCard.test.tsx` — 4 tests ✅
+  - Renders import date and transaction count
+  - Shows loading skeleton
+  - Displays empty state for no imports
+  - Handles single transaction label (grammar neutral: "X transactions")
+- **Fixes:** TaskFilterBar test missing `search` field in default — added to support Phase 10.1
+- **Status:** **95 Frontend tests passing** ✅, TypeScript 0 errors ✅, Build succeeds ✅
+- **Commits:**
+  - `feat: add ImportStatusCard component for displaying import status`
+  - `fix: add missing search field to TaskFilterBar test default`
+- **Next Step:** Phase 11.5 (CSV-Upload Endpoint POST /cost/import)
+
 ### 2026-05-14 — Task 8: useImportStatus Hook for Frontend ✅
 
 - **Hook Implementation:** `useImportStatus()` added to `src/api/hooks/cost.ts`
