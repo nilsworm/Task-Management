@@ -25,6 +25,7 @@ def transaction_to_model(t: Transaction) -> TransactionModel:
         tags=t.tags,
         description=t.description,
         recurring_source_id=t.recurring_source_id,
+        import_source=t.import_source,
         created_at=t.created_at,
         updated_at=t.updated_at,
     )
@@ -40,6 +41,7 @@ def transaction_from_model(m: TransactionModel) -> Transaction:
         tags=list(m.tags or []),
         description=m.description,
         recurring_source_id=m.recurring_source_id,
+        import_source=m.import_source,
         created_at=_utc(m.created_at),
         updated_at=_utc(m.updated_at),
     )

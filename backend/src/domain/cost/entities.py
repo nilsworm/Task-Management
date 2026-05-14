@@ -49,6 +49,7 @@ class Transaction:
     tags: list[str]
     description: str
     recurring_source_id: uuid.UUID | None
+    import_source: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -68,6 +69,7 @@ class Transaction:
         tags: list[str] | None = None,
         description: str = "",
         recurring_source_id: uuid.UUID | None = None,
+        import_source: str | None = None,
         id: uuid.UUID | None = None,
     ) -> Transaction:
         now = _now()
@@ -80,6 +82,7 @@ class Transaction:
             tags=tags or [],
             description=description,
             recurring_source_id=recurring_source_id,
+            import_source=import_source,
             created_at=now,
             updated_at=now,
         )
