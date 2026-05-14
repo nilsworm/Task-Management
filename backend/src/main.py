@@ -1,3 +1,6 @@
+import logging
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,7 +16,15 @@ from src.api.routers.goal_router import router as goal_router
 from src.api.routers.sprint_router import router as sprint_router
 from src.api.routers.task_router import router as task_router
 from src.application.exceptions import EntityNotFoundError, InvalidOperationError
+from src.application.services.import_scheduler import ImportScheduler
 from src.config import settings
+from src.infrastructure.database import async_session_factory
+from src.infrastructure.persistence.repositories.cost_repository import PostgresCostRepository
+
+logger = logging.getLogger(__name__)
+
+# Global scheduler reference
+scheduler: AsyncIOScheduler | None = None
 
 app = FastAPI(
     title="Task Manager API",
@@ -38,3 +49,42 @@ app.include_router(sprint_router)
 app.include_router(goal_router)
 app.include_router(dashboard_router)
 app.include_router(cost_router)
+
+
+@app.on_event("startup")
+async def start_scheduler():
+    """Start APScheduler for weekly CSV import."""
+    global scheduler
+
+    try:
+        # Create session for scheduler dependency
+        async with async_session_factory() as session:
+            cost_repo = PostgresCostRepository(session)
+            import_scheduler = ImportScheduler(cost_repo, settings.import_folder)
+
+            # Initialize and configure scheduler
+            scheduler = AsyncIOScheduler()
+
+            # Add weekly job (Monday 9:00 AM)
+            scheduler.add_job(
+                func=import_scheduler.run_weekly_import,
+                trigger="cron",
+                day_of_week=0,  # Monday
+                hour=9,
+                minute=0,
+                id="weekly_csv_import",
+            )
+
+            scheduler.start()
+            logger.info("CSV import scheduler started (weekly, Monday 9:00 AM)")
+    except Exception as e:
+        logger.error(f"Failed to start CSV import scheduler: {e}")
+
+
+@app.on_event("shutdown")
+async def stop_scheduler():
+    """Stop scheduler on shutdown."""
+    global scheduler
+    if scheduler:
+        scheduler.shutdown()
+        logger.info("CSV import scheduler stopped")
