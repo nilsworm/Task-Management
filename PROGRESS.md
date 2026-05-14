@@ -378,6 +378,27 @@
 
 **Next Phase:** Phase 10.5 (optional) — POST /cost/import endpoint for manual CSV uploads, intelligent tag categorization (ML), duplicate detection
 
+### 2026-05-14 — Phase 10.4: Consorsbank CSV Parser Fix ✅
+
+**Issue:** CSVParser expected Consorsbank format with columns `Buchungstag, Wertstellung, Umsatzart, ...` with comma delimiter and YYYY-MM-DD dates. Real Consorsbank CSV export has different format: semicolon-delimited, metadata headers before transaction data, actual columns: `Buchung, Valuta, Sender / Empfänger, IBAN, BIC, Buchungstext, Verwendungszweck, Kategorie, Stichwörter, Umsatz geteilt, Betrag, Währung` with DD.MM.YYYY dates and German number format (1.234,56).
+
+**Root Cause Analysis:** Code was written with assumptions about CSV format without verifying against actual Consorsbank exports. Spec provided expected format that didn't match real files.
+
+**Fixes Applied:**
+1. Updated `parse_consorsbank()` to skip metadata lines until "Kontoumsätze" section marker
+2. Changed `csv.DictReader` delimiter from ',' to ';'
+3. Changed date format parsing from "%Y-%m-%d" to "%d.%m.%Y"
+4. Updated German number format handling: remove periods (thousands sep), replace commas with periods: `.replace(".", "").replace(",", ".")`
+5. Fixed field name matching to handle trailing spaces from CSV
+6. Updated test CSVs in `test_csv_parser.py` to include metadata headers and proper format
+
+**Verification:** Parser successfully parses actual `imports/consorsbank.csv` with 87 real transactions. All 6 CSVParser tests passing.
+
+**Commits:**
+- `fix: update consorsbank csv test format to match actual file structure`
+
+**Status:** Phase 10.4 now fully complete and verified with real data.
+
 ---
 
 ### 2026-05-14 — Task 9: ImportStatusCard Component for Frontend ✅
