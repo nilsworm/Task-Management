@@ -312,6 +312,22 @@
 
 ## Session-Log
 
+### 2026-05-14 — Task 8: useImportStatus Hook for Frontend ✅
+
+- **Hook Implementation:** `useImportStatus()` added to `src/api/hooks/cost.ts`
+  - Fetches from `GET /cost/import-status` endpoint
+  - Returns `ImportStatus` type: `{ last_import_date: string | null, transaction_count: number }`
+  - Configured with 60-second `refetchInterval` for polling latest status
+- **Tests:** `src/api/__tests__/hooks.cost.test.tsx` — 4 tests
+  - Fetch from API with correct endpoint
+  - Handle empty state (no imports yet)
+  - Error handling
+  - Refetch interval configuration documented
+- **Types:** Regenerated OpenAPI types, `import-status` endpoint now properly typed
+- **Status:** **91 Frontend tests passing** ✅, TypeScript 0 errors ✅
+- **Commit:** `feat: add useImportStatus hook for fetching import status from backend`
+- **Next Step:** Phase 11.5 (CSV-Upload Endpoint POST /cost/import)
+
 ### 2026-05-14 — Task 7: Import Status Endpoint ✅
 
 - **Endpoint:** `GET /cost/import-status`
