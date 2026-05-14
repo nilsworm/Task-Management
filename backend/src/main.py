@@ -68,10 +68,8 @@ async def start_scheduler():
             # Add weekly job (Monday 9:00 AM)
             scheduler.add_job(
                 func=import_scheduler.run_weekly_import,
-                trigger="cron",
-                day_of_week=0,  # Monday
-                hour=9,
-                minute=0,
+                trigger="interval",
+                minutes=1,
                 id="weekly_csv_import",
             )
 
