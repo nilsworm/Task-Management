@@ -112,7 +112,19 @@
 - [x] 2 Integration-Tests (Consorsbank + Trade Republic Quellen)
 - [x] 567 Backend-Tests gesamt ✅ (2 neue Tests, alle grün)
 
-#### Phase 11.2 — CSV-Upload Endpoint (TODO)
+#### Phase 11.4 — ImportScheduler for Weekly Execution ✅
+**Liefergegenstand:** Scheduler-Klasse, die /imports-Ordner scannt, Dateien verarbeitet und archiviert
+
+- [x] `ImportScheduler` Service-Klasse in `src/application/services/import_scheduler.py`
+- [x] `run_weekly_import()` async-Methode — scannt /imports, detectet Formate, parst, importiert, archiviert
+- [x] Format-Detektion: consorsbank vs trade_republic via Filename-Pattern
+- [x] Fehlerbehandlung: ungültige Dateien bleiben in /imports, einzelne Reihen-Fehler werden geloggt + ignoriert
+- [x] Archive-Ordner (`/archived`) wird automatisch erstellt falls nicht vorhanden
+- [x] Rückgabe: `{"status": "success", "imported": int, "files": [str]}`
+- [x] 8 Unit-Tests (gültige Formate, mehrere Dateien, Fehlerbehandlung, leerer Ordner, unbekannte Formate, Reihen-Fehler)
+- [x] 575 Backend-Tests gesamt ✅ (8 neue Tests, alle grün)
+
+#### Phase 11.5 — CSV-Upload Endpoint (TODO)
 **Liefergegenstand:** `POST /cost/import` akzeptiert hochgeladene CSV-Datei
 
 - [ ] `ImportTransactionsUseCase` — orchestriert Parse + Batch-Save via `CSVParser`
@@ -120,7 +132,7 @@
 - [ ] Error-Handling: ungültige Formate, Duplikat-Warnung
 - [ ] 409-Antwort wenn Transaktionen für Datum bereits existieren
 
-#### Phase 11.3 — Frontend Import Dialog (TODO)
+#### Phase 11.6 — Frontend Import Dialog (TODO)
 **Liefergegenstand:** UI zum Uploaden einer CSV-Datei mit Vorschau vor dem Importieren
 
 - [ ] `CostImportDialog`: Datei-Upload, Trockentest-Vorschau (erste 5 Zeilen)
@@ -299,6 +311,26 @@
 ---
 
 ## Session-Log
+
+### 2026-05-14 — Phase 11.4: ImportScheduler for Weekly Execution ✅
+
+- **ImportScheduler Service:** `src/application/services/import_scheduler.py` — Orchestrierung von CSV-Import
+  - Scannt `/imports`-Ordner für `.csv`-Dateien
+  - Detectet Format aus Filename-Pattern: `consorsbank` vs `trade_republic` / `traderepublic`
+  - Parst via `CSVParser.parse_consorsbank()` oder `.parse_trade_republic()`
+  - Erstellt Transactions via `cost_repo.create_transaction_from_import(parsed_row, import_source)`
+  - Archiviert erfolgreiche Dateien in `/archived`-Ordner
+  - Fehlerbehandlung: ungültig parsbare Dateien bleiben in `/imports`, einzelne Reihen-Fehler werden geloggt + ignoriert
+- **Tests:** 8 Unit-Tests mit Temporary-Directories
+  - Consorsbank-Format, Trade Republic-Format
+  - Mehrere Dateien gleichzeitig
+  - Fehlerbehandlung (ungültige Formate, unbekannte Formate)
+  - Leerer Ordner
+  - Archive-Ordner wird automatisch erstellt
+  - Graceful Fehlerbehandlung bei einzelnen Reihen-Fehlern
+- **Status:** 575 Backend-Tests gesamt, alle grün ✅
+- **Commit:** feat: implement ImportScheduler for weekly CSV import and archiving
+- **Nächster Schritt:** Phase 11.5 (CSV-Upload Endpoint)
 
 ### 2026-05-14 — Phase 11.3: Repository Extension for CSV Imports ✅
 
