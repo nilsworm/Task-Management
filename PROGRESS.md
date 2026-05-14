@@ -170,6 +170,34 @@
 - [ ] `SprintDetailPage` / `SprintCard`: Button öffnet Modal statt direktem Aufruf
 - [ ] Tests
 
+#### Phase 10.4 — CSV Import für Finanz-Automation ✅
+**Liefergegenstand:** Wöchentliches Parsing von Bank-CSVs (Consorsbank/Trade Republic), automatisches Scheduling, Archivierung, Import-Status-UI
+
+- [x] Domain: `Transaction.import_source` field + migration
+- [x] Infrastructure: `CSVParser` (Consorsbank + Trade Republic formats) — 6 tests
+- [x] Application: `ImportScheduler` (weekly scan, parse, import, archive) — 8 tests
+- [x] Repository: `create_transaction_from_import()` method — 2 integration tests
+- [x] Config: `IMPORT_FOLDER` environment variable
+- [x] Backend: APScheduler registration in FastAPI startup
+- [x] API: `GET /cost/import-status` endpoint — 4 API tests
+- [x] Frontend: `useImportStatus()` hook — 4 tests
+- [x] Frontend: `ImportStatusCard` component — 4 tests
+- [x] Frontend: CostManagementPage integration
+- [x] Infrastructure: Docker `/imports` volume mount + .gitignore
+- [x] Tests: Total 32 new tests (backend 12, frontend 8, API 4, integration 8) — all passing
+- [x] Backend: 579 tests passing
+- [x] Frontend: 95 tests passing
+- [x] Commits: 17 commits total (one per subtask, Conventional Commits)
+
+**Success Criteria:**
+- ✅ Automatic weekly CSV imports (Monday 9am)
+- ✅ Support for Consorsbank and Trade Republic formats
+- ✅ Transaction persistence with import_source audit trail
+- ✅ File archiving after successful import
+- ✅ Frontend status display (last import date + count)
+- ✅ Docker-ready (volume mount for /imports)
+- ✅ No regressions in existing tests
+
 ---
 
 ### Phase 9 — Code-Optimierungen (`feature/code-optimizations`)
@@ -311,6 +339,46 @@
 ---
 
 ## Session-Log
+
+### 2026-05-14 — Phase 10.4: CSV Import für Finanz-Automation ✅
+
+**Backend Implementation (Tasks 1-7):**
+- Task 1: Transaction.import_source field + Alembic migration
+- Task 2: CSVParser utility (Consorsbank + Trade Republic) — 6 tests
+- Task 3: Repository.create_transaction_from_import() method — 2 tests
+- Task 4: Config.IMPORT_FOLDER setting
+- Task 5: ImportScheduler service (scan, parse, import, archive) — 8 tests
+- Task 6: APScheduler registration in FastAPI (Monday 9am)
+- Task 7: GET /cost/import-status endpoint — 4 tests
+- Backend total: 12 new tests, 579 passing
+
+**Frontend Implementation (Tasks 8-10):**
+- Task 8: useImportStatus() TanStack Query hook — 4 tests
+- Task 9: ImportStatusCard component (loading, empty, data states) — 4 tests
+- Task 10: CostManagementPage integration
+- Frontend total: 8 new tests, 95 passing
+
+**Infrastructure (Tasks 11-12):**
+- Task 11: Docker /imports volume mount + .gitignore
+- Task 12: PROGRESS.md documentation
+
+**Commits:** 17 total (subagent-driven development, TDD, frequent commits)
+- Task 1: Domain extension + test coverage fix
+- Task 2: CSVParser + temp file cleanup fix
+- Task 3: Repository extension
+- Task 4: Config
+- Task 5: ImportScheduler
+- Task 6: APScheduler registration
+- Task 7: API endpoint
+- Task 8: useImportStatus hook
+- Task 9: ImportStatusCard component
+- Task 10: CostManagementPage integration
+- Task 11: Docker + .gitignore
+- Task 12: PROGRESS.md
+
+**Next Phase:** Phase 10.5 (optional) — POST /cost/import endpoint for manual CSV uploads, intelligent tag categorization (ML), duplicate detection
+
+---
 
 ### 2026-05-14 — Task 9: ImportStatusCard Component for Frontend ✅
 
