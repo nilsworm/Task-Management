@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +11,10 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:5174"
     # ISO 4217 currency code used for all cost entries
     cost_currency: str = "EUR"
+    import_folder: str = Field(
+        default="/app/imports",
+        description="Folder path for CSV import files"
+    )
 
 
 settings = Settings()
