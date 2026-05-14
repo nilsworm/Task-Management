@@ -26,9 +26,13 @@ async def test_import_scheduler_run_weekly_import_consorsbank():
 
         # Write test CSV
         csv_file = import_folder / "consorsbank_2026-05-01.csv"
-        csv_content = """Buchungstag,Wertstellung,Umsatzart,Begünstigter / Auftraggeber,Verwendungszweck,Betrag,Saldo
-2026-05-01,2026-05-01,UEBERWEISUNG,John Doe,Salary May,+5000.00,10000.00
-2026-05-02,2026-05-02,KARTENZAHLUNG,Amazon,Laptop,−250.50,9749.50"""
+        csv_content = """Konto
+Allgemeine Informationen
+Kontostand
+Kontoumsätze
+Buchung;Valuta;Sender / Empfänger;IBAN;BIC;Buchungstext;Verwendungszweck;Kategorie;Stichwörter;Umsatz geteilt;Betrag;Währung
+01.05.2026;01.05.2026;John Doe;DE123;BIC123;UEBERWEISUNG;Salary May;n/a;n/a;n/a;5.000,00;EUR
+02.05.2026;02.05.2026;Amazon;DE456;BIC456;KARTENZAHLUNG;Laptop;n/a;n/a;n/a;−250,50;EUR"""
         csv_file.write_text(csv_content)
 
         # Mock repository
@@ -125,8 +129,12 @@ async def test_import_scheduler_handles_multiple_files():
 
         # Write two CSVs
         consors_file = import_folder / "consorsbank_2026-05.csv"
-        consors_content = """Buchungstag,Wertstellung,Umsatzart,Begünstigter / Auftraggeber,Verwendungszweck,Betrag,Saldo
-2026-05-01,2026-05-01,UEBERWEISUNG,John,Test,+1000.00,1000.00"""
+        consors_content = """Konto
+Allgemeine Informationen
+Kontostand
+Kontoumsätze
+Buchung;Valuta;Sender / Empfänger;IBAN;BIC;Buchungstext;Verwendungszweck;Kategorie;Stichwörter;Umsatz geteilt;Betrag;Währung
+01.05.2026;01.05.2026;John;DE123;BIC123;UEBERWEISUNG;Test;n/a;n/a;n/a;1.000,00;EUR"""
         consors_file.write_text(consors_content)
 
         tr_file = import_folder / "traderepublic_2026-05.csv"
@@ -181,8 +189,12 @@ async def test_import_scheduler_graceful_error_handling():
 
         # Valid CSV
         valid_file = import_folder / "consorsbank_valid.csv"
-        valid_content = """Buchungstag,Wertstellung,Umsatzart,Begünstigter / Auftraggeber,Verwendungszweck,Betrag,Saldo
-2026-05-01,2026-05-01,UEBERWEISUNG,Test,Test,+500.00,500.00"""
+        valid_content = """Konto
+Allgemeine Informationen
+Kontostand
+Kontoumsätze
+Buchung;Valuta;Sender / Empfänger;IBAN;BIC;Buchungstext;Verwendungszweck;Kategorie;Stichwörter;Umsatz geteilt;Betrag;Währung
+01.05.2026;01.05.2026;Test;DE123;BIC123;UEBERWEISUNG;Test;n/a;n/a;n/a;500,00;EUR"""
         valid_file.write_text(valid_content)
 
         # Invalid CSV (missing columns)
@@ -242,8 +254,12 @@ async def test_import_scheduler_creates_archive_folder_if_missing():
         import_folder = Path(tmpdir)
 
         csv_file = import_folder / "consorsbank_2026-05.csv"
-        csv_content = """Buchungstag,Wertstellung,Umsatzart,Begünstigter / Auftraggeber,Verwendungszweck,Betrag,Saldo
-2026-05-01,2026-05-01,UEBERWEISUNG,Test,Test,+100.00,100.00"""
+        csv_content = """Konto
+Allgemeine Informationen
+Kontostand
+Kontoumsätze
+Buchung;Valuta;Sender / Empfänger;IBAN;BIC;Buchungstext;Verwendungszweck;Kategorie;Stichwörter;Umsatz geteilt;Betrag;Währung
+01.05.2026;01.05.2026;Test;DE123;BIC123;UEBERWEISUNG;Test;n/a;n/a;n/a;100,00;EUR"""
         csv_file.write_text(csv_content)
 
         # Don't create archive folder; scheduler should create it
@@ -304,10 +320,14 @@ async def test_import_scheduler_continues_on_individual_row_errors():
         archive_folder.mkdir()
 
         csv_file = import_folder / "consorsbank_partial.csv"
-        csv_content = """Buchungstag,Wertstellung,Umsatzart,Begünstigter / Auftraggeber,Verwendungszweck,Betrag,Saldo
-2026-05-01,2026-05-01,UEBERWEISUNG,Test1,Test,+500.00,500.00
-2026-05-02,2026-05-02,UEBERWEISUNG,Test2,Test,+100.00,600.00
-2026-05-03,2026-05-03,UEBERWEISUNG,Test3,Test,+200.00,800.00"""
+        csv_content = """Konto
+Allgemeine Informationen
+Kontostand
+Kontoumsätze
+Buchung;Valuta;Sender / Empfänger;IBAN;BIC;Buchungstext;Verwendungszweck;Kategorie;Stichwörter;Umsatz geteilt;Betrag;Währung
+01.05.2026;01.05.2026;Test1;DE123;BIC123;UEBERWEISUNG;Test;n/a;n/a;n/a;500,00;EUR
+02.05.2026;02.05.2026;Test2;DE123;BIC123;UEBERWEISUNG;Test;n/a;n/a;n/a;100,00;EUR
+03.05.2026;03.05.2026;Test3;DE123;BIC123;UEBERWEISUNG;Test;n/a;n/a;n/a;200,00;EUR"""
         csv_file.write_text(csv_content)
 
         # Mock repo: first succeeds, second fails, third succeeds
