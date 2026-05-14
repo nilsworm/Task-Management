@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import date
 from decimal import Decimal
+from typing import Any
 
 import pytest
 
@@ -90,6 +91,22 @@ class InMemoryCostRepository(ICostRepository):
         for r in self._recurring.values():
             tags.update(r.tags)
         return sorted(tags)
+
+    async def create_transaction_from_import(
+        self,
+        parsed_row: dict[str, Any],
+        import_source: str,
+    ) -> Transaction:
+        """Create and persist a Transaction from parsed CSV row."""
+        transaction = Transaction.create(
+            title=parsed_row["description"],
+            amount=parsed_row["amount"],
+            transaction_type=TransactionType(parsed_row["type"].lower()),
+            transaction_date=parsed_row["date"],
+            import_source=import_source,
+        )
+        await self.save_transaction(transaction)
+        return transaction
 
 
 @pytest.fixture

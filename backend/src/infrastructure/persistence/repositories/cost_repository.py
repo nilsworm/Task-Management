@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 from sqlalchemy import delete, extract, func, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -107,3 +108,19 @@ class PostgresCostRepository(ICostRepository):
             select(stmt.c.tag).where(stmt.c.tag.isnot(None)).order_by(stmt.c.tag)
         )
         return list(result.scalars().all())
+
+    async def create_transaction_from_import(
+        self,
+        parsed_row: dict[str, Any],
+        import_source: str,
+    ) -> Transaction:
+        """Create and persist a Transaction from parsed CSV row."""
+        transaction = Transaction.create(
+            title=parsed_row["description"],
+            amount=parsed_row["amount"],
+            transaction_type=TransactionType(parsed_row["type"].lower()),
+            transaction_date=parsed_row["date"],
+            import_source=import_source,
+        )
+        await self.save_transaction(transaction)
+        return transaction

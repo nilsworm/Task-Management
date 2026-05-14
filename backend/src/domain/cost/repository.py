@@ -43,3 +43,24 @@ class ICostRepository(ABC):
 
     @abstractmethod
     async def list_all_tags(self) -> list[str]: ...
+
+    @abstractmethod
+    async def create_transaction_from_import(
+        self,
+        parsed_row: dict,
+        import_source: str,
+    ) -> Transaction:
+        """Create and persist a Transaction from parsed CSV row.
+
+        Args:
+            parsed_row: Dict with keys {date, amount, type, description}.
+                - date: datetime.date
+                - amount: Decimal
+                - type: str ("INCOME" or "EXPENSE")
+                - description: str
+            import_source: Source identifier (e.g., "consorsbank", "trade_republic")
+
+        Returns:
+            The persisted Transaction entity.
+        """
+        ...

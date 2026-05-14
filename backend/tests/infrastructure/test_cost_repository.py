@@ -184,3 +184,55 @@ async def test_list_all_tags_union(repo: PostgresCostRepository) -> None:
     assert "lebensmittel" in tags
     assert "wohnen" in tags
     assert tags == sorted(tags)
+
+
+# ---------------------------------------------------------------------------
+# CSV Import
+# ---------------------------------------------------------------------------
+
+
+async def test_create_transaction_from_import_consorsbank(repo: PostgresCostRepository) -> None:
+    """Create transaction from parsed Consorsbank CSV row."""
+    parsed_row = {
+        "date": date(2026, 5, 1),
+        "amount": Decimal("500.00"),
+        "type": "EXPENSE",
+        "description": "Amazon - Laptop",
+    }
+
+    transaction = await repo.create_transaction_from_import(parsed_row, "consorsbank")
+
+    assert transaction.import_source == "consorsbank"
+    assert transaction.title == "Amazon - Laptop"
+    assert transaction.amount == Decimal("500.00")
+    assert transaction.transaction_type is TransactionType.EXPENSE
+    assert transaction.date == date(2026, 5, 1)
+
+    # Verify persisted in DB
+    fetched = await repo.get_transaction(transaction.id)
+    assert fetched is not None
+    assert fetched.import_source == "consorsbank"
+    assert fetched.title == "Amazon - Laptop"
+
+
+async def test_create_transaction_from_import_trade_republic(repo: PostgresCostRepository) -> None:
+    """Create transaction from parsed Trade Republic CSV row."""
+    parsed_row = {
+        "date": date(2026, 5, 15),
+        "amount": Decimal("250.50"),
+        "type": "INCOME",
+        "description": "Dividend Payment",
+    }
+
+    transaction = await repo.create_transaction_from_import(parsed_row, "trade_republic")
+
+    assert transaction.import_source == "trade_republic"
+    assert transaction.title == "Dividend Payment"
+    assert transaction.amount == Decimal("250.50")
+    assert transaction.transaction_type is TransactionType.INCOME
+    assert transaction.date == date(2026, 5, 15)
+
+    # Verify persisted in DB
+    fetched = await repo.get_transaction(transaction.id)
+    assert fetched is not None
+    assert fetched.import_source == "trade_republic"
