@@ -12,12 +12,14 @@ const TASKS_KEY = ["tasks"] as const
 interface TaskFilters {
   status?: TaskStatus
   sprint_id?: string
+  search?: string
 }
 
 function buildQuery(filters: TaskFilters): string {
   const params = new URLSearchParams()
-  if (filters.status) params.set("status", filters.status)
-  if (filters.sprint_id) params.set("sprint_id", filters.sprint_id)
+  if (filters.search) params.set("search", filters.search)
+  else if (filters.status) params.set("status", filters.status)
+  else if (filters.sprint_id) params.set("sprint_id", filters.sprint_id)
   const q = params.toString()
   return q ? `?${q}` : ""
 }

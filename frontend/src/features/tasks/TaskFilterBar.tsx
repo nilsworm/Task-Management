@@ -1,3 +1,4 @@
+import { Search } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -34,6 +35,7 @@ const TYPE_OPTIONS = [
 ]
 
 export interface TaskFilters {
+  search: string
   status: string
   priority: string
   taskType: string
@@ -47,6 +49,16 @@ interface Props {
 export function TaskFilterBar({ filters, onChange }: Props) {
   return (
     <div className="flex flex-wrap gap-2">
+      <div className="relative flex items-center">
+        <Search className="pointer-events-none absolute left-2 h-3 w-3 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Search tasks…"
+          value={filters.search}
+          onChange={(e) => onChange({ ...filters, search: e.target.value })}
+          className="h-7 w-[180px] rounded-[5px] border border-border bg-surface-2 pl-6 pr-2 font-mono text-[11px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+      </div>
       {[
         { key: "status" as const,   options: STATUS_OPTIONS,   width: "w-[130px]" },
         { key: "priority" as const, options: PRIORITY_OPTIONS, width: "w-[130px]" },

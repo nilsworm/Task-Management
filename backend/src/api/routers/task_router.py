@@ -42,8 +42,11 @@ async def list_tasks(
     repo: TaskRepoDep,
     status: str | None = Query(None),
     sprint_id: uuid.UUID | None = Query(None),
+    search: str | None = Query(None, min_length=1, max_length=200),
 ) -> list[TaskResponse]:
-    if sprint_id is not None:
+    if search is not None:
+        tasks = await repo.list_by_search(search)
+    elif sprint_id is not None:
         tasks = await repo.list_by_sprint(sprint_id)
     elif status is not None:
         tasks = await repo.list_by_status(TaskStatus(status))

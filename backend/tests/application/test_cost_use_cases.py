@@ -108,6 +108,27 @@ class InMemoryCostRepository(ICostRepository):
         await self.save_transaction(transaction)
         return transaction
 
+    async def get_last_import_status(self) -> dict:
+        """Get last import date and transaction count from imports."""
+        imported = [
+            t for t in self._transactions.values() if t.import_source is not None
+        ]
+        if not imported:
+            return {
+                "last_import_date": None,
+                "transaction_count": 0,
+            }
+        max_date = max(t.date for t in imported)
+        return {
+            "last_import_date": max_date.isoformat(),
+            "transaction_count": len(imported),
+        }
+
+    @property
+    def transactions(self) -> list[Transaction]:
+        """Expose transactions list for testing."""
+        return list(self._transactions.values())
+
 
 @pytest.fixture
 def repo() -> InMemoryCostRepository:

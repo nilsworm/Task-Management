@@ -54,6 +54,10 @@ class InMemoryTaskRepository(ITaskRepository):
             if isinstance(t, SprintTask) and t.sprint_id in sprint_ids
         ]
 
+    async def list_by_search(self, query: str) -> list[Task]:
+        q = query.lower()
+        return [t for t in self._store.values() if q in t.title.lower()]
+
 
 class InMemorySprintRepository(ISprintRepository):
     def __init__(self) -> None:

@@ -72,3 +72,9 @@ class PostgresTaskRepository(ITaskRepository):
         )
         tasks = [task_from_model(m) for m in result.scalars().all()]
         return [t for t in tasks if isinstance(t, SprintTask)]
+
+    async def list_by_search(self, query: str) -> list[Task]:
+        result = await self._session.execute(
+            select(TaskModel).where(TaskModel.title.ilike(f"%{query}%"))
+        )
+        return [task_from_model(m) for m in result.scalars().all()]

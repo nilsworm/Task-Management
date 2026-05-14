@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { LayoutList, LayoutGrid, Plus } from "lucide-react"
 import { useTasks } from "@/api/hooks/tasks"
+import { useDebounce } from "@/lib/useDebounce"
 import { TaskFilterBar } from "./TaskFilterBar"
 import { TaskTable } from "./TaskTable"
 import { TaskBoardView } from "./TaskBoardView"
@@ -9,7 +10,7 @@ import type { TaskFilters } from "./TaskFilterBar"
 
 type ViewMode = "list" | "board"
 
-const DEFAULT_FILTERS: TaskFilters = { status: "all", priority: "all", taskType: "all" }
+const DEFAULT_FILTERS: TaskFilters = { search: "", status: "all", priority: "all", taskType: "all" }
 
 function RowSkeleton() {
   return <div className="h-9 animate-pulse rounded-[5px] bg-surface-3" />
@@ -20,7 +21,11 @@ export function TasksPage() {
   const [filters, setFilters]     = useState<TaskFilters>(DEFAULT_FILTERS)
   const [createOpen, setCreateOpen] = useState(false)
 
-  const { data: tasks = [], isLoading, isError } = useTasks()
+  const debouncedSearch = useDebounce(filters.search, 300)
+
+  const { data: tasks = [], isLoading, isError } = useTasks(
+    debouncedSearch ? { search: debouncedSearch } : {}
+  )
 
   const visible = tasks.filter((t) => {
     if (filters.status !== "all" && t.status !== filters.status) return false

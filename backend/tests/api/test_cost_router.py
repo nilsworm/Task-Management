@@ -434,3 +434,87 @@ def test_analytics_income_not_in_by_tag(client: TestClient) -> None:
     assert resp.status_code == 200
     tags = [item["tag"] for item in resp.json()["expenses_by_tag"]]
     assert "gehalt" not in tags
+
+
+# ---------------------------------------------------------------------------
+# GET /cost/import-status
+# ---------------------------------------------------------------------------
+
+
+def test_get_import_status_empty(client: TestClient) -> None:
+    """GET /cost/import-status returns null date and 0 count when no imports exist."""
+    resp = client.get("/cost/import-status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["last_import_date"] is None
+    assert data["transaction_count"] == 0
+
+
+def test_get_import_status_with_imports(client: TestClient, repo: InMemoryCostRepository) -> None:
+    """GET /cost/import-status returns last import date and count after importing."""
+    import_date = date(2026, 5, 10)
+    # Directly add transaction with import_source to test repo
+    transaction = Transaction.create(
+        title="Test Import",
+        amount=Decimal("100.00"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=import_date,
+        import_source="consorsbank",
+    )
+    repo._transactions[transaction.id] = transaction
+
+    resp = client.get("/cost/import-status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["last_import_date"] == "2026-05-10"
+    assert data["transaction_count"] == 1
+
+
+def test_get_import_status_multiple_imports(client: TestClient, repo: InMemoryCostRepository) -> None:
+    """GET /cost/import-status counts all imported transactions and returns latest date."""
+    # Add multiple imported transactions
+    for i in range(3):
+        transaction = Transaction.create(
+            title=f"Import {i}",
+            amount=Decimal("50.00"),
+            transaction_type=TransactionType.EXPENSE,
+            transaction_date=date(2026, 5, 10 + i),
+            import_source="trade_republic",
+        )
+        repo._transactions[transaction.id] = transaction
+
+    resp = client.get("/cost/import-status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["last_import_date"] == "2026-05-12"  # Latest date
+    assert data["transaction_count"] == 3
+
+
+def test_get_import_status_ignores_manual_transactions(
+    client: TestClient, repo: InMemoryCostRepository
+) -> None:
+    """GET /cost/import-status ignores manual transactions without import_source."""
+    # Add manual transaction (no import_source)
+    manual = Transaction.create(
+        title="Manual",
+        amount=Decimal("100.00"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 5, 10),
+    )
+    repo._transactions[manual.id] = manual
+
+    # Add imported transaction
+    imported = Transaction.create(
+        title="Imported",
+        amount=Decimal("50.00"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 5, 11),
+        import_source="consorsbank",
+    )
+    repo._transactions[imported.id] = imported
+
+    resp = client.get("/cost/import-status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["last_import_date"] == "2026-05-11"
+    assert data["transaction_count"] == 1

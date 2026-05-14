@@ -34,3 +34,6 @@ class ITaskRepository(ABC):
     async def list_by_sprint_ids(
         self, sprint_ids: list[uuid.UUID]
     ) -> list[SprintTask]: ...
+
+    @abstractmethod
+    async def list_by_search(self, query: str) -> list[Task]: ...
