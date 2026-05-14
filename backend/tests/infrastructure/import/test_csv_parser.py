@@ -14,7 +14,7 @@ class TestCSVParserConsorsbank:
 2026-05-01,2026-05-01,UEBERWEISUNG,John Doe,Salary May,+5000.00,10000.00
 2026-05-02,2026-05-02,KARTENZAHLUNG,Amazon,Laptop,−250.50,9749.50"""
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=True, encoding='utf-8') as f:
             f.write(csv_content)
             f.flush()
 
@@ -35,7 +35,7 @@ class TestCSVParserConsorsbank:
         """Raise InvalidCSVFormatError if expected columns are missing."""
         csv_content = "Datum,Betrag\n2026-05-01,1000"
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=True, encoding='utf-8') as f:
             f.write(csv_content)
             f.flush()
 
@@ -47,7 +47,7 @@ class TestCSVParserConsorsbank:
         csv_content = """Buchungstag,Wertstellung,Umsatzart,Begünstigter / Auftraggeber,Verwendungszweck,Betrag,Saldo
 2026-05-01,2026-05-01,UEBERWEISUNG,John Doe,Salary,INVALID,10000.00"""
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=True, encoding='utf-8') as f:
             f.write(csv_content)
             f.flush()
 
@@ -63,7 +63,7 @@ class TestCSVParserTradeRepublic:
 2026-05-01,Dividend Payment,Income,+50.00
 2026-05-02,Stock Purchase,Expense,−1200.00"""
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=True, encoding='utf-8') as f:
             f.write(csv_content)
             f.flush()
 
@@ -84,7 +84,7 @@ class TestCSVParserTradeRepublic:
         """Raise InvalidCSVFormatError if expected columns are missing."""
         csv_content = "Datum,Betrag\n2026-05-01,100"
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=True, encoding='utf-8') as f:
             f.write(csv_content)
             f.flush()
 
@@ -96,7 +96,7 @@ class TestCSVParserTradeRepublic:
         csv_content = """Datum,Beschreibung,Typ,Betrag
 2026-05-01,Payment,Income,INVALID"""
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=True, encoding='utf-8') as f:
             f.write(csv_content)
             f.flush()
 
