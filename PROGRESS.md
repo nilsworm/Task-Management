@@ -312,6 +312,18 @@
 
 ## Session-Log
 
+### 2026-05-14 — Task 7: Import Status Endpoint ✅
+
+- **Endpoint:** `GET /cost/import-status`
+  - Interface method `get_last_import_status()` → `ICostRepository`
+  - Implementation in `PostgresCostRepository` — queries most recent imported transaction date + count
+  - API endpoint returns `{last_import_date: ISO str | null, transaction_count: int}`
+  - Filters only transactions with `import_source IS NOT NULL`
+- **Tests:** 4 new API-level tests (empty, with imports, multiple imports, ignoring manual transactions)
+- **Status:** **579 Backend-Tests passing** ✅ (4 new)
+- **Commit:** `feat: add GET /cost/import-status endpoint`
+- **Next Step:** Phase 11.6 (CSV-Upload Endpoint via POST /cost/import)
+
 ### 2026-05-14 — Phase 11.5: APScheduler Registration ✅
 
 - **APScheduler Integration:** `backend/pyproject.toml` + `backend/src/main.py`
