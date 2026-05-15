@@ -31,6 +31,7 @@ class TransactionModel(Base):
         nullable=True,
     )
     import_source: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_opening_balance: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
