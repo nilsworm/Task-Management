@@ -198,6 +198,26 @@
 - ✅ Docker-ready (volume mount for /imports)
 - ✅ No regressions in existing tests
 
+#### Phase 10.6 — Opening Balance Calculation ✅
+**Liefergegenstand:** Use Case zur Berechnung des Eröffnungssaldos für einen Monat
+
+- [x] Domain: `Transaction.is_opening_balance` field + migration
+- [x] Repository: `get_opening_balance_transaction()` method + InMemory stub implementation
+- [x] Application: `CalculateOpeningBalanceUseCase` — calculates opening balance as closing balance of previous month
+- [x] Tests: `test_calculate_opening_balance_past_month()` — opening balance = income - expenses of previous month
+- [x] Tests: `test_calculate_opening_balance_first_month()` — January (no December) returns 0
+- [x] InMemoryRepository extended with `get_opening_balance_transaction()` stub
+- [x] All 34 cost use case tests passing (2 new + 32 existing)
+- [x] Commits: 1 commit (`feat: implement CalculateOpeningBalanceUseCase`)
+
+**Success Criteria:**
+- ✅ Opening balance correctly calculated as previous month's closing balance
+- ✅ Edge case: first month returns 0
+- ✅ Filtering out opening balance transactions to avoid double-counting
+- ✅ Type-safe Decimal arithmetic
+- ✅ No regressions in existing tests
+- ✅ Clean separation of concerns (use case handles logic, repo provides transactions)
+
 ---
 
 ### Phase 9 — Code-Optimierungen (`feature/code-optimizations`)
