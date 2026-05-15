@@ -313,3 +313,50 @@ class GetCostAnalyticsUseCase:
             comparison.append(MonthlyComparison(year=y, month=m, income=income, expenses=exps))
 
         return CostAnalytics(expenses_by_tag=expenses_by_tag, monthly_comparison=comparison)
+
+
+# ---------------------------------------------------------------------------
+# Opening Balance
+# ---------------------------------------------------------------------------
+
+
+class CalculateOpeningBalanceUseCase:
+    def __init__(self, repository: ICostRepository) -> None:
+        self._repo = repository
+
+    async def execute(self, year: int, month: int) -> Decimal:
+        """Calculate opening balance for a month.
+
+        Opening balance = closing balance of previous month.
+        For first month (January with no December), returns 0.
+
+        Returns: Decimal balance
+        """
+        # Calculate previous month (handle year boundary)
+        prev_month = month - 1
+        prev_year = year
+        if prev_month == 0:
+            prev_month = 12
+            prev_year -= 1
+
+        # Get all transactions from previous month (excluding opening balance)
+        prev_transactions = await self._repo.list_transactions(
+            year=prev_year, month=prev_month
+        )
+
+        # Filter out opening balance transactions
+        prev_transactions = [
+            t for t in prev_transactions if not t.is_opening_balance
+        ]
+
+        # Calculate balance
+        income = sum(
+            (t.amount for t in prev_transactions if t.transaction_type == TransactionType.INCOME),
+            Decimal("0"),
+        )
+        expenses = sum(
+            (t.amount for t in prev_transactions if t.transaction_type == TransactionType.EXPENSE),
+            Decimal("0"),
+        )
+
+        return income - expenses

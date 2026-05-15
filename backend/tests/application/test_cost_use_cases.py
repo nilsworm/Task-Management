@@ -9,6 +9,7 @@ import pytest
 
 from src.application.exceptions import EntityNotFoundError, InvalidOperationError
 from src.application.use_cases.cost_use_cases import (
+    CalculateOpeningBalanceUseCase,
     CreateRecurringInput,
     CreateRecurringUseCase,
     CreateTransactionInput,
@@ -123,6 +124,15 @@ class InMemoryCostRepository(ICostRepository):
             "last_import_date": max_date.isoformat(),
             "transaction_count": len(imported),
         }
+
+    async def get_opening_balance_transaction(
+        self, year: int, month: int
+    ) -> Transaction | None:
+        """Get opening balance transaction for month (if exists)."""
+        for t in self._transactions.values():
+            if t.date.year == year and t.date.month == month and t.is_opening_balance:
+                return t
+        return None
 
     @property
     def transactions(self) -> list[Transaction]:
@@ -566,3 +576,45 @@ async def test_generate_monthly_uses_bulk_save(repo: InMemoryCostRepository) -> 
     created = await GenerateMonthlyUseCase(repo).execute(year=2026, month=6)
     assert len(created) == 2
     assert len(repo._transactions) == 2
+
+
+# ---------------------------------------------------------------------------
+# Opening Balance
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_calculate_opening_balance_past_month() -> None:
+    """Calculate opening balance (closing balance of previous month)."""
+    repo = InMemoryCostRepository()
+    # April: +5000 income, -3000 expense = +2000 balance
+    await repo.save_transaction(Transaction.create(
+        title="Salary",
+        amount=Decimal("5000"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 4, 1),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Rent",
+        amount=Decimal("3000"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 4, 15),
+    ))
+
+    uc = CalculateOpeningBalanceUseCase(repo)
+    result = await uc.execute(year=2026, month=5)
+
+    # Opening balance for May = closing balance of April = 2000
+    assert result == Decimal("2000")
+
+
+@pytest.mark.asyncio
+async def test_calculate_opening_balance_first_month() -> None:
+    """First month (no previous) has opening balance 0."""
+    repo = InMemoryCostRepository()
+    # No April transactions
+
+    uc = CalculateOpeningBalanceUseCase(repo)
+    result = await uc.execute(year=2026, month=5)
+
+    assert result == Decimal("0")
