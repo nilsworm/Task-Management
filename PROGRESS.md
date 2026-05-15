@@ -199,8 +199,9 @@
 - ✅ No regressions in existing tests
 
 #### Phase 10.6 — Opening Balance Calculation ✅
-**Liefergegenstand:** Use Case zur Berechnung des Eröffnungssaldos für einen Monat
+**Liefergegenstand:** Use Cases zur Berechnung und Persistierung des Eröffnungssaldos für einen Monat
 
+**Task 1-2:** CalculateOpeningBalanceUseCase ✅
 - [x] Domain: `Transaction.is_opening_balance` field + migration
 - [x] Repository: `get_opening_balance_transaction()` method + InMemory stub implementation
 - [x] Application: `CalculateOpeningBalanceUseCase` — calculates opening balance as closing balance of previous month
@@ -210,13 +211,25 @@
 - [x] All 34 cost use case tests passing (2 new + 32 existing)
 - [x] Commits: 1 commit (`feat: implement CalculateOpeningBalanceUseCase`)
 
+**Task 5:** EnsureOpeningBalanceTransactionUseCase ✅
+- [x] Application: `EnsureOpeningBalanceTransactionUseCase` — orchestrates calculation & persistence
+- [x] Logic: Current/future months → return None; past months → check if exists → if not, calculate & create & persist
+- [x] Idempotent: returns existing transaction if already created
+- [x] Naming: opening balance transaction includes month name (e.g. "Opening Balance April")
+- [x] Type handling: converts Decimal balance to appropriate TransactionType (INCOME if >= 0, EXPENSE if < 0)
+- [x] Tests: 3 new unit tests (past month creation, current month skip, idempotency)
+- [x] All 37 cost use case tests passing (3 new + 34 existing)
+- [x] Commits: 1 commit (`feat: implement EnsureOpeningBalanceTransactionUseCase`)
+
 **Success Criteria:**
 - ✅ Opening balance correctly calculated as previous month's closing balance
 - ✅ Edge case: first month returns 0
 - ✅ Filtering out opening balance transactions to avoid double-counting
 - ✅ Type-safe Decimal arithmetic
-- ✅ No regressions in existing tests
-- ✅ Clean separation of concerns (use case handles logic, repo provides transactions)
+- ✅ Current month transactions skip creation (not applicable yet)
+- ✅ Idempotent: multiple calls don't create duplicates
+- ✅ No regressions in existing tests (355 domain + application tests passing)
+- ✅ Clean separation of concerns (calculation via CalculateOpeningBalanceUseCase, persistence via EnsureOpeningBalanceTransactionUseCase)
 
 ---
 
@@ -359,6 +372,23 @@
 ---
 
 ## Session-Log
+
+### 2026-05-15 — Task 5: EnsureOpeningBalanceTransactionUseCase ✅
+
+- **Implementation:** `EnsureOpeningBalanceTransactionUseCase` in `src/application/use_cases/cost_use_cases.py`
+  - Ensures opening balance transaction exists for a given month
+  - Current/future months: return None (not applicable yet)
+  - Past months: check if exists → if yes, return existing → if no, calculate & create & persist
+  - Idempotent via `get_opening_balance_transaction()` check
+  - Transaction naming: includes month name for clarity (e.g. "Opening Balance April")
+  - Balance handling: Decimal amount, auto-detects TransactionType (INCOME if >= 0, EXPENSE if < 0)
+- **Tests:** 3 new unit tests in `tests/application/test_cost_use_cases.py`
+  - `test_ensure_opening_balance_creates_for_past_month`: creates opening balance for April when May is requested
+  - `test_ensure_opening_balance_skips_current_month`: returns None for current month (today)
+  - `test_ensure_opening_balance_idempotent`: returns existing transaction on second call
+- **Status:** **37 Cost use case tests passing** (3 new + 34 existing) ✅, **355 total domain + application tests passing** ✅
+- **Commit:** `feat: implement EnsureOpeningBalanceTransactionUseCase`
+- **Next Step:** Phase 10.1–10.3 (Task-Textsuche, Überfällige Tasks, Sprint-Abschluss-Zusammenfassung)
 
 ### 2026-05-14 — Phase 10.4: CSV Import für Finanz-Automation ✅
 
