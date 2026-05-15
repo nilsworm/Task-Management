@@ -50,6 +50,7 @@ class Transaction:
     description: str
     recurring_source_id: uuid.UUID | None
     import_source: str | None
+    is_opening_balance: bool
     created_at: datetime
     updated_at: datetime
 
@@ -70,6 +71,7 @@ class Transaction:
         description: str = "",
         recurring_source_id: uuid.UUID | None = None,
         import_source: str | None = None,
+        is_opening_balance: bool = False,
         id: uuid.UUID | None = None,
     ) -> Transaction:
         now = _now()
@@ -83,6 +85,7 @@ class Transaction:
             description=description,
             recurring_source_id=recurring_source_id,
             import_source=import_source,
+            is_opening_balance=is_opening_balance,
             created_at=now,
             updated_at=now,
         )

@@ -102,6 +102,27 @@ def test_transaction_title_stripped() -> None:
     assert t.title == "Miete"
 
 
+def test_transaction_is_opening_balance_default_false() -> None:
+    tx = Transaction.create(
+        title="Test",
+        amount=Decimal("100"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 5, 1),
+    )
+    assert tx.is_opening_balance is False
+
+
+def test_transaction_is_opening_balance_can_be_set() -> None:
+    tx = Transaction.create(
+        title="Opening Balance",
+        amount=Decimal("2000"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 5, 1),
+        is_opening_balance=True,
+    )
+    assert tx.is_opening_balance is True
+
+
 # ---------------------------------------------------------------------------
 # RecurringTransaction
 # ---------------------------------------------------------------------------
