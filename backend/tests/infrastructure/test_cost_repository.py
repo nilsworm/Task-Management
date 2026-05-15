@@ -236,3 +236,31 @@ async def test_create_transaction_from_import_trade_republic(repo: PostgresCostR
     fetched = await repo.get_transaction(transaction.id)
     assert fetched is not None
     assert fetched.import_source == "trade_republic"
+
+
+# ---------------------------------------------------------------------------
+# Opening Balance
+# ---------------------------------------------------------------------------
+
+
+async def test_get_opening_balance_transaction_exists(repo: PostgresCostRepository) -> None:
+    """Retrieve existing opening balance transaction."""
+    opening_tx = _tx(
+        title="Opening Balance May",
+        amount="2000.00",
+        tx_type=TransactionType.INCOME,
+        tx_date=date(2026, 5, 1),
+    )
+    opening_tx.is_opening_balance = True
+    await repo.save_transaction(opening_tx)
+
+    result = await repo.get_opening_balance_transaction(year=2026, month=5)
+    assert result is not None
+    assert result.is_opening_balance is True
+    assert result.title == "Opening Balance May"
+
+
+async def test_get_opening_balance_transaction_not_found(repo: PostgresCostRepository) -> None:
+    """Return None if no opening balance exists."""
+    result = await repo.get_opening_balance_transaction(year=2026, month=5)
+    assert result is None

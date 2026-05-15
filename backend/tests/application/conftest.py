@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
+from decimal import Decimal
+from typing import Any
 
 import pytest
 
+from src.domain.cost.entities import RecurringTransaction, Transaction
+from src.domain.cost.repository import ICostRepository
+from src.domain.cost.value_objects import TransactionType
 from src.domain.entities import KeyResult, LongTermGoal, SprintTask, Task
 from src.domain.events import IDomainEvent, IEventHandler, InMemoryEventBus
 from src.domain.factory import TaskFactory
@@ -115,6 +121,116 @@ class InMemoryGoalRepository(IGoalRepository):
         self._key_results.pop(key_result_id, None)
 
 
+class InMemoryCostRepository(ICostRepository):
+    def __init__(self) -> None:
+        self._transactions: dict[uuid.UUID, Transaction] = {}
+        self._recurring: dict[uuid.UUID, RecurringTransaction] = {}
+
+    async def save_transaction(self, transaction: Transaction) -> None:
+        self._transactions[transaction.id] = transaction
+
+    async def save_transactions_bulk(self, transactions: list[Transaction]) -> None:
+        for transaction in transactions:
+            self._transactions[transaction.id] = transaction
+
+    async def get_transaction(self, transaction_id: uuid.UUID) -> Transaction | None:
+        return self._transactions.get(transaction_id)
+
+    async def list_transactions(
+        self,
+        year: int | None = None,
+        month: int | None = None,
+        tags: list[str] | None = None,
+        transaction_type: TransactionType | None = None,
+    ) -> list[Transaction]:
+        result = list(self._transactions.values())
+        if year is not None:
+            result = [t for t in result if t.date.year == year]
+        if month is not None:
+            result = [t for t in result if t.date.month == month]
+        if transaction_type is not None:
+            result = [t for t in result if t.transaction_type == transaction_type]
+        if tags:
+            result = [t for t in result if any(tag in t.tags for tag in tags)]
+        return sorted(result, key=lambda t: t.date, reverse=True)
+
+    async def delete_transaction(self, transaction_id: uuid.UUID) -> None:
+        self._transactions.pop(transaction_id, None)
+
+    async def save_recurring(self, recurring: RecurringTransaction) -> None:
+        self._recurring[recurring.id] = recurring
+
+    async def get_recurring(self, recurring_id: uuid.UUID) -> RecurringTransaction | None:
+        return self._recurring.get(recurring_id)
+
+    async def list_recurring(self, active_only: bool = False) -> list[RecurringTransaction]:
+        result = list(self._recurring.values())
+        if active_only:
+            result = [r for r in result if r.is_active]
+        return result
+
+    async def delete_recurring(self, recurring_id: uuid.UUID) -> None:
+        self._recurring.pop(recurring_id, None)
+
+    async def list_all_tags(self) -> list[str]:
+        tags: set[str] = set()
+        for t in self._transactions.values():
+            tags.update(t.tags)
+        for r in self._recurring.values():
+            tags.update(r.tags)
+        return sorted(tags)
+
+    async def create_transaction_from_import(
+        self,
+        parsed_row: dict[str, Any],
+        import_source: str,
+    ) -> Transaction:
+        """Create and persist a Transaction from parsed CSV row."""
+        transaction = Transaction.create(
+            title=parsed_row["description"],
+            amount=parsed_row["amount"],
+            transaction_type=TransactionType(parsed_row["type"].lower()),
+            transaction_date=parsed_row["date"],
+            import_source=import_source,
+        )
+        await self.save_transaction(transaction)
+        return transaction
+
+    async def get_last_import_status(self) -> dict:
+        """Get last import date and transaction count from imports."""
+        imported = [
+            t for t in self._transactions.values() if t.import_source is not None
+        ]
+        if not imported:
+            return {
+                "last_import_date": None,
+                "transaction_count": 0,
+            }
+        max_date = max(t.date for t in imported)
+        return {
+            "last_import_date": max_date.isoformat(),
+            "transaction_count": len(imported),
+        }
+
+    async def get_opening_balance_transaction(
+        self, year: int, month: int
+    ) -> Transaction | None:
+        """Get opening balance transaction for month (if exists)."""
+        for tx in self._transactions.values():
+            if (
+                tx.is_opening_balance
+                and tx.date.year == year
+                and tx.date.month == month
+            ):
+                return tx
+        return None
+
+    @property
+    def transactions(self) -> list[Transaction]:
+        """Expose transactions list for testing."""
+        return list(self._transactions.values())
+
+
 class EventSpy(IEventHandler):
     """Captures all published events for assertion in tests."""
 
@@ -138,6 +254,11 @@ def sprint_repo() -> InMemorySprintRepository:
 @pytest.fixture
 def goal_repo() -> InMemoryGoalRepository:
     return InMemoryGoalRepository()
+
+
+@pytest.fixture
+def cost_repo() -> InMemoryCostRepository:
+    return InMemoryCostRepository()
 
 
 @pytest.fixture

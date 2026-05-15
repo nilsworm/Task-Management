@@ -75,3 +75,17 @@ class ICostRepository(ABC):
                 - transaction_count: count of transactions with import_source set
         """
         ...
+
+    @abstractmethod
+    async def get_opening_balance_transaction(
+        self, year: int, month: int
+    ) -> Transaction | None:
+        """Get opening balance transaction for month (if exists).
+
+        Args:
+            year: Year (e.g., 2026)
+            month: Month (1-12)
+
+        Returns: Opening balance Transaction or None
+        """
+        ...

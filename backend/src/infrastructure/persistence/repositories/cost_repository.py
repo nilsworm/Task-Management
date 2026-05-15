@@ -140,3 +140,17 @@ class PostgresCostRepository(ICostRepository):
             "last_import_date": last_date.isoformat() if last_date else None,
             "transaction_count": int(count or 0),
         }
+
+    async def get_opening_balance_transaction(
+        self, year: int, month: int
+    ) -> Transaction | None:
+        """Get opening balance transaction for month (if exists)."""
+        stmt = select(TransactionModel).where(
+            TransactionModel.is_opening_balance.is_(True),
+            extract("year", TransactionModel.date) == year,
+            extract("month", TransactionModel.date) == month,
+        )
+
+        result = await self._session.execute(stmt)
+        model = result.scalar_one_or_none()
+        return transaction_from_model(model) if model else None
