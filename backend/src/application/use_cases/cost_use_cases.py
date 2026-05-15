@@ -360,3 +360,46 @@ class CalculateOpeningBalanceUseCase:
         )
 
         return income - expenses
+
+
+class EnsureOpeningBalanceTransactionUseCase:
+    def __init__(self, repository: ICostRepository) -> None:
+        self._repo = repository
+        self._calc_balance_uc = CalculateOpeningBalanceUseCase(repository)
+
+    async def execute(self, year: int, month: int) -> Transaction | None:
+        """Ensure opening balance transaction exists for month.
+
+        - If month is current month: return None (not yet applicable)
+        - If month in future: return None (not applicable)
+        - If month in past:
+          - Check if opening balance already exists
+          - If yes: return existing
+          - If no: calculate and create
+        """
+        today = date.today()
+
+        # Current or future month: skip
+        if (year, month) >= (today.year, today.month):
+            return None
+
+        # Check if already exists
+        existing = await self._repo.get_opening_balance_transaction(year, month)
+        if existing:
+            return existing
+
+        # Calculate opening balance
+        balance = await self._calc_balance_uc.execute(year, month)
+
+        # Create transaction with month name
+        month_name = date(year, month, 1).strftime("%B")
+        opening_tx = Transaction.create(
+            title=f"Opening Balance {month_name}",
+            amount=balance if balance >= 0 else abs(balance),
+            transaction_type=TransactionType.INCOME if balance >= 0 else TransactionType.EXPENSE,
+            transaction_date=date(year, month, 1),
+            is_opening_balance=True,
+        )
+
+        await self._repo.save_transaction(opening_tx)
+        return opening_tx

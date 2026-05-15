@@ -618,3 +618,79 @@ async def test_calculate_opening_balance_first_month() -> None:
     result = await uc.execute(year=2026, month=5)
 
     assert result == Decimal("0")
+
+
+# ---------------------------------------------------------------------------
+# Ensure Opening Balance
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_ensure_opening_balance_creates_for_past_month() -> None:
+    """Create opening balance transaction for past month."""
+    repo = InMemoryCostRepository()
+    # March: +5000 income, -3000 expense = +2000 balance
+    await repo.save_transaction(Transaction.create(
+        title="Salary",
+        amount=Decimal("5000"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 3, 1),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Rent",
+        amount=Decimal("3000"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 3, 15),
+    ))
+
+    from src.application.use_cases.cost_use_cases import EnsureOpeningBalanceTransactionUseCase
+    uc = EnsureOpeningBalanceTransactionUseCase(repo)
+    result = await uc.execute(year=2026, month=4)
+
+    # Should create opening balance transaction
+    assert result is not None
+    assert result.is_opening_balance is True
+    assert result.title == "Opening Balance April"
+    assert result.amount == Decimal("2000")
+    assert result.transaction_type == TransactionType.INCOME
+    assert result.date == date(2026, 4, 1)
+
+
+@pytest.mark.asyncio
+async def test_ensure_opening_balance_skips_current_month() -> None:
+    """Don't create opening balance for current month (still open)."""
+    repo = InMemoryCostRepository()
+    today = date.today()
+
+    from src.application.use_cases.cost_use_cases import EnsureOpeningBalanceTransactionUseCase
+    uc = EnsureOpeningBalanceTransactionUseCase(repo)
+    result = await uc.execute(year=today.year, month=today.month)
+
+    # Should return None (current month not applicable)
+    assert result is None
+    # Should not have created any transactions
+    assert len(repo.transactions) == 0
+
+
+@pytest.mark.asyncio
+async def test_ensure_opening_balance_idempotent() -> None:
+    """Don't recreate if opening balance already exists."""
+    existing_tx = Transaction.create(
+        title="Opening Balance April",
+        amount=Decimal("2000"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 4, 1),
+        is_opening_balance=True,
+    )
+
+    repo = InMemoryCostRepository()
+    await repo.save_transaction(existing_tx)
+
+    from src.application.use_cases.cost_use_cases import EnsureOpeningBalanceTransactionUseCase
+    uc = EnsureOpeningBalanceTransactionUseCase(repo)
+    result = await uc.execute(year=2026, month=4)
+
+    # Should return existing
+    assert result == existing_tx
+    # Should only have the one transaction we added
+    assert len(repo.transactions) == 1
