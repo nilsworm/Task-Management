@@ -1,4 +1,4 @@
-import { Search } from "lucide-react"
+import { AlertCircle, Search } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -36,6 +36,7 @@ const TYPE_OPTIONS = [
 
 export interface TaskFilters {
   search: string
+  overdue: boolean
   status: string
   priority: string
   taskType: string
@@ -59,6 +60,17 @@ export function TaskFilterBar({ filters, onChange }: Props) {
           className="h-7 w-[180px] rounded-[5px] border border-border bg-surface-2 pl-6 pr-2 font-mono text-[11px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </div>
+      <button
+        onClick={() => onChange({ ...filters, overdue: !filters.overdue })}
+        className={`h-7 rounded-[5px] border px-2 font-mono text-[11px] transition-colors ${
+          filters.overdue
+            ? "border-red/50 bg-red/10 text-red"
+            : "border-border bg-surface-2 text-muted-foreground hover:bg-surface-3"
+        }`}
+        title={filters.overdue ? "Show all tasks" : "Show overdue tasks"}
+      >
+        <AlertCircle className="inline h-3 w-3" />
+      </button>
       {[
         { key: "status" as const,   options: STATUS_OPTIONS,   width: "w-[130px]" },
         { key: "priority" as const, options: PRIORITY_OPTIONS, width: "w-[130px]" },

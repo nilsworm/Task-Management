@@ -191,6 +191,50 @@ def test_list_tasks_by_search_empty_returns_422(client: TestClient) -> None:
     assert resp.status_code == 422
 
 
+def test_list_tasks_overdue_filters_correctly(client: TestClient) -> None:
+    # Create overdue task (Milestone with past due_date)
+    r1 = client.post("/tasks", json={
+        "task_type": "milestone",
+        "title": "Overdue task",
+        "due_date": "2026-04-01",
+    })
+    task1_id = r1.json()["id"]
+    # Create completed task (should not appear in overdue)
+    r2 = client.post("/tasks", json={
+        "task_type": "milestone",
+        "title": "Done task",
+        "due_date": "2026-04-01",
+    })
+    task2_id = r2.json()["id"]
+    # Transition first task to done
+    t1 = client.post(f"/tasks/{task1_id}/transition", json={"status": "todo"})
+    t1_todo = client.post(f"/tasks/{task1_id}/transition", json={"status": "in_progress"})
+    t1_done = client.post(f"/tasks/{task1_id}/transition", json={"status": "review"})
+    t1_final = client.post(f"/tasks/{task1_id}/transition", json={"status": "done"})
+
+    # Verify first task is done
+    get_task1 = client.get(f"/tasks/{task1_id}")
+    assert get_task1.json()["status"] == "done"
+
+    # Leave second task in backlog (not done)
+
+    resp = client.get("/tasks?overdue=true")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Done task"
+
+
+def test_list_tasks_overdue_false_returns_all(client: TestClient) -> None:
+    client.post("/tasks", json={"task_type": "daily", "title": "Task A"})
+    client.post("/tasks", json={"task_type": "daily", "title": "Task B"})
+
+    resp = client.get("/tasks?overdue=false")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 2
+
+
 # ---------------------------------------------------------------------------
 # GET /tasks/{id}
 # ---------------------------------------------------------------------------

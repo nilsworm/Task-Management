@@ -17,6 +17,14 @@ const TYPE_LABELS: Record<string, string> = {
   milestone: "milestone",
 }
 
+function isTaskOverdue(task: Task): boolean {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  if (!task.due_date) return false
+  const due = new Date(task.due_date)
+  return due < today && !["done", "cancelled"].includes(task.status)
+}
+
 interface Props {
   tasks: Task[]
   onDeleted?: () => void
@@ -52,6 +60,7 @@ export function TaskTable({ tasks, onDeleted }: Props) {
         const isExpanded = expandedId === task.id
         const priorityColor = PRIORITY_COLORS[task.priority] ?? "#9090b0"
         const isDone = task.status === "done"
+        const overdue = isTaskOverdue(task)
 
         return (
           <div key={task.id}>
@@ -83,7 +92,9 @@ export function TaskTable({ tasks, onDeleted }: Props) {
                 </div>
 
                 <span
-                  className={`truncate text-xs font-medium ${isDone ? "text-muted-foreground line-through" : "text-foreground"}`}
+                  className={`truncate text-xs font-medium ${
+                    isDone ? "text-muted-foreground line-through" : overdue ? "text-red" : "text-foreground"
+                  }`}
                 >
                   {task.title}
                 </span>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,5 +77,17 @@ class PostgresTaskRepository(ITaskRepository):
     async def list_by_search(self, query: str) -> list[Task]:
         result = await self._session.execute(
             select(TaskModel).where(TaskModel.title.ilike(f"%{query}%"))
+        )
+        return [task_from_model(m) for m in result.scalars().all()]
+
+    async def list_overdue(self) -> list[Task]:
+        today = date.today()
+        done_cancelled = {TaskStatus.DONE.value, TaskStatus.CANCELLED.value}
+        result = await self._session.execute(
+            select(TaskModel).where(
+                TaskModel.due_date < today,
+                TaskModel.status.not_in(done_cancelled),
+                TaskModel.due_date.is_not(None),
+            )
         )
         return [task_from_model(m) for m in result.scalars().all()]

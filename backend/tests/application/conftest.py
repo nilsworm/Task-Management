@@ -64,6 +64,15 @@ class InMemoryTaskRepository(ITaskRepository):
         q = query.lower()
         return [t for t in self._store.values() if q in t.title.lower()]
 
+    async def list_overdue(self) -> list[Task]:
+        today = date.today()
+        return [
+            t for t in self._store.values()
+            if getattr(t, "due_date", None) is not None
+            and t.due_date < today
+            and t.status not in {TaskStatus.DONE, TaskStatus.CANCELLED}
+        ]
+
 
 class InMemorySprintRepository(ISprintRepository):
     def __init__(self) -> None:

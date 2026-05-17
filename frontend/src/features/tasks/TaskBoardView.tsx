@@ -2,6 +2,14 @@ import { useTransitionTask } from "@/api/hooks/tasks"
 import { TRANSITIONS } from "./taskTransitions"
 import type { Task, TaskStatus } from "@/api/hooks/tasks"
 
+function isTaskOverdue(task: Task): boolean {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  if (!task.due_date) return false
+  const due = new Date(task.due_date)
+  return due < today && !["done", "cancelled"].includes(task.status)
+}
+
 const COLUMNS: { key: string; label: string; color: string }[] = [
   { key: "backlog",     label: "Backlog",     color: "#5a5a7a" },
   { key: "todo",        label: "To Do",       color: "#9090b0" },
@@ -37,13 +45,14 @@ function BoardCard({ task }: { task: Task }) {
   const nextStatuses = TRANSITIONS[task.status as TaskStatus] ?? []
   const primaryNext = nextStatuses[0] as TaskStatus | undefined
   const priorityColor = PRIORITY_COLORS[task.priority] ?? "#5a5a7a"
+  const overdue = isTaskOverdue(task)
 
   return (
     <div
       className="flex flex-col gap-2 rounded-[5px] border border-border bg-surface-2 p-3 transition-colors hover:bg-surface-3"
-      style={{ borderLeft: `2px solid ${priorityColor}` }}
+      style={{ borderLeft: `2px solid ${overdue ? "#ff4d6d" : priorityColor}` }}
     >
-      <span className="text-xs font-medium leading-snug text-foreground line-clamp-2">
+      <span className={`text-xs font-medium leading-snug line-clamp-2 ${overdue ? "text-red" : "text-foreground"}`}>
         {task.title}
       </span>
 

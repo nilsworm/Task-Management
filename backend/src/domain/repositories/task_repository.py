@@ -37,3 +37,6 @@ class ITaskRepository(ABC):
 
     @abstractmethod
     async def list_by_search(self, query: str) -> list[Task]: ...
+
+    @abstractmethod
+    async def list_overdue(self) -> list[Task]: ...
