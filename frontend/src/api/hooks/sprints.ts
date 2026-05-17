@@ -66,7 +66,8 @@ export function useStartSprint() {
 export function useCompleteSprint() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => apiPost<Sprint>(`/sprints/${id}/complete`),
+    mutationFn: ({ id, moveIncomplete }: { id: string; moveIncomplete: boolean }) =>
+      apiPost<Sprint>(`/sprints/${id}/complete`, { move_incomplete_to_backlog: moveIncomplete }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: SPRINTS_KEY })
       invalidateDashboard(qc)

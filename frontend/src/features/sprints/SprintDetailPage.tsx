@@ -6,6 +6,7 @@ import { SprintStatusBadge } from "./SprintStatusBadge"
 import { SprintTaskList } from "./SprintTaskList"
 import { SprintTaskPicker } from "./SprintTaskPicker"
 import { SprintInlineCreate } from "./SprintInlineCreate"
+import { SprintCompleteModal } from "./SprintCompleteModal"
 
 export function SprintDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -17,6 +18,7 @@ export function SprintDetailPage() {
 
   const [pickerOpen, setPickerOpen]   = useState(false)
   const [inlineCreate, setInlineCreate] = useState(false)
+  const [completeModalOpen, setCompleteModalOpen] = useState(false)
 
   if (isLoading) return <p className="font-mono text-[11px] text-muted-foreground">Loading sprint…</p>
   if (isError || !sprint) {
@@ -85,7 +87,7 @@ export function SprintDetailPage() {
         {sprint.status === "active" && (
           <button
             disabled={complete.isPending}
-            onClick={() => complete.mutate(sprint.id)}
+            onClick={() => setCompleteModalOpen(true)}
             className="h-7 rounded-[5px] border border-border bg-surface-2 px-3 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-surface-3 hover:text-foreground disabled:opacity-50"
           >
             Complete sprint
@@ -124,6 +126,22 @@ export function SprintDetailPage() {
           sprintId={sprint.id}
           assignedTaskIds={sprint.task_ids.map(String)}
           onClose={() => setPickerOpen(false)}
+        />
+      )}
+
+      {/* Complete sprint modal */}
+      {sprint && (
+        <SprintCompleteModal
+          sprint={sprint}
+          isOpen={completeModalOpen}
+          doneCount={tasks.filter((t) => t.status === "done").length}
+          totalCount={tasks.length}
+          onClose={() => setCompleteModalOpen(false)}
+          onConfirm={(moveIncomplete) => {
+            complete.mutate({ id: sprint.id, moveIncomplete })
+            setCompleteModalOpen(false)
+          }}
+          isPending={complete.isPending}
         />
       )}
     </div>

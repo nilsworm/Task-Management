@@ -66,7 +66,7 @@ export function SprintCard({ sprint }: Props) {
         {sprint.status === "active" && (
           <button
             disabled={complete.isPending}
-            onClick={() => complete.mutate(sprint.id, {
+            onClick={() => complete.mutate({ id: sprint.id, moveIncomplete: false }, {
               onSuccess: () => toast.success("Sprint completed"),
               onError:   () => toast.error("Failed to complete sprint"),
             })}
