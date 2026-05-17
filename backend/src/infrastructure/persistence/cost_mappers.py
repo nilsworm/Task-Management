@@ -26,6 +26,7 @@ def transaction_to_model(t: Transaction) -> TransactionModel:
         description=t.description,
         recurring_source_id=t.recurring_source_id,
         import_source=t.import_source,
+        is_opening_balance=t.is_opening_balance,
         created_at=t.created_at,
         updated_at=t.updated_at,
     )
@@ -42,6 +43,7 @@ def transaction_from_model(m: TransactionModel) -> Transaction:
         description=m.description,
         recurring_source_id=m.recurring_source_id,
         import_source=m.import_source,
+        is_opening_balance=m.is_opening_balance,
         created_at=_utc(m.created_at),
         updated_at=_utc(m.updated_at),
     )
