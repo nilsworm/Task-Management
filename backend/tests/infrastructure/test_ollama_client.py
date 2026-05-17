@@ -65,10 +65,11 @@ async def test_generate_returns_response_text(client: OllamaClient) -> None:
 
 @pytest.mark.asyncio
 async def test_generate_stream_yields_tokens(client: OllamaClient) -> None:
+    # /api/chat response format: {"message": {"role": "assistant", "content": "..."}, "done": bool}
     ndjson_lines = [
-        json.dumps({"response": "Hal", "done": False}),
-        json.dumps({"response": "lo", "done": False}),
-        json.dumps({"response": " Welt", "done": True}),
+        json.dumps({"message": {"role": "assistant", "content": "Hal"}, "done": False}),
+        json.dumps({"message": {"role": "assistant", "content": "lo"}, "done": False}),
+        json.dumps({"message": {"role": "assistant", "content": " Welt"}, "done": True}),
     ]
 
     async def mock_aiter_lines():
@@ -92,8 +93,9 @@ async def test_generate_stream_yields_tokens(client: OllamaClient) -> None:
         mock_instance.stream = MagicMock(return_value=mock_stream_ctx)
         mock_class.return_value = mock_instance
 
+        messages = [{"role": "user", "content": "Test"}]
         tokens = []
-        async for token in client.generate_stream(prompt="Test", system="System"):
+        async for token in client.generate_stream(messages=messages, system="System"):
             tokens.append(token)
 
     assert tokens == ["Hal", "lo", " Welt"]

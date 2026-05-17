@@ -12,5 +12,7 @@ class IAIClient(ABC):
     async def generate(self, prompt: str, system: str) -> str: ...
 
     @abstractmethod
-    async def generate_stream(self, prompt: str, system: str) -> AsyncIterator[str]:
+    async def generate_stream(
+        self, messages: list[dict[str, str]], system: str
+    ) -> AsyncIterator[str]:
         yield  # makes this an async generator stub for type-checking purposes

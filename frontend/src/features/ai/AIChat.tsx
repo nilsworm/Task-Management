@@ -1,40 +1,42 @@
-import { useState, useRef, useEffect } from "react"
+import { useRef, useEffect } from "react"
 import { Send } from "lucide-react"
+import { useAIChatStore } from "@/stores/aiChatStore"
+import { useState } from "react"
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? ""
 
 export function AIChat() {
-  const [message, setMessage] = useState("")
-  const [response, setResponse] = useState("")
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const responseRef = useRef<HTMLDivElement>(null)
+  const [input, setInput] = useState("")
+  const { messages, isStreaming, error, addUserMessage, startAssistantMessage, appendToken, finalizeMessage, setError } = useAIChatStore()
+  const bottomRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => () => { abortRef.current?.abort() }, [])
 
   useEffect(() => {
-    if (responseRef.current) {
-      responseRef.current.scrollTop = responseRef.current.scrollHeight
-    }
-  }, [response])
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
   const handleSend = async () => {
-    if (!message.trim() || isStreaming) return
+    if (!input.trim() || isStreaming) return
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
-    const trimmed = message.trim()
-    setIsStreaming(true)
-    setResponse("")
-    setError(null)
-    setMessage("")
+    const trimmed = input.trim()
+
+    const history = messages
+      .filter((m) => !m.streaming)
+      .map((m) => ({ role: m.role, content: m.content }))
+
+    setInput("")
+    addUserMessage(trimmed)
+    startAssistantMessage()
 
     try {
       const res = await fetch(`${BASE_URL}/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed }),
+        body: JSON.stringify({ message: trimmed, history }),
         signal: controller.signal,
       })
 
@@ -54,15 +56,18 @@ export function AIChat() {
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue
           const token = line.slice(6)
-          if (token.trim() === "[DONE]") return
-          if (token.trim()) setResponse((prev) => prev + token)
+          if (token.trim() === "[DONE]") {
+            finalizeMessage()
+            return
+          }
+          if (token.trim()) appendToken(token)
         }
       }
+      finalizeMessage()
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return
       setError("Antwort konnte nicht geladen werden.")
-    } finally {
-      setIsStreaming(false)
+      finalizeMessage()
     }
   }
 
@@ -74,43 +79,66 @@ export function AIChat() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-3 overflow-hidden">
-      {response && (
-        <div
-          ref={responseRef}
-          data-testid="ai-response"
-          className="flex-1 overflow-y-auto rounded-lg p-3.5 text-[12px] leading-[1.75] scrollbar-thin"
-          style={{
-            background: "rgba(0,212,255,0.03)",
-            border: "1px solid rgba(0,212,255,0.08)",
-            color: "rgba(200,215,240,0.85)",
-            boxShadow: "inset 0 1px 0 rgba(0,212,255,0.04)",
-          }}
-        >
-          {response}
-          {isStreaming && (
-            <span
-              className="ml-0.5 inline-block h-[13px] w-[2px] translate-y-[2px] rounded-full"
-              style={{
-                background: "#00d4ff",
-                boxShadow: "0 0 6px rgba(0,212,255,0.8)",
-                animation: "ai-cursor 1s step-end infinite",
-              }}
-            />
-          )}
-        </div>
-      )}
+    <div className="flex flex-1 flex-col gap-2 overflow-hidden">
+      {/* Message list */}
+      <div
+        data-testid="ai-chat-messages"
+        className="flex flex-1 flex-col gap-2 overflow-y-auto pr-1 scrollbar-thin"
+      >
+        {messages.length === 0 && (
+          <p className="text-[11px] text-center mt-4" style={{ color: "rgba(255,255,255,0.2)" }}>
+            Stelle eine Frage zu deinen Finanzen.
+          </p>
+        )}
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            data-testid={msg.role === "user" ? "ai-chat-user-message" : "ai-chat-assistant-message"}
+            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+          >
+            <div
+              className="max-w-[85%] rounded-lg px-3 py-2 text-[12px] leading-[1.75]"
+              style={
+                msg.role === "user"
+                  ? {
+                      background: "rgba(0,212,255,0.12)",
+                      border: "1px solid rgba(0,212,255,0.2)",
+                      color: "rgba(220,230,245,0.9)",
+                    }
+                  : {
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.07)",
+                      color: "rgba(200,215,240,0.85)",
+                    }
+              }
+            >
+              {msg.content}
+              {msg.streaming && (
+                <span
+                  className="ml-0.5 inline-block h-[13px] w-[2px] translate-y-[2px] rounded-full"
+                  style={{
+                    background: "#00d4ff",
+                    boxShadow: "0 0 6px rgba(0,212,255,0.8)",
+                    animation: "ai-cursor 1s step-end infinite",
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        ))}
+        {error && (
+          <p
+            data-testid="ai-error"
+            className="text-[11px] text-center"
+            style={{ color: "rgba(255,77,109,0.8)" }}
+          >
+            {error}
+          </p>
+        )}
+        <div ref={bottomRef} />
+      </div>
 
-      {error && (
-        <p
-          data-testid="ai-error"
-          className="text-[11px]"
-          style={{ color: "rgba(255,77,109,0.8)" }}
-        >
-          {error}
-        </p>
-      )}
-
+      {/* Input */}
       <div
         className="flex shrink-0 gap-2 rounded-lg p-1"
         style={{
@@ -120,19 +148,18 @@ export function AIChat() {
       >
         <input
           type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Frage stellen..."
           disabled={isStreaming}
+          data-testid="ai-chat-input"
           className="flex-1 bg-transparent px-2 py-1.5 text-[12px] focus:outline-none disabled:opacity-40"
-          style={{
-            color: "rgba(220,230,245,0.9)",
-          }}
+          style={{ color: "rgba(220,230,245,0.9)" }}
         />
         <button
           onClick={handleSend}
-          disabled={!message.trim() || isStreaming}
+          disabled={!input.trim() || isStreaming}
           aria-label="Senden"
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-all disabled:cursor-not-allowed disabled:opacity-30"
           style={{

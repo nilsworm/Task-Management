@@ -24,7 +24,7 @@ class MockAIAdvisorService:
     async def get_insights(self) -> list[InsightCard]:
         return self._insights
 
-    async def stream_chat(self, message: str) -> AsyncIterator[str]:
+    async def stream_chat(self, message: str, history: list[dict[str, str]] | None = None) -> AsyncIterator[str]:
         for token in self._stream_tokens:
             yield token
 
@@ -107,8 +107,20 @@ def test_chat_returns_422_for_message_too_long(client: TestClient) -> None:
     assert resp.status_code == 422
 
 
+def test_chat_sends_history(client: TestClient) -> None:
+    resp = client.post("/ai/chat", json={
+        "message": "Und im April?",
+        "history": [
+            {"role": "user", "content": "Was kostet mich Tabak?"},
+            {"role": "assistant", "content": "Im Mai 12€."},
+        ],
+    })
+    assert resp.status_code == 200
+    assert "data: [DONE]\n\n" in resp.text
+
+
 def test_chat_returns_503_when_service_unavailable(mock_service: MockAIAdvisorService) -> None:
-    async def raise_connection_error(message: str) -> AsyncIterator[str]:
+    async def raise_connection_error(message: str, history: list | None = None) -> AsyncIterator[str]:
         raise ConnectionError("Ollama not reachable")
         yield  # makes it an async generator
 

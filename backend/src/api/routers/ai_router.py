@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from src.api.dependencies import get_ai_advisor_service
-from src.api.schemas.ai_schemas import AIChatRequest, InsightCardResponse
+from src.api.schemas.ai_schemas import AIChatRequest, ChatMessage, InsightCardResponse
 from src.application.services.ai_advisor import AIAdvisorService
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,8 @@ async def get_insights(service: AIAdvisorServiceDep) -> list[InsightCardResponse
 
 @router.post("/chat")
 async def chat(request: AIChatRequest, service: AIAdvisorServiceDep) -> StreamingResponse:
-    stream = service.stream_chat(request.message)
+    history = [{"role": m.role, "content": m.content} for m in request.history]
+    stream = service.stream_chat(request.message, history)
 
     # Prime the stream to catch availability errors before committing to a 200 response.
     try:
