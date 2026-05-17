@@ -1,6 +1,7 @@
 import { useAIPanelStore } from "@/stores/aiPanelStore"
 import { useAIInsights } from "@/api/hooks/ai"
 import { InsightCards } from "@/features/ai/InsightCards"
+import { AIChat } from "@/features/ai/AIChat"
 import { X } from "lucide-react"
 
 export function AIAdvisorPanel() {
@@ -33,7 +34,7 @@ export function AIAdvisorPanel() {
           <InsightCards cards={insights ?? []} isLoading={isLoading} />
         </div>
         <div className="mx-0 h-px bg-border/30" />
-        {/* AIChat will be added in Task 8 */}
+        <AIChat />
       </div>
     </div>
   )
