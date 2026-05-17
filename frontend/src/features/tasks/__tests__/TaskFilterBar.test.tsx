@@ -25,4 +25,12 @@ describe("TaskFilterBar", () => {
     fireEvent.click(statusTrigger)
     expect(screen.getByRole("listbox")).toBeInTheDocument()
   })
+
+  it("calls onChange with search value when input changes", () => {
+    const onChange = vi.fn()
+    render(<TaskFilterBar filters={DEFAULT} onChange={onChange} />)
+    const searchInput = screen.getByPlaceholderText("Search tasks…") as HTMLInputElement
+    fireEvent.change(searchInput, { target: { value: "backend" } })
+    expect(onChange).toHaveBeenCalledWith({ ...DEFAULT, search: "backend" })
+  })
 })

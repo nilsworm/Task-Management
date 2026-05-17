@@ -152,6 +152,45 @@ def test_list_tasks_filter_by_sprint(client: TestClient) -> None:
     assert data[0]["sprint_id"] == sid
 
 
+def test_list_tasks_by_search_returns_matches(client: TestClient) -> None:
+    client.post("/tasks", json={"task_type": "daily", "title": "Write documentation"})
+    client.post("/tasks", json={"task_type": "daily", "title": "Fix database bug"})
+
+    resp = client.get("/tasks?search=documentation")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Write documentation"
+
+
+def test_list_tasks_by_search_case_insensitive(client: TestClient) -> None:
+    client.post("/tasks", json={"task_type": "daily", "title": "Write Tests"})
+    client.post("/tasks", json={"task_type": "daily", "title": "Debug code"})
+
+    resp = client.get("/tasks?search=TESTS")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Write Tests"
+
+
+def test_list_tasks_by_search_no_matches(client: TestClient) -> None:
+    client.post("/tasks", json={"task_type": "daily", "title": "Task A"})
+    client.post("/tasks", json={"task_type": "daily", "title": "Task B"})
+
+    resp = client.get("/tasks?search=nonexistent")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 0
+
+
+def test_list_tasks_by_search_empty_returns_422(client: TestClient) -> None:
+    client.post("/tasks", json={"task_type": "daily", "title": "Task"})
+
+    resp = client.get("/tasks?search=")
+    assert resp.status_code == 422
+
+
 # ---------------------------------------------------------------------------
 # GET /tasks/{id}
 # ---------------------------------------------------------------------------
