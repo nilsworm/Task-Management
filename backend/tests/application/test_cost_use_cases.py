@@ -694,3 +694,39 @@ async def test_ensure_opening_balance_idempotent() -> None:
     assert result == existing_tx
     # Should only have the one transaction we added
     assert len(repo.transactions) == 1
+
+
+# ---------------------------------------------------------------------------
+# ListTransactions with Opening Balance Integration
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_list_transactions_includes_opening_balance() -> None:
+    """ListTransactionsUseCase auto-creates opening balance for past month."""
+    repo = InMemoryCostRepository()
+
+    # April transactions (for calculating opening balance)
+    await repo.save_transaction(Transaction.create(
+        title="Salary",
+        amount=Decimal("5000"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 4, 1),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Rent",
+        amount=Decimal("3000"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 4, 15),
+    ))
+
+    # List May transactions (should auto-create opening balance)
+    uc = ListTransactionsUseCase(repo)
+    result = await uc.execute(year=2026, month=5)
+
+    # Should include opening balance transaction
+    opening_balances = [t for t in result if t.is_opening_balance]
+    assert len(opening_balances) == 1
+    assert opening_balances[0].title == "Opening Balance May"
+    assert opening_balances[0].amount == Decimal("2000")
+    assert opening_balances[0].transaction_type == TransactionType.INCOME
