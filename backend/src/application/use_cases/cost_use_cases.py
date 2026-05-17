@@ -391,11 +391,15 @@ class EnsureOpeningBalanceTransactionUseCase:
         # Calculate opening balance
         balance = await self._calc_balance_uc.execute(year, month)
 
+        # No transactions in previous month → no opening balance to record
+        if balance == Decimal("0"):
+            return None
+
         # Create transaction with month name
         month_name = date(year, month, 1).strftime("%B")
         opening_tx = Transaction.create(
             title=f"Opening Balance {month_name}",
-            amount=balance if balance >= 0 else abs(balance),
+            amount=abs(balance),
             transaction_type=TransactionType.INCOME if balance >= 0 else TransactionType.EXPENSE,
             transaction_date=date(year, month, 1),
             is_opening_balance=True,
