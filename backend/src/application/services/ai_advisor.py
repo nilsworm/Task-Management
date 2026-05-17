@@ -27,6 +27,10 @@ _INSIGHTS_PROMPT = (
     "Jeder Insight hat: title (max 60 Zeichen), body (max 120 Zeichen), "
     "type (warning|tip|forecast).\n"
     "Gib ausschließlich das JSON-Array zurück, keine Erklärungen.\n\n"
+    "Achte besonders auf folgende Muster und priorisiere sie als 'warning':\n"
+    "- Zigaretten / Tabak (Tags wie zigaretten, rauchen, tabak)\n"
+    "- Unnötige Kleinstausgaben unter 10€ (häufige kleine Beträge)\n"
+    "- Impulskäufe und Konsumausgaben (Tags wie shopping, amazon, kleidung, konsum)\n\n"
     "{context}"
 )
 
