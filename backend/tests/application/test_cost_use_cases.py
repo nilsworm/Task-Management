@@ -657,19 +657,42 @@ async def test_ensure_opening_balance_creates_for_past_month() -> None:
 
 
 @pytest.mark.asyncio
-async def test_ensure_opening_balance_skips_current_month() -> None:
-    """Don't create opening balance for current month (still open)."""
+async def test_ensure_opening_balance_skips_future_month() -> None:
+    """Don't create opening balance for future months."""
     repo = InMemoryCostRepository()
     today = date.today()
+    future_year = today.year + 1
+
+    from src.application.use_cases.cost_use_cases import EnsureOpeningBalanceTransactionUseCase
+    uc = EnsureOpeningBalanceTransactionUseCase(repo)
+    result = await uc.execute(year=future_year, month=today.month)
+
+    assert result is None
+    assert len(repo.transactions) == 0
+
+
+@pytest.mark.asyncio
+async def test_ensure_opening_balance_creates_for_current_month() -> None:
+    """Create opening balance for current month using previous month's closing balance."""
+    repo = InMemoryCostRepository()
+    today = date.today()
+    prev_month = today.month - 1 or 12
+    prev_year = today.year if today.month > 1 else today.year - 1
+
+    await repo.save_transaction(Transaction.create(
+        title="Salary",
+        amount=Decimal("3000"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(prev_year, prev_month, 1),
+    ))
 
     from src.application.use_cases.cost_use_cases import EnsureOpeningBalanceTransactionUseCase
     uc = EnsureOpeningBalanceTransactionUseCase(repo)
     result = await uc.execute(year=today.year, month=today.month)
 
-    # Should return None (current month not applicable)
-    assert result is None
-    # Should not have created any transactions
-    assert len(repo.transactions) == 0
+    assert result is not None
+    assert result.is_opening_balance is True
+    assert result.amount == Decimal("3000")
 
 
 @pytest.mark.asyncio
@@ -697,36 +720,25 @@ async def test_ensure_opening_balance_idempotent() -> None:
 
 
 # ---------------------------------------------------------------------------
-# ListTransactions with Opening Balance Integration
+# ListTransactions — opening balance is a router concern, not a UseCase concern
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio
-async def test_list_transactions_includes_opening_balance() -> None:
-    """ListTransactionsUseCase auto-creates opening balance for past month."""
+async def test_list_transactions_does_not_create_opening_balance() -> None:
+    """ListTransactionsUseCase has no side-effects — opening balance is ensured at router level."""
     repo = InMemoryCostRepository()
 
-    # April transactions (for calculating opening balance)
     await repo.save_transaction(Transaction.create(
         title="Salary",
         amount=Decimal("5000"),
         transaction_type=TransactionType.INCOME,
         transaction_date=date(2026, 4, 1),
     ))
-    await repo.save_transaction(Transaction.create(
-        title="Rent",
-        amount=Decimal("3000"),
-        transaction_type=TransactionType.EXPENSE,
-        transaction_date=date(2026, 4, 15),
-    ))
 
-    # List May transactions (should auto-create opening balance)
     uc = ListTransactionsUseCase(repo)
     result = await uc.execute(year=2026, month=5)
 
-    # Should include opening balance transaction
-    opening_balances = [t for t in result if t.is_opening_balance]
-    assert len(opening_balances) == 1
-    assert opening_balances[0].title == "Opening Balance May"
-    assert opening_balances[0].amount == Decimal("2000")
-    assert opening_balances[0].transaction_type == TransactionType.INCOME
+    # UseCase itself does not create opening balance transactions
+    assert all(not t.is_opening_balance for t in result)
+    assert len(result) == 0  # No May transactions exist yet

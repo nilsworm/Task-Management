@@ -20,6 +20,7 @@ from src.application.use_cases.cost_use_cases import (
     CreateTransactionUseCase,
     DeleteRecurringUseCase,
     DeleteTransactionUseCase,
+    EnsureOpeningBalanceTransactionUseCase,
     GenerateMonthlyUseCase,
     GetCostAnalyticsUseCase,
     GetCostSummaryUseCase,
@@ -55,6 +56,8 @@ async def list_transactions(
     tags: list[str] | None = Query(None),
     transaction_type: str | None = Query(None),
 ) -> list[TransactionResponse]:
+    if year is not None and month is not None:
+        await EnsureOpeningBalanceTransactionUseCase(repo).execute(year=year, month=month)
     tx_type = TransactionType(transaction_type) if transaction_type else None
     transactions = await ListTransactionsUseCase(repo).execute(
         year=year,
@@ -140,6 +143,7 @@ async def get_cost_summary(
     year: int = Query(..., ge=2000, le=2100),
     month: int = Query(..., ge=1, le=12),
 ) -> CostSummaryResponse:
+    await EnsureOpeningBalanceTransactionUseCase(repo).execute(year=year, month=month)
     summary = await GetCostSummaryUseCase(repo).execute(year=year, month=month)
     return CostSummaryResponse(
         year=summary.year,

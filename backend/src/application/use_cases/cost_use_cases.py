@@ -77,11 +77,6 @@ class ListTransactionsUseCase:
         tags: list[str] | None = None,
         transaction_type: TransactionType | None = None,
     ) -> list[Transaction]:
-        # Ensure opening balance exists (for past months)
-        if year is not None and month is not None:
-            ensure_balance_uc = EnsureOpeningBalanceTransactionUseCase(self._repo)
-            await ensure_balance_uc.execute(year, month)
-
         return await self._repo.list_transactions(
             year=year,
             month=month,
@@ -384,8 +379,8 @@ class EnsureOpeningBalanceTransactionUseCase:
         """
         today = date.today()
 
-        # Current or future month: skip
-        if (year, month) >= (today.year, today.month):
+        # Future month only: skip (current month is valid — opening balance = prev month closing)
+        if (year, month) > (today.year, today.month):
             return None
 
         # Check if already exists
