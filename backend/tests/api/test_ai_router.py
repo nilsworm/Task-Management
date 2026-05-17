@@ -69,3 +69,27 @@ def test_insights_returns_503_when_service_unavailable(mock_service: MockAIAdvis
         resp = c.post("/ai/insights")
     app.dependency_overrides.clear()
     assert resp.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# POST /ai/chat
+# ---------------------------------------------------------------------------
+
+
+def test_chat_returns_200_sse_stream(client: TestClient) -> None:
+    resp = client.post("/ai/chat", json={"message": "Was sind meine größten Ausgaben?"})
+    assert resp.status_code == 200
+    assert "text/event-stream" in resp.headers["content-type"]
+    body = resp.text
+    assert "data: Hallo \n\n" in body
+    assert "data: [DONE]\n\n" in body
+
+
+def test_chat_returns_422_for_empty_message(client: TestClient) -> None:
+    resp = client.post("/ai/chat", json={"message": ""})
+    assert resp.status_code == 422
+
+
+def test_chat_returns_422_for_message_too_long(client: TestClient) -> None:
+    resp = client.post("/ai/chat", json={"message": "x" * 501})
+    assert resp.status_code == 422
