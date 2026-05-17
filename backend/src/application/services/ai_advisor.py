@@ -50,6 +50,10 @@ class AIAdvisorService:
         year, month = today.year, today.month
 
         current = await self._repo.list_transactions(year=year, month=month)
+        opening_balance = sum(
+            t.amount if t.transaction_type == TransactionType.INCOME else -t.amount
+            for t in current if t.is_opening_balance
+        )
         income = sum(
             t.amount for t in current
             if t.transaction_type == TransactionType.INCOME and not t.is_opening_balance
@@ -59,6 +63,7 @@ class AIAdvisorService:
             if t.transaction_type == TransactionType.EXPENSE and not t.is_opening_balance
         )
         balance = income - expenses
+        account_balance = opening_balance + balance
 
         tag_totals: dict[str, Decimal] = {}
         for t in current:
@@ -99,10 +104,15 @@ class AIAdvisorService:
             f"  {t.date}  {t.title}  {t.amount:.2f}€  [{', '.join(t.tags) or 'unkategorisiert'}]" for t in top5
         ) or "  keine"
 
+        def signed(v: Decimal) -> str:
+            return f"+{v:.2f}€" if v >= 0 else f"{v:.2f}€"
+
         return (
             f"Aktueller Monat ({month_name[month]} {year}):\n"
+            f"- Anfangsbestand (Vormonat): {signed(opening_balance)}\n"
             f"- Einnahmen: {income:.2f}€  Ausgaben: {expenses:.2f}€  "
-            f"Saldo: {'+' if balance >= 0 else ''}{balance:.2f}€\n"
+            f"Monatssaldo: {signed(balance)}\n"
+            f"- Aktueller Kontostand: {signed(account_balance)}\n"
             f"- Ausgaben nach Tag: {tag_lines or 'keine'}\n\n"
             f"Letzte 6 Monate (Monatssaldo):\n{chr(10).join(trend_lines)}\n\n"
             f"Wiederkehrende Einträge (aktiv):\n  {rec_lines}\n\n"

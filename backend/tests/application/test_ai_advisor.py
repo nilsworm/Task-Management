@@ -157,6 +157,11 @@ async def test_build_context_excludes_opening_balance() -> None:
     await service.get_insights()
 
     assert captured_prompts
-    # The context should show 500€ income, not 1500€
-    assert "500" in captured_prompts[0]
-    assert "1500" not in captured_prompts[0]
+    prompt = captured_prompts[0]
+    # Income line must show 500€, not conflate with opening balance
+    assert "Einnahmen: 500.00€" in prompt
+    # Opening balance must be shown separately as Anfangsbestand
+    assert "Anfangsbestand" in prompt
+    assert "1000.00€" in prompt
+    # Account balance (opening + income) correctly shown as 1500€
+    assert "Kontostand" in prompt
