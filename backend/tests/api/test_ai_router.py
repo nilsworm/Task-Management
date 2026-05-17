@@ -96,13 +96,11 @@ def test_chat_returns_422_for_message_too_long(client: TestClient) -> None:
 
 
 def test_chat_returns_503_when_service_unavailable(mock_service: MockAIAdvisorService) -> None:
-    async def raise_503(message: str) -> AsyncIterator[str]:
-        from fastapi import HTTPException
+    async def raise_connection_error(message: str) -> AsyncIterator[str]:
+        raise ConnectionError("Ollama not reachable")
+        yield  # makes it an async generator
 
-        raise HTTPException(status_code=503, detail="Ollama not available")
-        yield  # makes this an async generator; never reached
-
-    mock_service.stream_chat = raise_503  # type: ignore[assignment]
+    mock_service.stream_chat = raise_connection_error  # type: ignore[assignment]
     app.dependency_overrides[get_ai_advisor_service] = lambda: mock_service
     with TestClient(app) as c:
         resp = c.post("/ai/chat", json={"message": "test"})

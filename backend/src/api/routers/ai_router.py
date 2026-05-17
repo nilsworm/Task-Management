@@ -29,7 +29,7 @@ async def chat(request: AIChatRequest, service: AIAdvisorServiceDep) -> Streamin
 
     # Prime the stream to catch availability errors before committing to a 200 response.
     try:
-        first_token = await stream.__anext__()
+        first_token = await anext(stream)
     except StopAsyncIteration:
         first_token = None
     except HTTPException:
