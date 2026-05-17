@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import { AIChat } from "@/features/ai/AIChat"
 
@@ -17,6 +17,10 @@ function makeStream(chunks: string[]): ReadableStream<Uint8Array> {
 describe("AIChat", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it("renders input and send button", () => {
@@ -71,6 +75,45 @@ describe("AIChat", () => {
 
     await waitFor(() =>
       expect(screen.getByTestId("ai-error")).toBeInTheDocument()
+    )
+  })
+
+  it("shows error message on non-200 response", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 503,
+      body: null,
+    } as unknown as Response)
+
+    render(<AIChat />)
+    fireEvent.change(screen.getByPlaceholderText(/frage stellen/i), {
+      target: { value: "Test" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /senden/i }))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("ai-error")).toBeInTheDocument()
+    )
+  })
+
+  it("handles SSE data split across chunks", async () => {
+    // Simulate "data: Hallo\n\ndata: [DONE]\n\n" split mid-line
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      body: makeStream([
+        "data: Hal",        // split in the middle of a token
+        "lo\n\ndata: [DONE]\n\n",
+      ]),
+    } as unknown as Response)
+
+    render(<AIChat />)
+    fireEvent.change(screen.getByPlaceholderText(/frage stellen/i), {
+      target: { value: "Test" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /senden/i }))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("ai-response")).toHaveTextContent("Hallo")
     )
   })
 })

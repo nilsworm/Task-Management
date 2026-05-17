@@ -9,6 +9,9 @@ export function AIChat() {
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const responseRef = useRef<HTMLDivElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => () => { abortRef.current?.abort() }, [])
 
   useEffect(() => {
     if (responseRef.current) {
@@ -18,15 +21,21 @@ export function AIChat() {
 
   const handleSend = async () => {
     if (!message.trim() || isStreaming) return
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+    const trimmed = message.trim()
     setIsStreaming(true)
     setResponse("")
     setError(null)
+    setMessage("")
 
     try {
       const res = await fetch(`${BASE_URL}/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message.trim() }),
+        body: JSON.stringify({ message: trimmed }),
+        signal: controller.signal,
       })
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -34,22 +43,23 @@ export function AIChat() {
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
+      let buffer = ""
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        const text = decoder.decode(value, { stream: true })
-        for (const line of text.split("\n")) {
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split("\n")
+        buffer = lines.pop() ?? ""
+        for (const line of lines) {
           if (!line.startsWith("data: ")) continue
           const token = line.slice(6)
-          if (token === "[DONE]") {
-            setIsStreaming(false)
-            return
-          }
-          setResponse((prev) => prev + token)
+          if (token.trim() === "[DONE]") return
+          if (token.trim()) setResponse((prev) => prev + token)
         }
       }
     } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return
       setError("Antwort konnte nicht geladen werden.")
     } finally {
       setIsStreaming(false)
