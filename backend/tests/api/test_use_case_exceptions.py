@@ -46,6 +46,14 @@ def factory() -> TaskFactory:
     return TaskFactory()
 
 
+def _task_repo() -> InMemoryTaskRepository:
+    return InMemoryTaskRepository()
+
+
+
+def _task_repo() -> InMemoryTaskRepository:
+    return InMemoryTaskRepository()
+
 def _sprint() -> Sprint:
     return Sprint("S1", DateRange(date(2026, 5, 1), date(2026, 5, 14)))
 
@@ -113,7 +121,7 @@ async def test_complete_missing_sprint_raises_not_found(
     sprint_repo: InMemorySprintRepository, event_bus: InMemoryEventBus
 ) -> None:
     with pytest.raises(EntityNotFoundError):
-        await CompleteSprintUseCase(sprint_repo, event_bus).execute(uuid.uuid4())
+        await CompleteSprintUseCase(sprint_repo, _task_repo(), event_bus).execute(uuid.uuid4())
 
 
 # ---------------------------------------------------------------------------
@@ -136,4 +144,4 @@ async def test_complete_planned_sprint_raises_invalid_operation(
     sprint = _sprint()
     await sprint_repo.save(sprint)
     with pytest.raises(InvalidOperationError):
-        await CompleteSprintUseCase(sprint_repo, event_bus).execute(sprint.id)
+        await CompleteSprintUseCase(sprint_repo, _task_repo(), event_bus).execute(sprint.id)

@@ -130,13 +130,14 @@ async def test_start_sprint_already_active_raises(
 
 async def test_complete_sprint_changes_status(
     sprint_repo: InMemorySprintRepository,
+    task_repo: InMemoryTaskRepository,
     event_bus: InMemoryEventBus,
 ) -> None:
     sprint = Sprint("Sprint 1", _date_range())
     sprint.start()
     await sprint_repo.save(sprint)
 
-    use_case = CompleteSprintUseCase(sprint_repo, event_bus)
+    use_case = CompleteSprintUseCase(sprint_repo, task_repo, event_bus)
     result = await use_case.execute(sprint.id)
 
     assert result.status is SprintStatus.COMPLETED
@@ -145,6 +146,7 @@ async def test_complete_sprint_changes_status(
 
 async def test_complete_sprint_publishes_completed_event(
     sprint_repo: InMemorySprintRepository,
+    task_repo: InMemoryTaskRepository,
     event_bus: InMemoryEventBus,
 ) -> None:
     sprint = Sprint("Sprint 1", _date_range())
@@ -154,7 +156,7 @@ async def test_complete_sprint_publishes_completed_event(
     spy = EventSpy()
     event_bus.subscribe(SprintCompletedEvent, spy)
 
-    use_case = CompleteSprintUseCase(sprint_repo, event_bus)
+    use_case = CompleteSprintUseCase(sprint_repo, task_repo, event_bus)
     await use_case.execute(sprint.id)
 
     assert len(spy.events) == 1
@@ -165,21 +167,23 @@ async def test_complete_sprint_publishes_completed_event(
 
 async def test_complete_sprint_not_found_raises(
     sprint_repo: InMemorySprintRepository,
+    task_repo: InMemoryTaskRepository,
     event_bus: InMemoryEventBus,
 ) -> None:
-    use_case = CompleteSprintUseCase(sprint_repo, event_bus)
+    use_case = CompleteSprintUseCase(sprint_repo, task_repo, event_bus)
     with pytest.raises(ValueError):
         await use_case.execute(uuid.uuid4())
 
 
 async def test_complete_sprint_from_planned_raises(
     sprint_repo: InMemorySprintRepository,
+    task_repo: InMemoryTaskRepository,
     event_bus: InMemoryEventBus,
 ) -> None:
     sprint = Sprint("Sprint 1", _date_range())
     await sprint_repo.save(sprint)
 
-    use_case = CompleteSprintUseCase(sprint_repo, event_bus)
+    use_case = CompleteSprintUseCase(sprint_repo, task_repo, event_bus)
     with pytest.raises(ValueError):
         await use_case.execute(sprint.id)
 
