@@ -1,6 +1,7 @@
 """API-level tests for /sprints router using TestClient + DI overrides."""
 from __future__ import annotations
 
+import asyncio
 import uuid
 
 import pytest
@@ -180,6 +181,65 @@ def test_complete_planned_sprint_returns_409(client: TestClient) -> None:
     sprint = _create_sprint(client)
     resp = client.post(f"/sprints/{sprint['id']}/complete")
     assert resp.status_code == 409
+
+
+def test_complete_sprint_moves_incomplete_to_backlog(
+    client: TestClient, task_repo: InMemoryTaskRepository
+) -> None:
+    from src.domain.factory import TaskFactory
+
+    factory = TaskFactory()
+    sprint = _create_sprint(client)
+    sprint_id = uuid.UUID(sprint["id"])
+
+    # Create two tasks: one done, one in_progress
+    task_done = factory.create_sprint("Done task", sprint_id=sprint_id)
+    task_todo = factory.create_sprint("Incomplete task", sprint_id=sprint_id)
+
+    import asyncio
+    asyncio.run(task_repo.save(task_done))
+    asyncio.run(task_repo.save(task_todo))
+
+    # Transition first to done
+    client.post(f"/sprints/{sprint_id}/start")
+    client.post(f"/tasks/{task_done.id}/transition", json={"status": "todo"})
+    client.post(f"/tasks/{task_done.id}/transition", json={"status": "in_progress"})
+    client.post(f"/tasks/{task_done.id}/transition", json={"status": "review"})
+    client.post(f"/tasks/{task_done.id}/transition", json={"status": "done"})
+
+    # Complete sprint with move_incomplete_to_backlog=true
+    resp = client.post(f"/sprints/{sprint_id}/complete", json={"move_incomplete_to_backlog": True})
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "completed"
+
+    # Check that incomplete task is detached from sprint
+    incomplete_task = asyncio.run(task_repo.get_by_id(task_todo.id))
+    assert incomplete_task is not None
+    assert incomplete_task.sprint_id is None
+
+
+def test_complete_sprint_default_leaves_tasks(
+    client: TestClient, task_repo: InMemoryTaskRepository
+) -> None:
+    from src.domain.factory import TaskFactory
+
+    factory = TaskFactory()
+    sprint = _create_sprint(client)
+    sprint_id = uuid.UUID(sprint["id"])
+
+    task = factory.create_sprint("Task in sprint", sprint_id=sprint_id)
+    import asyncio
+    asyncio.run(task_repo.save(task))
+
+    client.post(f"/sprints/{sprint_id}/start")
+    # Complete without body (or with move_incomplete_to_backlog=false)
+    resp = client.post(f"/sprints/{sprint_id}/complete")
+    assert resp.status_code == 200
+
+    # Check that task still has sprint_id (not detached)
+    updated_task = asyncio.run(task_repo.get_by_id(task.id))
+    assert updated_task is not None
+    assert updated_task.sprint_id == sprint_id
 
 
 # ---------------------------------------------------------------------------

@@ -24,6 +24,10 @@ class SprintUpdateRequest(BaseModel):
     goal: str | None = None
 
 
+class CompleteSprintRequest(BaseModel):
+    move_incomplete_to_backlog: bool = False
+
+
 class SprintResponse(BaseModel):
     id: uuid.UUID
     name: str

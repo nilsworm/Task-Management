@@ -42,11 +42,12 @@ class StartSprintUseCase:
 
 
 class CompleteSprintUseCase:
-    def __init__(self, repository: ISprintRepository, event_bus: IEventBus) -> None:
+    def __init__(self, repository: ISprintRepository, task_repo: ITaskRepository, event_bus: IEventBus) -> None:
         self._repo = repository
+        self._task_repo = task_repo
         self._event_bus = event_bus
 
-    async def execute(self, sprint_id: uuid.UUID) -> Sprint:
+    async def execute(self, sprint_id: uuid.UUID, move_incomplete_to_backlog: bool = False) -> Sprint:
         sprint = await self._repo.get_by_id(sprint_id)
         if sprint is None:
             raise EntityNotFoundError("Sprint", str(sprint_id))
@@ -54,6 +55,14 @@ class CompleteSprintUseCase:
             sprint.complete()
         except ValueError as exc:
             raise InvalidOperationError(str(exc)) from exc
+
+        if move_incomplete_to_backlog:
+            tasks = await self._task_repo.list_by_sprint(sprint_id)
+            for task in tasks:
+                if task.status not in {"done", "cancelled"}:
+                    task.sprint_id = None
+                    await self._task_repo.save(task)
+
         await self._repo.save(sprint)
         self._event_bus.publish(
             SprintCompletedEvent(sprint.id, datetime.now(timezone.utc))

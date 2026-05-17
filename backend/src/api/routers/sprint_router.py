@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Body
 from fastapi import Query
 
 from src.api.dependencies import EventBusDep, SprintRepoDep, TaskRepoDep
-from src.api.schemas.sprint_schemas import SprintCreateRequest, SprintResponse, SprintUpdateRequest
+from src.api.schemas.sprint_schemas import CompleteSprintRequest, SprintCreateRequest, SprintResponse, SprintUpdateRequest
 from src.api.schemas.task_schemas import TaskResponse
 from src.application.exceptions import EntityNotFoundError, InvalidOperationError
 from src.domain.sprint import Sprint
@@ -115,8 +115,9 @@ async def complete_sprint(
     repo: SprintRepoDep,
     task_repo: TaskRepoDep,
     bus: EventBusDep,
+    body: CompleteSprintRequest = Body(CompleteSprintRequest()),
 ) -> SprintResponse:
-    sprint = await CompleteSprintUseCase(repo, bus).execute(sprint_id)
+    sprint = await CompleteSprintUseCase(repo, task_repo, bus).execute(sprint_id, body.move_incomplete_to_backlog)
     return await _build_response(sprint, task_repo)
 
 
