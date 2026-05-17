@@ -79,22 +79,45 @@ export function AIChat() {
         <div
           ref={responseRef}
           data-testid="ai-response"
-          className="flex-1 overflow-y-auto rounded-lg border border-border/30 bg-white/5 p-3 text-[12px] leading-relaxed text-zinc-300"
+          className="flex-1 overflow-y-auto rounded-lg p-3.5 text-[12px] leading-[1.75] scrollbar-thin"
+          style={{
+            background: "rgba(0,212,255,0.03)",
+            border: "1px solid rgba(0,212,255,0.08)",
+            color: "rgba(200,215,240,0.85)",
+            boxShadow: "inset 0 1px 0 rgba(0,212,255,0.04)",
+          }}
         >
           {response}
           {isStreaming && (
-            <span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-cyan" />
+            <span
+              className="ml-0.5 inline-block h-[13px] w-[2px] translate-y-[2px] rounded-full"
+              style={{
+                background: "#00d4ff",
+                boxShadow: "0 0 6px rgba(0,212,255,0.8)",
+                animation: "ai-cursor 1s step-end infinite",
+              }}
+            />
           )}
         </div>
       )}
 
       {error && (
-        <p data-testid="ai-error" className="text-[11px] text-red-400">
+        <p
+          data-testid="ai-error"
+          className="text-[11px]"
+          style={{ color: "rgba(255,77,109,0.8)" }}
+        >
           {error}
         </p>
       )}
 
-      <div className="flex shrink-0 gap-2">
+      <div
+        className="flex shrink-0 gap-2 rounded-lg p-1"
+        style={{
+          background: "rgba(0,212,255,0.03)",
+          border: "1px solid rgba(0,212,255,0.1)",
+        }}
+      >
         <input
           type="text"
           value={message}
@@ -102,13 +125,20 @@ export function AIChat() {
           onKeyDown={handleKeyDown}
           placeholder="Frage stellen..."
           disabled={isStreaming}
-          className="flex-1 rounded-lg border border-border/50 bg-white/5 px-3 py-2 text-[12px] text-white placeholder:text-zinc-500 focus:border-cyan/50 focus:outline-none disabled:opacity-50"
+          className="flex-1 bg-transparent px-2 py-1.5 text-[12px] focus:outline-none disabled:opacity-40"
+          style={{
+            color: "rgba(220,230,245,0.9)",
+          }}
         />
         <button
           onClick={handleSend}
           disabled={!message.trim() || isStreaming}
           aria-label="Senden"
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan/20 text-cyan transition-colors hover:bg-cyan/30 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-all disabled:cursor-not-allowed disabled:opacity-30"
+          style={{
+            background: "linear-gradient(135deg, rgba(0,212,255,0.2), rgba(124,58,237,0.2))",
+            color: "#00d4ff",
+          }}
         >
           <Send className="h-3.5 w-3.5" />
         </button>

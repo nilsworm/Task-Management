@@ -118,6 +118,34 @@
   --overlay:   rgba(0, 0, 0, 0.60);
 }
 
+/* ─── AI Advisor Animations ──────────────────────────────────────────────── */
+
+@keyframes ai-ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes ai-panel-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes ai-card-appear {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+@keyframes ai-glow-breathe {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1;   }
+}
+
+@keyframes ai-cursor {
+  0%, 100% { opacity: 1; }
+  49%       { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
 /* ─── Base Styles ─────────────────────────────────────────────────────────── */
 
 @layer base {
