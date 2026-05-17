@@ -19,7 +19,12 @@ AIAdvisorServiceDep = Annotated[AIAdvisorService, Depends(get_ai_advisor_service
 
 @router.post("/insights", response_model=list[InsightCardResponse])
 async def get_insights(service: AIAdvisorServiceDep) -> list[InsightCardResponse]:
-    cards = await service.get_insights()
+    try:
+        cards = await service.get_insights()
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="AI service unavailable") from exc
     return [InsightCardResponse(title=c.title, body=c.body, type=c.type) for c in cards]
 
 

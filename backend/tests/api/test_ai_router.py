@@ -71,6 +71,18 @@ def test_insights_returns_503_when_service_unavailable(mock_service: MockAIAdvis
     assert resp.status_code == 503
 
 
+def test_insights_returns_503_when_ollama_unreachable(mock_service: MockAIAdvisorService) -> None:
+    async def raise_connect_error():
+        raise ConnectionError("Ollama not reachable")
+
+    mock_service.get_insights = raise_connect_error  # type: ignore[assignment]
+    app.dependency_overrides[get_ai_advisor_service] = lambda: mock_service
+    with TestClient(app) as c:
+        resp = c.post("/ai/insights")
+    app.dependency_overrides.clear()
+    assert resp.status_code == 503
+
+
 # ---------------------------------------------------------------------------
 # POST /ai/chat
 # ---------------------------------------------------------------------------
