@@ -187,36 +187,36 @@ async def _seed(session: AsyncSession) -> None:
     # total: 5+5+5+3+1+3 = 22 pts
 
     # -----------------------------------------------------------------------
-    # Sprint 3 tasks — mixed statuses (28 story points total)
+    # Sprint 3 tasks — mixed statuses (26 story points total)
     # -----------------------------------------------------------------------
 
     s3_tasks: list[SprintTask] = [
-        SprintTask("Frontend scaffolding & routing",
+        SprintTask("Phase 10.1 — Task Text Search (ILIKE + debounce)",
                    sprint_id=s3_id, id=sid("s3-t1"),
                    status=TaskStatus.DONE, priority=Priority.HIGH,
                    estimation=_est(3), created_at=_now(-10)),
-        SprintTask("Tasks view with filters & modals",
+        SprintTask("Phase 10.2 — Overdue Task Highlighting (red indicators)",
                    sprint_id=s3_id, id=sid("s3-t2"),
                    status=TaskStatus.DONE, priority=Priority.HIGH,
                    estimation=_est(5), created_at=_now(-9)),
-        SprintTask("Sprint Kanban board with drag & drop",
+        SprintTask("Phase 10.3 — Sprint Complete Modal (velocity display)",
                    sprint_id=s3_id, id=sid("s3-t3"),
                    status=TaskStatus.IN_PROGRESS, priority=Priority.HIGH,
                    estimation=_est(8), created_at=_now(-8)),
-        SprintTask("Goals view with KeyResult progress bars",
+        SprintTask("Phase 11.5 — CSV Import Endpoint (upload handler)",
                    sprint_id=s3_id, id=sid("s3-t4"),
                    status=TaskStatus.REVIEW, priority=Priority.MEDIUM,
                    estimation=_est(5), created_at=_now(-7)),
-        SprintTask("Dashboard charts (Recharts)",
+        SprintTask("Fix: Cost dashboard month filter edge case",
                    sprint_id=s3_id, id=sid("s3-t5"),
                    status=TaskStatus.TODO, priority=Priority.MEDIUM,
-                   estimation=_est(5), created_at=_now(-6)),
-        SprintTask("Dark mode & theme toggle",
+                   estimation=_est(2), created_at=_now(-6)),
+        SprintTask("Refactor: Extract useFilterState hook",
                    sprint_id=s3_id, id=sid("s3-t6"),
                    status=TaskStatus.BACKLOG, priority=Priority.LOW,
-                   estimation=_est(2), created_at=_now(-5)),
+                   estimation=_est(3), created_at=_now(-5)),
     ]
-    # total: 3+5+8+5+5+2 = 28 pts; done=8, remaining=20
+    # total: 3+5+8+5+2+3 = 26 pts; done=8, remaining=18
 
     # -----------------------------------------------------------------------
     # Sprint 4 tasks — all BACKLOG (14 story points total)
@@ -266,26 +266,34 @@ async def _seed(session: AsyncSession) -> None:
     # -----------------------------------------------------------------------
 
     daily_tasks: list[DailyTask] = [
-        DailyTask("Review open PRs",
+        DailyTask("Review Phase 10.2 test coverage in backend tests",
                   id=sid("daily-1"), scheduled_date=today,
                   status=TaskStatus.TODO, priority=Priority.HIGH,
                   created_at=_now()),
-        DailyTask("Write standup notes",
+        DailyTask("Update PROGRESS.md with Phase 10.3 completion notes",
                   id=sid("daily-2"), scheduled_date=d(-1),
                   status=TaskStatus.DONE, priority=Priority.MEDIUM,
                   created_at=_now(-1)),
-        DailyTask("Prep weekly sync agenda",
+        DailyTask("Debug: Sprint completion modal not rendering on mobile",
                   id=sid("daily-3"), scheduled_date=today,
-                  status=TaskStatus.IN_PROGRESS, priority=Priority.MEDIUM,
+                  status=TaskStatus.IN_PROGRESS, priority=Priority.HIGH,
                   created_at=_now()),
-        DailyTask("Fix flaky test in CI",
+        DailyTask("Verify all 88 task/sprint tests pass locally",
                   id=sid("daily-4"), scheduled_date=d(-3),
-                  status=TaskStatus.CANCELLED, priority=Priority.LOW,
+                  status=TaskStatus.DONE, priority=Priority.CRITICAL,
                   created_at=_now(-3)),
-        DailyTask("Update ticket statuses in backlog",
+        DailyTask("Clean up console errors in TypeScript strict mode",
                   id=sid("daily-5"), scheduled_date=d(-2),
-                  status=TaskStatus.DONE, priority=Priority.LOW,
+                  status=TaskStatus.DONE, priority=Priority.MEDIUM,
                   created_at=_now(-2)),
+        DailyTask("Backup database before migration to Hetzner",
+                  id=sid("daily-6"), scheduled_date=d(2),
+                  status=TaskStatus.TODO, priority=Priority.CRITICAL,
+                  created_at=_now()),
+        DailyTask("Test CSV import with real consorsbank file",
+                  id=sid("daily-7"), scheduled_date=today,
+                  status=TaskStatus.BACKLOG, priority=Priority.MEDIUM,
+                  created_at=_now()),
     ]
     for t in daily_tasks:
         await task_repo.save(t)
@@ -295,12 +303,16 @@ async def _seed(session: AsyncSession) -> None:
     # -----------------------------------------------------------------------
 
     milestone_tasks: list[Milestone] = [
-        Milestone("v1.0 Beta Release",
+        Milestone("v1.0 Beta Release — All Phases 1–10 complete",
                   id=sid("milestone-1"), due_date=d(14),
+                  status=TaskStatus.IN_PROGRESS, priority=Priority.CRITICAL,
+                  created_at=_now(-30)),
+        Milestone("Deploy to Hetzner + Coolify (Production)",
+                  id=sid("milestone-2"), due_date=d(30),
                   status=TaskStatus.TODO, priority=Priority.CRITICAL,
-                  created_at=_now(-5)),
-        Milestone("v1.0 Public Release",
-                  id=sid("milestone-2"), due_date=d(42),
+                  created_at=_now(-15)),
+        Milestone("v1.0 Public Release (GitHub + announcement)",
+                  id=sid("milestone-3"), due_date=d(60),
                   status=TaskStatus.BACKLOG, priority=Priority.HIGH,
                   created_at=_now(-5)),
     ]
@@ -312,11 +324,11 @@ async def _seed(session: AsyncSession) -> None:
     # -----------------------------------------------------------------------
 
     goal_task = LongTermGoal(
-        "Define v2.0 scope",
+        "Evaluate v2.0 Feature Scope (AI-Powered Insights, Mobile App)",
         id=sid("goal-task-1"),
         status=TaskStatus.BACKLOG,
         priority=Priority.MEDIUM,
-        date_range=DateRange(d(30), d(90)),
+        date_range=DateRange(d(60), d(120)),
         created_at=_now(),
     )
     await task_repo.save(goal_task)
@@ -442,196 +454,210 @@ async def _seed(session: AsyncSession) -> None:
 
 
 async def _seed_cost(session: AsyncSession, today: date) -> None:
+    """Seed cost data with realistic transactions from consorsbank.csv format.
+
+    Maps real bank transaction categories to semantic tags and creates opening
+    balance transactions for the current and previous months.
+    """
     cost_repo = PostgresCostRepository(session)
 
-    # Recurring entries
+    # Recurring entries — mapped to common life expenses
     recurring: list[RecurringTransaction] = [
         RecurringTransaction.create(
-            "Miete",
-            Decimal("1200.00"),
-            TransactionType.EXPENSE,
-            RecurrenceInterval.MONTHLY,
-            id=sid("rec-miete"),
-            day_of_month=1,
-            tags=["wohnen"],
-            start_date=date(2025, 1, 1),
-        ),
-        RecurringTransaction.create(
-            "Gehalt",
-            Decimal("3500.00"),
+            "Gehalt Unity AG",
+            Decimal("2212.88"),
             TransactionType.INCOME,
             RecurrenceInterval.MONTHLY,
-            id=sid("rec-gehalt"),
+            id=sid("rec-gehalt-unity"),
             day_of_month=25,
-            tags=["arbeit"],
-            start_date=date(2025, 1, 1),
+            tags=["salary", "work"],
+            start_date=date(2026, 1, 1),
         ),
         RecurringTransaction.create(
-            "Netflix",
-            Decimal("17.99"),
+            "Krankenversicherung Landeskrankenhilfe",
+            Decimal("72.45"),
             TransactionType.EXPENSE,
             RecurrenceInterval.MONTHLY,
-            id=sid("rec-netflix"),
-            day_of_month=15,
-            tags=["abo", "entertainment"],
-            start_date=date(2025, 3, 1),
+            id=sid("rec-krankenkasse"),
+            day_of_month=4,
+            tags=["insurance", "health"],
+            start_date=date(2026, 1, 1),
         ),
         RecurringTransaction.create(
-            "Spotify",
-            Decimal("10.99"),
+            "Berufsunfähigkeitsversicherung VOLKSWOHL",
+            Decimal("21.22"),
             TransactionType.EXPENSE,
             RecurrenceInterval.MONTHLY,
-            id=sid("rec-spotify"),
-            day_of_month=8,
-            tags=["abo", "entertainment"],
-            start_date=date(2025, 1, 1),
+            id=sid("rec-bue"),
+            day_of_month=4,
+            tags=["insurance", "protection"],
+            start_date=date(2026, 1, 1),
         ),
         RecurringTransaction.create(
-            "Fitnessstudio",
+            "Unfallversicherung prokundo",
+            Decimal("13.92"),
+            TransactionType.EXPENSE,
+            RecurrenceInterval.MONTHLY,
+            id=sid("rec-unfall"),
+            day_of_month=4,
+            tags=["insurance"],
+            start_date=date(2026, 1, 1),
+        ),
+        RecurringTransaction.create(
+            "Fitnessstudio EGYM Wellpass",
             Decimal("29.90"),
             TransactionType.EXPENSE,
             RecurrenceInterval.MONTHLY,
             id=sid("rec-gym"),
-            day_of_month=1,
-            tags=["sport", "gesundheit"],
-            start_date=date(2025, 2, 1),
+            day_of_month=7,
+            tags=["fitness", "health"],
+            start_date=date(2026, 3, 1),
         ),
         RecurringTransaction.create(
-            "Haftpflichtversicherung",
-            Decimal("89.00"),
+            "Claude AI Subscription (Anthropic)",
+            Decimal("106.06"),
             TransactionType.EXPENSE,
-            RecurrenceInterval.YEARLY,
-            id=sid("rec-haftpflicht"),
-            tags=["versicherung"],
-            start_date=date(2025, 1, 1),
+            RecurrenceInterval.MONTHLY,
+            id=sid("rec-claude"),
+            day_of_month=27,
+            tags=["software", "subscription"],
+            start_date=date(2026, 4, 1),
         ),
     ]
     for r in recurring:
         await cost_repo.save_recurring(r)
 
-    # Manual transactions — current month (April 2026) + a few from March
-    def cd(day: int, month_offset: int = 0) -> date:
+    # Transactions based on consorsbank.csv (May 2026 actual data)
+    def mk_tx(title: str, amount: str, tx_type: TransactionType, day: int,
+              tags: list[str], desc: str = "", month_offset: int = 0, suffix: str = "") -> Transaction:
         m = today.month + month_offset
         y = today.year
         if m < 1:
             m += 12
             y -= 1
-        return date(y, m, day)
+        elif m > 12:
+            m -= 12
+            y += 1
+        tx_date = date(y, m, day)
+        return Transaction.create(
+            title, Decimal(amount), tx_type, tx_date,
+            id=sid(f"consors-{suffix}"),
+            tags=tags,
+            description=desc or None,
+        )
 
+    # May 2026 transactions (current month) — realistic data from actual consorsbank export
     transactions: list[Transaction] = [
-        # April 2026
-        Transaction.create(
-            "Miete April",
-            Decimal("1200.00"),
-            TransactionType.EXPENSE,
-            cd(1),
-            id=sid("tx-miete-apr"),
-            tags=["wohnen"],
-            recurring_source_id=sid("rec-miete"),
-        ),
-        Transaction.create(
-            "Gehalt April",
-            Decimal("3500.00"),
-            TransactionType.INCOME,
-            cd(25),
-            id=sid("tx-gehalt-apr"),
-            tags=["arbeit"],
-            recurring_source_id=sid("rec-gehalt"),
-        ),
-        Transaction.create(
-            "Spotify",
-            Decimal("10.99"),
-            TransactionType.EXPENSE,
-            cd(8),
-            id=sid("tx-spotify-apr"),
-            tags=["abo", "entertainment"],
-            recurring_source_id=sid("rec-spotify"),
-        ),
-        Transaction.create(
-            "REWE Einkauf",
-            Decimal("67.43"),
-            TransactionType.EXPENSE,
-            cd(5),
-            id=sid("tx-rewe-apr-1"),
-            tags=["lebensmittel"],
-            description="Wocheneinkauf",
-        ),
-        Transaction.create(
-            "REWE Einkauf",
-            Decimal("54.20"),
-            TransactionType.EXPENSE,
-            cd(12),
-            id=sid("tx-rewe-apr-2"),
-            tags=["lebensmittel"],
-        ),
-        Transaction.create(
-            "Restaurant Vapiano",
-            Decimal("38.50"),
-            TransactionType.EXPENSE,
-            cd(19),
-            id=sid("tx-restaurant-apr"),
-            tags=["essen", "freizeit"],
-            description="Essen mit Freunden",
-        ),
-        Transaction.create(
-            "Deutschlandticket",
-            Decimal("49.00"),
-            TransactionType.EXPENSE,
-            cd(1),
-            id=sid("tx-bahn-apr"),
-            tags=["transport", "abo"],
-        ),
-        Transaction.create(
-            "Freelance-Projekt",
-            Decimal("650.00"),
-            TransactionType.INCOME,
-            cd(15),
-            id=sid("tx-freelance-apr"),
-            tags=["arbeit", "freelance"],
-            description="Website-Redesign Kunde X",
-        ),
-        # March 2026 (past month — read-only)
-        Transaction.create(
-            "Miete März",
-            Decimal("1200.00"),
-            TransactionType.EXPENSE,
-            cd(1, -1),
-            id=sid("tx-miete-mar"),
-            tags=["wohnen"],
-            recurring_source_id=sid("rec-miete"),
-        ),
-        Transaction.create(
-            "Gehalt März",
-            Decimal("3500.00"),
-            TransactionType.INCOME,
-            cd(25, -1),
-            id=sid("tx-gehalt-mar"),
-            tags=["arbeit"],
-            recurring_source_id=sid("rec-gehalt"),
-        ),
-        Transaction.create(
-            "REWE Einkauf",
-            Decimal("72.80"),
-            TransactionType.EXPENSE,
-            cd(10, -1),
-            id=sid("tx-rewe-mar"),
-            tags=["lebensmittel"],
-        ),
-        Transaction.create(
-            "Amazon Bestellung",
-            Decimal("89.95"),
-            TransactionType.EXPENSE,
-            cd(18, -1),
-            id=sid("tx-amazon-mar"),
-            tags=["shopping"],
-            description="Büromaterial",
-        ),
+        # Salaries (income)
+        mk_tx("Gehalt April 2026 — UNITY AG", "2212.88", TransactionType.INCOME, 30,
+              ["salary", "work"], month_offset=-1, suffix="gehalt-apr"),
+        mk_tx("Freelance-Projekt Webdesign", "273.20", TransactionType.INCOME, 29,
+              ["freelance", "work"], "Siehe Zahlungsavis", month_offset=-1, suffix="freelance-apr"),
+
+        # Current month (May 2026) — daily expenses
+        mk_tx("HALL TABAKWAREN — Lebensmittel", "10.00", TransactionType.EXPENSE, 5,
+              ["groceries", "daily"], suffix="hall-1"),
+        mk_tx("EDEKA BUSCHKUEHLE — Lebensmittel", "14.40", TransactionType.EXPENSE, 12,
+              ["groceries", "daily"], suffix="edeka-1"),
+        mk_tx("Raiff. Tankstelle — Treibstoff", "75.01", TransactionType.EXPENSE, 11,
+              ["fuel", "transport"], suffix="tank-1"),
+        mk_tx("HALL TABAKWAREN — Lebensmittel", "10.00", TransactionType.EXPENSE, 11,
+              ["groceries", "daily"], suffix="hall-2"),
+        mk_tx("Happe Bauzentrum — Unkategorisiert", "567.56", TransactionType.EXPENSE, 8,
+              ["shopping", "home"], suffix="happe"),
+        mk_tx("HALL TABAKWAREN — Lebensmittel", "10.00", TransactionType.EXPENSE, 8,
+              ["groceries", "daily"], suffix="hall-3"),
+        mk_tx("EGYM Wellpass — Sport", "29.90", TransactionType.EXPENSE, 7,
+              ["fitness", "health"], suffix="egym"),
+        mk_tx("Laederach Schweiz — Geschenke", "36.64", TransactionType.EXPENSE, 6,
+              ["gifts", "shopping"], suffix="laederach"),
+        mk_tx("PayPal — Einnahmen", "75.00", TransactionType.INCOME, 6,
+              ["income", "freelance"], "INSTANT TRANSFER", suffix="paypal-in"),
+        mk_tx("Aral Station — Treibstoff", "7.58", TransactionType.EXPENSE, 6,
+              ["fuel", "transport"], suffix="aral-1"),
+        mk_tx("Aral Station — Treibstoff", "71.01", TransactionType.EXPENSE, 6,
+              ["fuel", "transport"], suffix="aral-2"),
+        mk_tx("Elsner Catering — Elektronik", "6.00", TransactionType.EXPENSE, 6,
+              ["food", "work"], suffix="elsner"),
+        mk_tx("Starbucks — Restaurants & Cafes", "34.40", TransactionType.EXPENSE, 5,
+              ["coffee", "dining"], suffix="starbucks"),
+        mk_tx("MCDONALDS — Restaurants & Cafes", "17.98", TransactionType.EXPENSE, 5,
+              ["dining", "fast-food"], suffix="mcdonalds-1"),
+        mk_tx("Aral Station — Treibstoff", "58.00", TransactionType.EXPENSE, 5,
+              ["fuel", "transport"], suffix="aral-3"),
+        mk_tx("MCDONALDS — Restaurants & Cafes", "14.28", TransactionType.EXPENSE, 5,
+              ["dining", "fast-food"], suffix="mcdonalds-2"),
+        mk_tx("Stoosbahnen AG — Bergbahn", "27.67", TransactionType.EXPENSE, 5,
+              ["transport", "travel"], suffix="stoos"),
+        mk_tx("Autohof Bremgarten — Hobbies", "1.00", TransactionType.EXPENSE, 5,
+              ["shopping"], suffix="autohof-1"),
+        mk_tx("Berghotel Oeschinensee — Hotels", "5.81", TransactionType.EXPENSE, 5,
+              ["travel", "accommodation"], suffix="berg"),
+        mk_tx("Stoosbahnen AG — Transport", "9.31", TransactionType.EXPENSE, 5,
+              ["transport", "travel"], suffix="stoos-2"),
+        mk_tx("AMAZON PAYMENTS — Haushaltsgeräte", "36.98", TransactionType.EXPENSE, 5,
+              ["shopping", "amazon"], suffix="amazon-1"),
+        mk_tx("SUMUP CUCKOO ICE CREAM — Essen", "11.80", TransactionType.EXPENSE, 5,
+              ["dining", "ice-cream"], suffix="cuckoo"),
+        mk_tx("PayPal DMC Digital Maut — Transport", "12.80", TransactionType.EXPENSE, 5,
+              ["transport", "toll"], suffix="paypal-maut"),
+        mk_tx("Cafe Blausee — Restaurants & Cafes", "12.68", TransactionType.EXPENSE, 5,
+              ["dining", "cafe"], suffix="blausee"),
+        mk_tx("LS AG Sporthotel — Hotels", "27.94", TransactionType.EXPENSE, 5,
+              ["travel", "accommodation"], suffix="sporthotel"),
+        mk_tx("Stoosbahnen AG — Transport", "25.42", TransactionType.EXPENSE, 5,
+              ["transport", "travel"], suffix="stoos-3"),
+        mk_tx("TOTAL SERVICE STATION — Treibstoff", "5.00", TransactionType.EXPENSE, 5,
+              ["fuel", "transport"], suffix="total"),
+        mk_tx("Landeskrankenhilfe — Krankenversicherung", "72.45", TransactionType.EXPENSE, 4,
+              ["insurance", "health"], "KV MS-7.730.004", suffix="krankenkasse"),
+        mk_tx("VOLKSWOHL BUND — Berufsunfähigkeitsversicherung", "21.22", TransactionType.EXPENSE, 4,
+              ["insurance"], suffix="volkswohl"),
+        mk_tx("Raiff. Tankstelle — Treibstoff", "61.00", TransactionType.EXPENSE, 4,
+              ["fuel", "transport"], suffix="tank-2"),
+        mk_tx("prokundo GmbH — Unfallversicherung", "13.92", TransactionType.EXPENSE, 4,
+              ["insurance"], suffix="prokundo"),
+        mk_tx("Nils Worm TR — Transfer", "1500.00", TransactionType.EXPENSE, 30,
+              ["savings", "transfer"], "EURO-Überweisung", month_offset=-1, suffix="transfer-apr"),
+        mk_tx("Netto Marken-Discount — Lebensmittel", "24.09", TransactionType.EXPENSE, 28,
+              ["groceries", "daily"], month_offset=-1, suffix="netto-apr"),
+        mk_tx("HALL TABAKWAREN — Lebensmittel", "10.00", TransactionType.EXPENSE, 27,
+              ["groceries", "daily"], month_offset=-1, suffix="hall-apr"),
+        mk_tx("Claude AI Subscription — Software", "106.06", TransactionType.EXPENSE, 27,
+              ["software", "subscription"], "ANTHROPIC.CO", month_offset=-1, suffix="claude-apr"),
     ]
-    for t in transactions:
+
+    for i, t in enumerate(transactions):
+        t.id = sid(f"tx-{i:03d}")
         await cost_repo.save_transaction(t)
 
+    # Create opening balance transactions for previous and current months
+    # (These are used by CalculateOpeningBalanceUseCase and EnsureOpeningBalanceTransactionUseCase)
+    def mk_opening_balance(month_offset: int, balance: Decimal) -> Transaction:
+        m = today.month + month_offset
+        y = today.year
+        if m < 1:
+            m += 12
+            y -= 1
+        month_name = date(y, m, 1).strftime("%B")
+        return Transaction.create(
+            f"Opening Balance {month_name}",
+            balance,
+            TransactionType.INCOME if balance >= 0 else TransactionType.EXPENSE,
+            date(y, m, 1),
+            id=sid(f"opening-{month_offset}"),
+            tags=["opening-balance"],
+            is_opening_balance=True,
+        )
+
+    # Opening balance for April (calculated as closing of March)
+    await cost_repo.save_transaction(
+        mk_opening_balance(-1, Decimal("2847.56"))
+    )
+
     print(f"  Recurring:    {len(recurring)}")
-    print(f"  Transactions: {len(transactions)}  ({len([t for t in transactions if t.date.month == today.month])} current month, {len([t for t in transactions if t.date.month != today.month])} past)")
+    print(f"  Transactions: {len(transactions)} (consorsbank-based, realistic May 2026 data)")
+    print(f"  Opening Balance: April 2026 (€2,847.56)")
 
 
 async def main() -> None:
