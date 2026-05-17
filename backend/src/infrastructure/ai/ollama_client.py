@@ -18,7 +18,8 @@ class IOllamaClient(ABC):
     async def generate(self, prompt: str, system: str) -> str: ...
 
     @abstractmethod
-    async def generate_stream(self, prompt: str, system: str) -> AsyncIterator[str]: ...
+    async def generate_stream(self, prompt: str, system: str) -> AsyncIterator[str]:
+        yield  # makes this an async generator stub for type-checking purposes
 
 
 class OllamaClient(IOllamaClient):
@@ -31,7 +32,8 @@ class OllamaClient(IOllamaClient):
             async with httpx.AsyncClient() as client:
                 resp = await client.get(f"{self._base_url}/api/tags", timeout=3.0)
                 return resp.status_code == 200
-        except Exception:
+        except Exception as exc:
+            logger.debug("Ollama not available at %s: %s", self._base_url, exc)
             return False
 
     async def generate(self, prompt: str, system: str) -> str:
