@@ -1,0 +1,61 @@
+from __future__ import annotations
+
+import json
+import logging
+from typing import AsyncIterator
+
+import httpx
+
+from src.domain.ai.client import IAIClient
+
+logger = logging.getLogger(__name__)
+
+# Alias for backward compatibility
+IOllamaClient = IAIClient
+
+
+class OllamaClient(IAIClient):
+    def __init__(self, base_url: str, model: str) -> None:
+        self._base_url = base_url.rstrip("/")
+        self._model = model
+
+    async def is_available(self) -> bool:
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"{self._base_url}/api/tags", timeout=3.0)
+                return resp.status_code == 200
+        except Exception as exc:
+            logger.debug("Ollama not available at %s: %s", self._base_url, exc)
+            return False
+
+    async def generate(self, prompt: str, system: str) -> str:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.post(
+                f"{self._base_url}/api/generate",
+                json={"model": self._model, "prompt": prompt, "system": system, "stream": False},
+            )
+            resp.raise_for_status()
+            return resp.json()["response"]
+
+    async def generate_stream(
+        self, messages: list[dict[str, str]], system: str
+    ) -> AsyncIterator[str]:
+        payload = {
+            "model": self._model,
+            "messages": [{"role": "system", "content": system}] + messages,
+            "stream": True,
+        }
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            async with client.stream(
+                "POST", f"{self._base_url}/api/chat", json=payload
+            ) as resp:
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    if not line:
+                        continue
+                    data = json.loads(line)
+                    token = data.get("message", {}).get("content", "")
+                    if token:
+                        yield token
+                    if data.get("done"):
+                        break

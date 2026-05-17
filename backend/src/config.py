@@ -15,6 +15,14 @@ class Settings(BaseSettings):
         default="/app/imports",
         description="Folder path for CSV import files"
     )
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen2.5:14b-instruct-q4_K_M"
+
+    # AI provider selection: "ollama" | "openrouter"
+    ai_provider: str = "ollama"
+    ai_api_key: str = ""
+    # Default free model for OpenRouter; override in .env
+    ai_model: str = "meta-llama/llama-3.3-70b-instruct:free"
 
 
 settings = Settings()

@@ -4,6 +4,8 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle"
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 import { useMetrics } from "@/api/hooks/dashboard"
 import { cn } from "@/lib/utils"
+import { AIFloatingButton } from "@/features/ai/AIFloatingButton"
+import { AIAdvisorPanel } from "@/features/ai/AIAdvisorPanel"
 
 const NAV_ITEMS = [
   { to: "/",       label: "Dashboard",       icon: LayoutDashboard, end: true  },
@@ -67,6 +69,7 @@ function CurrentDate() {
 
 export function AppLayout() {
   return (
+    <>
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
 
       {/* ── Sidebar ──────────────────────────────────────────────── */}
@@ -133,5 +136,8 @@ export function AppLayout() {
       </div>
 
     </div>
+    <AIFloatingButton />
+    <AIAdvisorPanel />
+    </>
   )
 }
