@@ -15,6 +15,8 @@ class Settings(BaseSettings):
         default="/app/imports",
         description="Folder path for CSV import files"
     )
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen2.5:14b-instruct-q4_K_M"
 
 
 settings = Settings()
