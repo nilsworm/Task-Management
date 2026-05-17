@@ -99,14 +99,35 @@ class AIAdvisorService:
             f"{r.title} {r.amount:.2f}€/{r.interval.value}" for r in recurring[:10]
         ) or "keine"
 
-        top5 = sorted(
-            [t for t in current if t.transaction_type == TransactionType.EXPENSE and not t.is_opening_balance],
-            key=lambda t: t.amount,
-            reverse=True,
-        )[:5]
+        expenses_list = [
+            t for t in current
+            if t.transaction_type == TransactionType.EXPENSE and not t.is_opening_balance
+        ]
+        top5 = sorted(expenses_list, key=lambda t: t.amount, reverse=True)[:5]
         top5_lines = "\n".join(
             f"  {t.date}  {t.title}  {t.amount:.2f}€  [{', '.join(t.tags) or 'unkategorisiert'}]" for t in top5
         ) or "  keine"
+
+        _FOCUS_TAGS = {"zigaretten", "rauchen", "tabak", "tobacco", "iqos", "vape", "nikotin",
+                       "shopping", "amazon", "konsum", "kleidung", "impulskauf"}
+        focus_txs = [
+            t for t in expenses_list
+            if any(tag.lower() in _FOCUS_TAGS for tag in (t.tags or []))
+        ]
+        small_txs = [t for t in expenses_list if t.amount < Decimal("10")]
+        focus_lines: list[str] = []
+        if focus_txs:
+            focus_lines.append("  Tabak/Konsum/Shopping:")
+            focus_lines += [
+                f"    {t.date}  {t.title}  {t.amount:.2f}€  [{', '.join(t.tags)}]"
+                for t in sorted(focus_txs, key=lambda t: t.date)
+            ]
+        if small_txs:
+            total_small = sum(t.amount for t in small_txs)
+            focus_lines.append(
+                f"  Kleinstausgaben <10€: {len(small_txs)} Buchungen, gesamt {total_small:.2f}€"
+            )
+        focus_section = "\n".join(focus_lines) if focus_lines else "  keine"
 
         def signed(v: Decimal) -> str:
             return f"+{v:.2f}€" if v >= 0 else f"{v:.2f}€"
@@ -120,7 +141,8 @@ class AIAdvisorService:
             f"- Ausgaben nach Tag: {tag_lines or 'keine'}\n\n"
             f"Letzte 6 Monate (Monatssaldo):\n{chr(10).join(trend_lines)}\n\n"
             f"Wiederkehrende Einträge (aktiv):\n  {rec_lines}\n\n"
-            f"Top-5 Ausgaben diesen Monat:\n{top5_lines}"
+            f"Top-5 Ausgaben diesen Monat:\n{top5_lines}\n\n"
+            f"Focus-Ausgaben (Tabak/Konsum/Kleinstbeträge):\n{focus_section}"
         )
 
     async def get_insights(self) -> list[InsightCard]:
