@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import React from "react"
 import { renderHook, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { createElement } from "react"
 import { useAIInsights } from "@/api/hooks/ai"
 
 vi.mock("@/api/client", () => ({
@@ -10,9 +10,11 @@ vi.mock("@/api/client", () => ({
 
 import { apiPost } from "@/api/client"
 
-function wrapper({ children }: { children: React.ReactNode }) {
+function makeWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return createElement(QueryClientProvider, { client: qc }, children)
+  return function wrapper({ children }: { children: React.ReactNode }) {
+    return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  }
 }
 
 describe("useAIInsights", () => {
@@ -21,7 +23,7 @@ describe("useAIInsights", () => {
   })
 
   it("does not fetch when isOpen is false", () => {
-    renderHook(() => useAIInsights(false), { wrapper })
+    renderHook(() => useAIInsights(false), { wrapper: makeWrapper() })
     expect(apiPost).not.toHaveBeenCalled()
   })
 
@@ -29,10 +31,16 @@ describe("useAIInsights", () => {
     const mockCards = [{ title: "Test", body: "Body", type: "tip" }]
     vi.mocked(apiPost).mockResolvedValue(mockCards)
 
-    const { result } = renderHook(() => useAIInsights(true), { wrapper })
+    const { result } = renderHook(() => useAIInsights(true), { wrapper: makeWrapper() })
 
     await waitFor(() => expect(result.current.data).toBeDefined())
     expect(apiPost).toHaveBeenCalledWith("/ai/insights")
     expect(result.current.data).toEqual(mockCards)
+  })
+
+  it("sets isError when fetch fails", async () => {
+    vi.mocked(apiPost).mockRejectedValue(new Error("Network error"))
+    const { result } = renderHook(() => useAIInsights(true), { wrapper: makeWrapper() })
+    await waitFor(() => expect(result.current.isError).toBe(true))
   })
 })

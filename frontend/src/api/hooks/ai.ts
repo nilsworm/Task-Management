@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { apiPost } from "@/api/client"
 
+// TODO: replace with generated type once AI endpoints are in openapi.json
 export interface InsightCard {
   title: string
   body: string
