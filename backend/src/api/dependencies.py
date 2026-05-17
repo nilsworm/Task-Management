@@ -12,7 +12,8 @@ from src.domain.events import IEventBus, InMemoryEventBus
 from src.domain.repositories.goal_repository import IGoalRepository
 from src.domain.repositories.sprint_repository import ISprintRepository
 from src.domain.repositories.task_repository import ITaskRepository
-from src.infrastructure.ai.ollama_client import IAIClient, IOllamaClient, OllamaClient
+from src.domain.ai.client import IAIClient
+from src.infrastructure.ai.ollama_client import IOllamaClient, OllamaClient
 from src.infrastructure.ai.openai_compat_client import OpenAICompatClient
 from src.infrastructure.database import get_session
 from src.infrastructure.persistence.repositories.cost_repository import PostgresCostRepository

@@ -5,7 +5,7 @@ from typing import AsyncIterator
 
 from openai import AsyncOpenAI
 
-from src.infrastructure.ai.ollama_client import IAIClient
+from src.domain.ai.client import IAIClient
 
 logger = logging.getLogger(__name__)
 

@@ -8,9 +8,9 @@ from datetime import date
 from decimal import Decimal
 from typing import AsyncGenerator, AsyncIterator
 
+from src.domain.ai.client import IAIClient
 from src.domain.cost.repository import ICostRepository
 from src.domain.cost.value_objects import TransactionType
-from src.infrastructure.ai.ollama_client import IOllamaClient
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,11 @@ _INSIGHTS_PROMPT = (
 
 _CHAT_PROMPT = "{question}\n\nFinanzdaten:\n{context}"
 
+_FOCUS_TAGS = frozenset({
+    "zigaretten", "rauchen", "tabak", "tobacco", "iqos", "vape", "nikotin",
+    "shopping", "amazon", "konsum", "kleidung", "impulskauf",
+})
+
 
 @dataclass
 class InsightCard:
@@ -45,7 +50,7 @@ class InsightCard:
 
 
 class AIAdvisorService:
-    def __init__(self, cost_repo: ICostRepository, ollama: IOllamaClient) -> None:
+    def __init__(self, cost_repo: ICostRepository, ollama: IAIClient) -> None:
         self._repo = cost_repo
         self._ollama = ollama
 
@@ -122,8 +127,6 @@ class AIAdvisorService:
         ) or "keine"
 
         # --- Focus-Scan über alle 3 Monate ---
-        _FOCUS_TAGS = {"zigaretten", "rauchen", "tabak", "tobacco", "iqos", "vape", "nikotin",
-                       "shopping", "amazon", "konsum", "kleidung", "impulskauf"}
         focus_txs = [
             t for t in all_expenses_3m
             if any(tag.lower() in _FOCUS_TAGS for tag in (t.tags or []))
