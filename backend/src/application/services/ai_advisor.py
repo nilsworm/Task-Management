@@ -126,8 +126,9 @@ class AIAdvisorService:
                     type=c.get("type", "tip") if c.get("type") in valid_types else "tip",
                 )
                 for c in cards_data[:3]
+                if isinstance(c, dict)
             ]
-        except (json.JSONDecodeError, TypeError, KeyError) as exc:
+        except (json.JSONDecodeError, TypeError, KeyError, AttributeError, ValueError) as exc:
             logger.warning("Failed to parse AI insights JSON: %s", exc)
             return [
                 InsightCard(
