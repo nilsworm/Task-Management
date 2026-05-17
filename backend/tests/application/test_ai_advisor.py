@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import uuid
 from datetime import date
 from decimal import Decimal
 from typing import AsyncIterator
-from unittest.mock import AsyncMock
 
 import pytest
 
 from src.application.services.ai_advisor import AIAdvisorService, InsightCard
-from src.domain.cost.entities import RecurringTransaction, Transaction
-from src.domain.cost.value_objects import RecurrenceInterval, TransactionType
+from src.domain.cost.entities import Transaction
+from src.domain.cost.value_objects import TransactionType
 from src.infrastructure.ai.ollama_client import IOllamaClient
 from tests.application.test_cost_use_cases import InMemoryCostRepository
 

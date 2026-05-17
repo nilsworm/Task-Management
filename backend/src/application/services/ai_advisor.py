@@ -6,7 +6,7 @@ from calendar import month_abbr, month_name
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
-from typing import AsyncIterator
+from typing import AsyncGenerator, AsyncIterator
 
 from src.domain.cost.repository import ICostRepository
 from src.domain.cost.value_objects import TransactionType
@@ -96,7 +96,7 @@ class AIAdvisorService:
             reverse=True,
         )[:5]
         top5_lines = "\n".join(
-            f"  {t.date}  {t.title}  {t.amount:.2f}€  [{', '.join(t.tags)}]" for t in top5
+            f"  {t.date}  {t.title}  {t.amount:.2f}€  [{', '.join(t.tags) or 'unkategorisiert'}]" for t in top5
         ) or "  keine"
 
         return (
@@ -137,7 +137,7 @@ class AIAdvisorService:
                 )
             ]
 
-    async def stream_chat(self, message: str) -> AsyncIterator[str]:
+    async def stream_chat(self, message: str) -> AsyncGenerator[str, None]:
         context = await self._build_context()
         prompt = _CHAT_PROMPT.format(question=message, context=context)
         async for token in self._ollama.generate_stream(prompt, _CHAT_SYSTEM):
