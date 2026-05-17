@@ -53,7 +53,7 @@ services:
       - coolify
     labels:
       - "traefik.enable=true"
-      - 'traefik.http.middlewares.taskauth.basicauth.users=nils:$2y$05$HhSfLbY8s8JxBYdMdkqtuuflOnzhn7wN/vo.Txqjp4IhihS/l6nPm'
+      - 'traefik.http.middlewares.taskauth.basicauth.users=nils:$2y$05$D/j1DTQYTd2pOVxrKGZD7ODCzxJYaGBNQubTfv7ahNKdgIj6AGoGu'
       - "coolify.traefik.middlewares=taskauth"
     restart: unless-stopped
 
