@@ -9,6 +9,7 @@ export function AIFloatingButton() {
       onClick={toggle}
       aria-label="AI Advisor"
       aria-expanded={isOpen}
+      aria-controls="ai-advisor-panel"
       className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
       style={{
         background: "linear-gradient(135deg, #00d4ff, #7c3aed)",

@@ -8,6 +8,7 @@ export function AIAdvisorPanel() {
 
   return (
     <div
+      id="ai-advisor-panel"
       className="fixed right-0 top-0 z-50 flex h-screen w-[420px] flex-col border-l border-border bg-[#0d0d0f] shadow-2xl"
       data-testid="ai-advisor-panel"
     >
