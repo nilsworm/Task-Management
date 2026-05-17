@@ -26,14 +26,21 @@ export function InsightCards({ cards, isLoading }: InsightCardsProps) {
     )
   }
 
+  if (cards.length === 0) {
+    return (
+      <p className="text-[11px] text-zinc-500">Keine Insights verfügbar.</p>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-2">
       {cards.map((card, i) => {
-        const cfg = TYPE_CONFIG[card.type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.tip
+        const typeKey = (card.type in TYPE_CONFIG ? card.type : "tip") as keyof typeof TYPE_CONFIG
+        const cfg = TYPE_CONFIG[typeKey]
         return (
           <div
             key={i}
-            data-testid={`insight-card-${card.type}`}
+            data-testid={`insight-card-${typeKey}`}
             className="rounded-lg border p-3"
             style={{
               borderColor: `${cfg.color}33`,
