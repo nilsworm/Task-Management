@@ -119,15 +119,21 @@ class AIAdvisorService:
                 clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
             cards_data = json.loads(clean)
             valid_types = {"warning", "tip", "forecast"}
-            return [
-                InsightCard(
+            cards: list[InsightCard] = []
+            for c in cards_data[:3]:
+                if isinstance(c, str):
+                    try:
+                        c = json.loads(c)
+                    except (json.JSONDecodeError, ValueError):
+                        continue
+                if not isinstance(c, dict):
+                    continue
+                cards.append(InsightCard(
                     title=str(c.get("title", ""))[:60],
                     body=str(c.get("body", ""))[:120],
                     type=c.get("type", "tip") if c.get("type") in valid_types else "tip",
-                )
-                for c in cards_data[:3]
-                if isinstance(c, dict)
-            ]
+                ))
+            return cards
         except (json.JSONDecodeError, TypeError, KeyError, AttributeError, ValueError) as exc:
             logger.warning("Failed to parse AI insights JSON: %s", exc)
             return [
