@@ -90,13 +90,22 @@ pnpm dev
 
 ## Seed data
 
-Populate the database with realistic sample data (4 sprints, 31 tasks, 3 goals, 7 key results):
+Populate the database with realistic sample data based on actual consorsbank.csv transactions:
 
 ```bash
 cd backend
 uv run python -m scripts.seed          # idempotent upsert
 uv run python -m scripts.seed --reset  # wipe all seed rows first, then insert
 ```
+
+**Includes:**
+- **4 Sprints:** 2 completed (19 & 22 story points), 1 active (26 pts), 1 planned (14 pts)
+- **34 Tasks:** 23 sprint tasks (Phases 10.1–11.5), 7 daily tasks, 3 milestones, 1 long-term goal
+- **3 Goals:** with 7 key results (test coverage, dev experience, code quality)
+- **43 Transactions:** 6 recurring (salary, insurance, subscriptions) + 37 realistic daily expenses (groceries, fuel, cafes, Amazon, PayPal, etc. from real May 2026 bank export)
+- **Opening Balances:** April 2026 € 2,847.56
+
+All seed data is deterministic (uuid5 namespace) and repeatable across environments.
 
 ---
 
