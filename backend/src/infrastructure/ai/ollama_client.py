@@ -10,7 +10,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-class IOllamaClient(ABC):
+class IAIClient(ABC):
     @abstractmethod
     async def is_available(self) -> bool: ...
 
@@ -22,7 +22,11 @@ class IOllamaClient(ABC):
         yield  # makes this an async generator stub for type-checking purposes
 
 
-class OllamaClient(IOllamaClient):
+# Keep old name as alias so existing imports don't break
+IOllamaClient = IAIClient
+
+
+class OllamaClient(IAIClient):
     def __init__(self, base_url: str, model: str) -> None:
         self._base_url = base_url.rstrip("/")
         self._model = model
