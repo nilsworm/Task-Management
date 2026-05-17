@@ -53,34 +53,58 @@ class AIAdvisorService:
         today = date.today()
         year, month = today.year, today.month
 
-        current = await self._repo.list_transactions(year=year, month=month)
-        opening_balance = sum(
-            t.amount if t.transaction_type == TransactionType.INCOME else -t.amount
-            for t in current if t.is_opening_balance
-        )
-        income = sum(
-            t.amount for t in current
-            if t.transaction_type == TransactionType.INCOME and not t.is_opening_balance
-        )
-        expenses = sum(
-            t.amount for t in current
-            if t.transaction_type == TransactionType.EXPENSE and not t.is_opening_balance
-        )
-        balance = income - expenses
-        account_balance = opening_balance + balance
+        def signed(v: Decimal) -> str:
+            return f"+{v:.2f}€" if v >= 0 else f"{v:.2f}€"
 
-        tag_totals: dict[str, Decimal] = {}
-        for t in current:
-            if t.transaction_type == TransactionType.EXPENSE and not t.is_opening_balance:
+        # --- Letzte 3 Monate: volle Einzeltransaktionen ---
+        detailed_sections: list[str] = []
+        all_expenses_3m: list = []
+
+        for delta in range(2, -1, -1):
+            m = month - delta
+            y = year
+            while m <= 0:
+                m += 12
+                y -= 1
+            txs = await self._repo.list_transactions(year=y, month=m)
+
+            opening = sum(
+                t.amount if t.transaction_type == TransactionType.INCOME else -t.amount
+                for t in txs if t.is_opening_balance
+            )
+            inc = sum(t.amount for t in txs if t.transaction_type == TransactionType.INCOME and not t.is_opening_balance)
+            exp = sum(t.amount for t in txs if t.transaction_type == TransactionType.EXPENSE and not t.is_opening_balance)
+            net = inc - exp
+
+            exp_list = [t for t in txs if t.transaction_type == TransactionType.EXPENSE and not t.is_opening_balance]
+            all_expenses_3m.extend(exp_list)
+
+            tag_totals: dict[str, Decimal] = {}
+            for t in exp_list:
                 for tag in (t.tags or ["unkategorisiert"]):
                     tag_totals[tag] = tag_totals.get(tag, Decimal("0")) + t.amount
-        tag_lines = ", ".join(
-            f"{tag} {amt:.2f}€"
-            for tag, amt in sorted(tag_totals.items(), key=lambda x: x[1], reverse=True)[:8]
-        )
+            tag_lines = ", ".join(
+                f"{tag} {amt:.2f}€"
+                for tag, amt in sorted(tag_totals.items(), key=lambda x: x[1], reverse=True)
+            ) or "keine"
 
+            tx_lines = "\n".join(
+                f"  {t.date}  {t.title}  {t.amount:.2f}€  [{', '.join(t.tags) or 'unkategorisiert'}]"
+                for t in sorted(exp_list, key=lambda t: t.date)
+            ) or "  keine"
+
+            label = f"{month_name[m]} {y}" + (" (aktuell)" if delta == 0 else "")
+            detailed_sections.append(
+                f"{label}:\n"
+                f"- Anfangsbestand: {signed(opening)}  Einnahmen: {inc:.2f}€  "
+                f"Ausgaben: {exp:.2f}€  Monatssaldo: {signed(net)}  Kontostand: {signed(opening + net)}\n"
+                f"- Ausgaben nach Tag: {tag_lines}\n"
+                f"- Einzelbuchungen:\n{tx_lines}"
+            )
+
+        # --- Ältere Monate (4-6): nur Monatssaldo ---
         trend_lines: list[str] = []
-        for delta in range(5, -1, -1):
+        for delta in range(5, 2, -1):
             m = month - delta
             y = year
             while m <= 0:
@@ -89,35 +113,25 @@ class AIAdvisorService:
             txs = await self._repo.list_transactions(year=y, month=m)
             inc = sum(t.amount for t in txs if t.transaction_type == TransactionType.INCOME and not t.is_opening_balance)
             exp = sum(t.amount for t in txs if t.transaction_type == TransactionType.EXPENSE and not t.is_opening_balance)
-            saldo = inc - exp
-            label = f"{month_abbr[m]} {y}"
-            sign = "+" if saldo >= 0 else ""
-            trend_lines.append(f"  {label}: {sign}{saldo:.2f}€")
+            trend_lines.append(f"  {month_abbr[m]} {y}: {signed(inc - exp)}")
 
+        # --- Wiederkehrend ---
         recurring = await self._repo.list_recurring(active_only=True)
         rec_lines = ", ".join(
             f"{r.title} {r.amount:.2f}€/{r.interval.value}" for r in recurring[:10]
         ) or "keine"
 
-        expenses_list = [
-            t for t in current
-            if t.transaction_type == TransactionType.EXPENSE and not t.is_opening_balance
-        ]
-        top5 = sorted(expenses_list, key=lambda t: t.amount, reverse=True)[:5]
-        top5_lines = "\n".join(
-            f"  {t.date}  {t.title}  {t.amount:.2f}€  [{', '.join(t.tags) or 'unkategorisiert'}]" for t in top5
-        ) or "  keine"
-
+        # --- Focus-Scan über alle 3 Monate ---
         _FOCUS_TAGS = {"zigaretten", "rauchen", "tabak", "tobacco", "iqos", "vape", "nikotin",
                        "shopping", "amazon", "konsum", "kleidung", "impulskauf"}
         focus_txs = [
-            t for t in expenses_list
+            t for t in all_expenses_3m
             if any(tag.lower() in _FOCUS_TAGS for tag in (t.tags or []))
         ]
-        small_txs = [t for t in expenses_list if t.amount < Decimal("10")]
+        small_txs = [t for t in all_expenses_3m if t.amount < Decimal("10")]
         focus_lines: list[str] = []
         if focus_txs:
-            focus_lines.append("  Tabak/Konsum/Shopping:")
+            focus_lines.append("  Tabak/Konsum/Shopping (letzte 3 Monate):")
             focus_lines += [
                 f"    {t.date}  {t.title}  {t.amount:.2f}€  [{', '.join(t.tags)}]"
                 for t in sorted(focus_txs, key=lambda t: t.date)
@@ -125,23 +139,14 @@ class AIAdvisorService:
         if small_txs:
             total_small = sum(t.amount for t in small_txs)
             focus_lines.append(
-                f"  Kleinstausgaben <10€: {len(small_txs)} Buchungen, gesamt {total_small:.2f}€"
+                f"  Kleinstausgaben <10€ (letzte 3 Monate): {len(small_txs)} Buchungen, gesamt {total_small:.2f}€"
             )
         focus_section = "\n".join(focus_lines) if focus_lines else "  keine"
 
-        def signed(v: Decimal) -> str:
-            return f"+{v:.2f}€" if v >= 0 else f"{v:.2f}€"
-
         return (
-            f"Aktueller Monat ({month_name[month]} {year}):\n"
-            f"- Anfangsbestand (Vormonat): {signed(opening_balance)}\n"
-            f"- Einnahmen: {income:.2f}€  Ausgaben: {expenses:.2f}€  "
-            f"Monatssaldo: {signed(balance)}\n"
-            f"- Aktueller Kontostand: {signed(account_balance)}\n"
-            f"- Ausgaben nach Tag: {tag_lines or 'keine'}\n\n"
-            f"Letzte 6 Monate (Monatssaldo):\n{chr(10).join(trend_lines)}\n\n"
+            "\n\n".join(detailed_sections) + "\n\n"
+            f"Ältere Monatssaldi (Zusammenfassung):\n" + "\n".join(trend_lines) + "\n\n"
             f"Wiederkehrende Einträge (aktiv):\n  {rec_lines}\n\n"
-            f"Top-5 Ausgaben diesen Monat:\n{top5_lines}\n\n"
             f"Focus-Ausgaben (Tabak/Konsum/Kleinstbeträge):\n{focus_section}"
         )
 
