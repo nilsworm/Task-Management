@@ -9,7 +9,9 @@ from src.api.exception_handlers import (
     invalid_operation_handler,
     value_error_handler,
 )
+from src.api.dependencies import get_ollama_client
 from src.api.health import router as health_router
+from src.api.routers.ai_router import router as ai_router
 from src.api.routers.cost_router import router as cost_router
 from src.api.routers.dashboard_router import router as dashboard_router
 from src.api.routers.goal_router import router as goal_router
@@ -49,6 +51,7 @@ app.include_router(sprint_router)
 app.include_router(goal_router)
 app.include_router(dashboard_router)
 app.include_router(cost_router)
+app.include_router(ai_router)
 
 
 @app.on_event("startup")
@@ -86,3 +89,16 @@ async def stop_scheduler():
     if scheduler:
         scheduler.shutdown()
         logger.info("CSV import scheduler stopped")
+
+
+@app.on_event("startup")
+async def check_ollama() -> None:
+    client = get_ollama_client()
+    available = await client.is_available()
+    if available:
+        logger.info("Ollama is available at %s", settings.ollama_base_url)
+    else:
+        logger.warning(
+            "Ollama not reachable at %s — AI endpoints will return 503",
+            settings.ollama_base_url,
+        )
