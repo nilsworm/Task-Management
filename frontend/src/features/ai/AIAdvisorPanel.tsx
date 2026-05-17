@@ -1,8 +1,11 @@
 import { useAIPanelStore } from "@/stores/aiPanelStore"
+import { useAIInsights } from "@/api/hooks/ai"
+import { InsightCards } from "@/features/ai/InsightCards"
 import { X } from "lucide-react"
 
 export function AIAdvisorPanel() {
   const { isOpen, toggle } = useAIPanelStore()
+  const { data: insights, isLoading } = useAIInsights(isOpen)
 
   if (!isOpen) return null
 
@@ -22,8 +25,15 @@ export function AIAdvisorPanel() {
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="flex flex-1 flex-col overflow-hidden p-4">
-        {/* InsightCards and AIChat will be added in Tasks 7 and 8 */}
+      <div className="flex flex-1 flex-col gap-4 overflow-hidden p-4">
+        <div className="shrink-0">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            Aktuelle Insights
+          </p>
+          <InsightCards cards={insights ?? []} isLoading={isLoading} />
+        </div>
+        <div className="mx-0 h-px bg-border/30" />
+        {/* AIChat will be added in Task 8 */}
       </div>
     </div>
   )
