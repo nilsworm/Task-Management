@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react"
 import { TaskFilterBar } from "../TaskFilterBar"
 import type { TaskFilters } from "../TaskFilterBar"
 
-const DEFAULT: TaskFilters = { search: "", status: "all", priority: "all", taskType: "all" }
+const DEFAULT: TaskFilters = { search: "", status: "all", priority: "all", taskType: "all", overdue: false }
 
 describe("TaskFilterBar", () => {
   it("renders three filter trigger buttons", () => {
