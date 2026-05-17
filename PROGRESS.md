@@ -143,32 +143,39 @@
 
 ### Phase 10 — Features (`feature/features`)
 
-#### Phase 10.1 — Task-Textsuche
+#### Phase 10.1 — Task-Textsuche ✅
 **Liefergegenstand:** Freitext-Suche über Titel im /tasks-View
 
-- [ ] `ITaskRepository.list_by_search(query: str) -> list[Task]` + `PostgresTaskRepository` mit `ILIKE`
-- [ ] `GET /tasks?search=` Query-Parameter im Router
-- [ ] `TaskFilterBar`: debounced Texteingabe, steuert `search`-Filter
-- [ ] `useTasks`-Hook: `search`-Parameter ergänzen
-- [ ] Tests (UC/API/Vitest)
+- [x] `ITaskRepository.list_by_search(query: str) -> list[Task]` + `PostgresTaskRepository` mit `ILIKE`
+- [x] `GET /tasks?search=` Query-Parameter im Router
+- [x] `TaskFilterBar`: debounced Texteingabe, steuert `search`-Filter
+- [x] `useTasks`-Hook: `search`-Parameter ergänzen
+- [x] Tests (UC/API/Vitest) — 4 API tests + 1 Vitest
 
-#### Phase 10.2 — Überfällige Tasks hervorheben
+#### Phase 10.2 — Überfällige Tasks hervorheben ✅
 **Liefergegenstand:** Tasks mit `due_date < heute` und Status ≠ Done/Cancelled werden visuell markiert
 
-- [ ] `GET /tasks?overdue=true` Backend-Filter (`due_date < today AND status NOT IN done/cancelled`)
-- [ ] `ITaskRepository`: `overdue`-Filter in `list_all` oder neue `list_overdue`-Methode
-- [ ] Frontend: roter visueller Indikator in `TaskTable` + `TaskBoardView`
-- [ ] Optionaler Filter-Toggle in `TaskFilterBar`
-- [ ] Tests
+- [x] `GET /tasks?overdue=true` Backend-Filter (`due_date < today AND status NOT IN done/cancelled`)
+- [x] `ITaskRepository.list_overdue()` — neue Methode in Interface + alle Implementierungen
+- [x] Frontend: roter visueller Indikator in `TaskTable` + `TaskBoardView`
+- [x] Filter-Toggle in `TaskFilterBar` mit AlertCircle-Icon
+- [x] Tests — 2 API tests + Vitest-Tests für rote Indikation
 
-#### Phase 10.3 — Sprint-Abschluss-Zusammenfassung
+#### Phase 10.3 — Sprint-Abschluss-Zusammenfassung ✅
 **Liefergegenstand:** Modal vor "Complete" zeigt Velocity + erlaubt Backlog-Move für unfertige Tasks
 
-- [ ] `CompleteSprintUseCase`: optionaler Parameter `move_incomplete_to_backlog: bool`
-- [ ] `POST /sprints/{id}/complete` akzeptiert Body `{"move_incomplete_to_backlog": bool}`
-- [ ] `SprintCompleteModal`: Zusammenfassung (done/offen, Velocity) + Checkbox für Backlog-Move
-- [ ] `SprintDetailPage` / `SprintCard`: Button öffnet Modal statt direktem Aufruf
-- [ ] Tests
+- [x] `CompleteSprintUseCase`: akzeptiert `task_repo` + `move_incomplete_to_backlog` Parameter
+- [x] `POST /sprints/{id}/complete` akzeptiert Body `{"move_incomplete_to_backlog": bool}`
+- [x] `SprintCompleteModal`: Zusammenfassung (done/offen, Velocity) + Checkbox für Backlog-Move
+- [x] `SprintDetailPage` / `SprintCard`: Button öffnet Modal statt direktem Aufruf
+- [x] Tests — 2 API tests + 3 UC tests für move_incomplete-Logik
+
+**Summary Phases 10.1–10.3:**
+- ✅ 88 backend/application tests passing (all task/sprint related)
+- ✅ 96 frontend Vitest tests passing
+- ✅ TypeScript strict mode: 0 errors
+- ✅ 3 phases implemented in sequence, each with full test coverage
+- ✅ Commits: 9 commits total (one per subtask, Conventional Commits)
 
 #### Phase 10.4 — CSV Import für Finanz-Automation ✅
 **Liefergegenstand:** Wöchentliches Parsing von Bank-CSVs (Consorsbank/Trade Republic), automatisches Scheduling, Archivierung, Import-Status-UI
