@@ -33,13 +33,12 @@ class OpenAICompatClient(IAIClient):
         )
         return response.choices[0].message.content or ""
 
-    async def generate_stream(self, prompt: str, system: str) -> AsyncIterator[str]:
+    async def generate_stream(
+        self, messages: list[dict[str, str]], system: str
+    ) -> AsyncIterator[str]:
         stream = await self._client.chat.completions.create(
             model=self._model,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
-            ],
+            messages=[{"role": "system", "content": system}] + messages,
             stream=True,
         )
         async for chunk in stream:

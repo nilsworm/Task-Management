@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 _CHAT_SYSTEM = (
     "Du bist ein persönlicher Finanzberater. Antworte auf Deutsch, präzise, "
     "maximal 3 kurze Absätze. Nutze ausschließlich die bereitgestellten Finanzdaten "
-    "als Grundlage. Beantworte nur Fragen zu persönlichen Finanzen."
+    "als Grundlage. Beantworte nur Fragen zu persönlichen Finanzen.\n\n"
+    "Finanzdaten:\n{context}"
 )
 
 _INSIGHTS_SYSTEM = "Du bist ein persönlicher Finanzberater. Antworte ausschließlich mit einem JSON-Array."
@@ -34,7 +35,6 @@ _INSIGHTS_PROMPT = (
     "{context}"
 )
 
-_CHAT_PROMPT = "{question}\n\nFinanzdaten:\n{context}"
 
 _FOCUS_TAGS = frozenset({
     "zigaretten", "rauchen", "tabak", "tobacco", "iqos", "vape", "nikotin",
@@ -188,8 +188,11 @@ class AIAdvisorService:
                 )
             ]
 
-    async def stream_chat(self, message: str) -> AsyncGenerator[str, None]:
+    async def stream_chat(
+        self, message: str, history: list[dict[str, str]] | None = None
+    ) -> AsyncGenerator[str, None]:
         context = await self._build_context()
-        prompt = _CHAT_PROMPT.format(question=message, context=context)
-        async for token in self._ollama.generate_stream(prompt, _CHAT_SYSTEM):
+        system = _CHAT_SYSTEM.format(context=context)
+        messages = list(history or []) + [{"role": "user", "content": message}]
+        async for token in self._ollama.generate_stream(messages, system):
             yield token

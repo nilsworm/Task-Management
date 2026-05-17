@@ -37,19 +37,25 @@ class OllamaClient(IAIClient):
             resp.raise_for_status()
             return resp.json()["response"]
 
-    async def generate_stream(self, prompt: str, system: str) -> AsyncIterator[str]:
+    async def generate_stream(
+        self, messages: list[dict[str, str]], system: str
+    ) -> AsyncIterator[str]:
+        payload = {
+            "model": self._model,
+            "messages": [{"role": "system", "content": system}] + messages,
+            "stream": True,
+        }
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream(
-                "POST",
-                f"{self._base_url}/api/generate",
-                json={"model": self._model, "prompt": prompt, "system": system, "stream": True},
+                "POST", f"{self._base_url}/api/chat", json=payload
             ) as resp:
                 resp.raise_for_status()
                 async for line in resp.aiter_lines():
                     if not line:
                         continue
                     data = json.loads(line)
-                    if data.get("response"):
-                        yield data["response"]
+                    token = data.get("message", {}).get("content", "")
+                    if token:
+                        yield token
                     if data.get("done"):
                         break
