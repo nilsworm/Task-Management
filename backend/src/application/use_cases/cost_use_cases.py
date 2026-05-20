@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from decimal import Decimal
+
+logger = logging.getLogger(__name__)
 
 from src.application.exceptions import EntityNotFoundError, InvalidOperationError
 from src.domain.cost.entities import RecurringTransaction, Transaction
@@ -407,3 +410,42 @@ class EnsureOpeningBalanceTransactionUseCase:
 
         await self._repo.save_transaction(opening_tx)
         return opening_tx
+
+
+# ---------------------------------------------------------------------------
+# Import Transactions
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ImportTransactionsInput:
+    parsed_rows: list[dict]
+    import_source: str
+
+
+@dataclass
+class ImportTransactionsResult:
+    imported: int
+    skipped: int
+
+
+class ImportTransactionsUseCase:
+    def __init__(self, cost_repo: ICostRepository) -> None:
+        self._repo = cost_repo
+
+    async def execute(self, input: ImportTransactionsInput) -> ImportTransactionsResult:
+        imported = 0
+        skipped = 0
+        for row in input.parsed_rows:
+            try:
+                exists = await self._repo.transaction_exists(
+                    row["date"], row["amount"], row["description"]
+                )
+                if exists:
+                    skipped += 1
+                else:
+                    await self._repo.create_transaction_from_import(row, input.import_source)
+                    imported += 1
+            except Exception:
+                logger.error("Failed to import row: %s", row, exc_info=True)
+        return ImportTransactionsResult(imported=imported, skipped=skipped)

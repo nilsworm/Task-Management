@@ -779,3 +779,89 @@ async def test_transaction_exists_requires_all_three_fields(repo: InMemoryCostRe
     result = await repo.transaction_exists(date(2026, 5, 1), Decimal("800.00"), "Andere Beschreibung")
 
     assert result is False
+
+
+# ---------------------------------------------------------------------------
+# ImportTransactionsUseCase
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_import_transactions_all_new(repo: InMemoryCostRepository) -> None:
+    """All rows are new — imported count equals row count, skipped is 0."""
+    from datetime import date
+    from src.application.use_cases.cost_use_cases import ImportTransactionsUseCase, ImportTransactionsInput
+
+    rows = [
+        {"date": date(2026, 5, 1), "amount": Decimal("500.00"), "description": "Gehalt", "type": "INCOME"},
+        {"date": date(2026, 5, 2), "amount": Decimal("50.00"), "description": "Supermarkt", "type": "EXPENSE"},
+    ]
+    use_case = ImportTransactionsUseCase(repo)
+
+    result = await use_case.execute(ImportTransactionsInput(parsed_rows=rows, import_source="consorsbank"))
+
+    assert result.imported == 2
+    assert result.skipped == 0
+    assert len(repo.transactions) == 2
+
+
+@pytest.mark.asyncio
+async def test_import_transactions_all_duplicates(repo: InMemoryCostRepository) -> None:
+    """All rows already exist — imported is 0, skipped equals row count."""
+    from datetime import date
+    from src.application.use_cases.cost_use_cases import ImportTransactionsUseCase, ImportTransactionsInput
+
+    rows = [
+        {"date": date(2026, 5, 1), "amount": Decimal("500.00"), "description": "Gehalt", "type": "INCOME"},
+    ]
+    tx = Transaction.create(
+        title="Gehalt",
+        amount=Decimal("500.00"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 5, 1),
+    )
+    await repo.save_transaction(tx)
+
+    use_case = ImportTransactionsUseCase(repo)
+    result = await use_case.execute(ImportTransactionsInput(parsed_rows=rows, import_source="consorsbank"))
+
+    assert result.imported == 0
+    assert result.skipped == 1
+    assert len(repo.transactions) == 1
+
+
+@pytest.mark.asyncio
+async def test_import_transactions_mixed(repo: InMemoryCostRepository) -> None:
+    """Mixed rows: some new, some duplicates — counts are accurate."""
+    from datetime import date
+    from src.application.use_cases.cost_use_cases import ImportTransactionsUseCase, ImportTransactionsInput
+
+    tx = Transaction.create(
+        title="Miete",
+        amount=Decimal("800.00"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 5, 1),
+    )
+    await repo.save_transaction(tx)
+
+    rows = [
+        {"date": date(2026, 5, 1), "amount": Decimal("800.00"), "description": "Miete", "type": "EXPENSE"},
+        {"date": date(2026, 5, 3), "amount": Decimal("30.00"), "description": "Tankstelle", "type": "EXPENSE"},
+    ]
+    use_case = ImportTransactionsUseCase(repo)
+    result = await use_case.execute(ImportTransactionsInput(parsed_rows=rows, import_source="consorsbank"))
+
+    assert result.imported == 1
+    assert result.skipped == 1
+    assert len(repo.transactions) == 2
+
+
+@pytest.mark.asyncio
+async def test_import_transactions_empty(repo: InMemoryCostRepository) -> None:
+    """Empty rows list — both counts are 0."""
+    from src.application.use_cases.cost_use_cases import ImportTransactionsUseCase, ImportTransactionsInput
+
+    use_case = ImportTransactionsUseCase(repo)
+    result = await use_case.execute(ImportTransactionsInput(parsed_rows=[], import_source="consorsbank"))
+
+    assert result.imported == 0
+    assert result.skipped == 0
