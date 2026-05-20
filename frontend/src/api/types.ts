@@ -496,20 +496,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/cost/import-status": {
+    "/cost/import": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Import Status
-         * @description Get last CSV import status: date and transaction count.
-         */
-        get: operations["get_import_status_cost_import_status_get"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** Import Csv */
+        post: operations["import_csv_cost_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get Insights */
+        post: operations["get_insights_ai_insights_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Chat */
+        post: operations["chat_ai_chat_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -520,6 +551,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AIChatRequest */
+        AIChatRequest: {
+            /** Message */
+            message: string;
+            /** History */
+            history?: components["schemas"]["ChatMessage"][];
+        };
+        /** Body_import_csv_cost_import_post */
+        Body_import_csv_cost_import_post: {
+            /** File */
+            file: string;
+        };
         /** BurndownPoint */
         BurndownPoint: {
             /**
@@ -555,6 +598,24 @@ export interface components {
             ideal_line: components["schemas"]["BurndownPoint"][];
             /** Actual Remaining */
             actual_remaining: number;
+        };
+        /** ChatMessage */
+        ChatMessage: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Content */
+            content: string;
+        };
+        /** CompleteSprintRequest */
+        CompleteSprintRequest: {
+            /**
+             * Move Incomplete To Backlog
+             * @default false
+             */
+            move_incomplete_to_backlog: boolean;
         };
         /** CostAnalyticsResponse */
         CostAnalyticsResponse: {
@@ -680,6 +741,15 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** InsightCardResponse */
+        InsightCardResponse: {
+            /** Title */
+            title: string;
+            /** Body */
+            body: string;
+            /** Type */
+            type: string;
         };
         /** KeyResultCreateRequest */
         KeyResultCreateRequest: {
@@ -1156,6 +1226,7 @@ export interface operations {
     list_tasks_tasks_get: {
         parameters: {
             query?: {
+                overdue?: boolean | null;
                 status?: string | null;
                 sprint_id?: string | null;
                 search?: string | null;
@@ -1590,7 +1661,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CompleteSprintRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -2449,7 +2524,42 @@ export interface operations {
             };
         };
     };
-    get_import_status_cost_import_status_get: {
+    import_csv_cost_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_csv_cost_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_insights_ai_insights_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2464,9 +2574,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["InsightCardResponse"][];
+                };
+            };
+        };
+    };
+    chat_ai_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
