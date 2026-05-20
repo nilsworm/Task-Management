@@ -125,22 +125,6 @@ class PostgresCostRepository(ICostRepository):
         await self.save_transaction(transaction)
         return transaction
 
-    async def get_last_import_status(self) -> dict:
-        """Get last import date and transaction count from imports."""
-        stmt = select(
-            func.max(TransactionModel.date).label("last_date"),
-            func.count(TransactionModel.id).label("count"),
-        ).where(TransactionModel.import_source.isnot(None))
-
-        result = await self._session.execute(stmt)
-        row = result.one()
-        last_date, count = row.last_date, row.count
-
-        return {
-            "last_import_date": last_date.isoformat() if last_date else None,
-            "transaction_count": int(count or 0),
-        }
-
     async def get_opening_balance_transaction(
         self, year: int, month: int
     ) -> Transaction | None:

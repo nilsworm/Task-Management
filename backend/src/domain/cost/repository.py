@@ -66,17 +66,6 @@ class ICostRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_last_import_status(self) -> dict:
-        """Get last import date and transaction count from imports.
-
-        Returns:
-            Dict with keys:
-                - last_import_date: ISO format date string or None if no imports exist
-                - transaction_count: count of transactions with import_source set
-        """
-        ...
-
-    @abstractmethod
     async def get_opening_balance_transaction(
         self, year: int, month: int
     ) -> Transaction | None:

@@ -180,12 +180,3 @@ async def get_cost_analytics(
     return CostAnalyticsResponse.from_domain(analytics)
 
 
-# ---------------------------------------------------------------------------
-# Import Status
-# ---------------------------------------------------------------------------
-
-
-@router.get("/import-status", response_model=dict)
-async def get_import_status(repo: CostRepoDep) -> dict:
-    """Get last CSV import status: date and transaction count."""
-    return await repo.get_last_import_status()
