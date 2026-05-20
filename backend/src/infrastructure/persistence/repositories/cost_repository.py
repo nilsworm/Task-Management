@@ -5,7 +5,7 @@ from datetime import date as date_type
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import delete, extract, func, select, union
+from sqlalchemy import delete, exists as sa_exists, extract, func, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.cost.entities import RecurringTransaction, Transaction
@@ -144,7 +144,6 @@ class PostgresCostRepository(ICostRepository):
     async def transaction_exists(
         self, transaction_date: date_type, amount: Decimal, description: str
     ) -> bool:
-        from sqlalchemy import exists as sa_exists
         stmt = select(
             sa_exists().where(
                 TransactionModel.date == transaction_date,
