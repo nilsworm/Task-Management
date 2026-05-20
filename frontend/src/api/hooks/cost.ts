@@ -120,17 +120,3 @@ export function useCostAnalytics(year: number, month: number, tags?: string[]) {
   })
 }
 
-export interface ImportStatus {
-  last_import_date: string | null
-  transaction_count: number
-}
-
-const IMPORT_STATUS_KEY = ["cost", "importStatus"] as const
-
-export function useImportStatus() {
-  return useQuery({
-    queryKey: IMPORT_STATUS_KEY,
-    queryFn: () => apiGet<ImportStatus>("/cost/import-status"),
-    refetchInterval: 60_000, // Refetch every minute
-  })
-}

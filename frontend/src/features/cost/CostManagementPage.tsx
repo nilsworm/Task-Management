@@ -10,7 +10,6 @@ import { RecurringList } from "./RecurringList"
 import { SummaryCards } from "./SummaryCards"
 import { TagFilterBar } from "./TagFilterBar"
 import { AnalyticsTab } from "./AnalyticsTab"
-import { ImportStatusCard } from "./ImportStatusCard"
 
 type Tab = "overview" | "recurring" | "analytics"
 
@@ -102,8 +101,7 @@ export function CostManagementPage() {
       {/* Tab Content */}
       {activeTab === "overview" && (
         <div className="flex flex-col gap-4">
-          <ImportStatusCard />
-          <SummaryCards summary={summary} isLoading={summaryLoading} />
+<SummaryCards summary={summary} isLoading={summaryLoading} />
           <Button
             variant="outline"
             size="sm"
