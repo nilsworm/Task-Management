@@ -131,8 +131,11 @@ def test_list_transactions_filter_month(client: TestClient) -> None:
     resp = client.get("/cost/transactions?year=2026&month=4")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) == 1
-    assert data[0]["title"] == "April"
+    # Querying a past month with prior transactions triggers EnsureOpeningBalanceTransactionUseCase,
+    # which auto-creates an "Opening Balance April" entry. Filter it out to verify the real transaction.
+    user_transactions = [t for t in data if not t["title"].startswith("Opening Balance")]
+    assert len(user_transactions) == 1
+    assert user_transactions[0]["title"] == "April"
 
 
 # ---------------------------------------------------------------------------
