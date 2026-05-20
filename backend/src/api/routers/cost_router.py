@@ -187,9 +187,6 @@ async def get_cost_analytics(
 # Import
 # ---------------------------------------------------------------------------
 
-logger = logging.getLogger(__name__)
-
-
 @router.post("/import", response_model=dict)
 async def import_csv(file: UploadFile, repo: CostRepoDep) -> dict:
     from src.application.use_cases.cost_use_cases import (
@@ -216,9 +213,10 @@ async def import_csv(file: UploadFile, repo: CostRepoDep) -> dict:
         )
 
     content = await file.read()
-    tmp_path = Path(tempfile.mktemp(suffix=".csv"))
+    with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = Path(tmp.name)
     try:
-        tmp_path.write_bytes(content)
         try:
             parsed_rows = parse_fn(tmp_path)
         except (InvalidCSVFormatError, InvalidTransactionDataError) as e:
