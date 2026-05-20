@@ -436,3 +436,80 @@ def test_analytics_income_not_in_by_tag(client: TestClient) -> None:
     assert "gehalt" not in tags
 
 
+# ---------------------------------------------------------------------------
+# POST /cost/import
+# ---------------------------------------------------------------------------
+
+CONSORSBANK_CSV = (
+    b"Konto\nAllgemeine Informationen\nKontostand\nKontoums\xc3\xa4tze\n"
+    b"Buchung;Valuta;Sender / Empf\xc3\xa4nger;IBAN;BIC;Buchungstext;Verwendungszweck;Kategorie;Stichw\xc3\xb6rter;Umsatz geteilt;Betrag;W\xc3\xa4hrung\n"
+    b"01.05.2026;01.05.2026;John Doe;DE123;BIC123;UEBERWEISUNG;Salary May;n/a;n/a;n/a;5.000,00;EUR\n"
+    b"02.05.2026;02.05.2026;Amazon;DE456;BIC456;KARTENZAHLUNG;Laptop;n/a;n/a;n/a;\xe2\x88\x92250,50;EUR\n"
+)
+
+TRADE_REPUBLIC_CSV = (
+    b"Datum,Beschreibung,Typ,Betrag\n"
+    b"2026-05-01,Dividend Payment,Income,+50.00\n"
+    b"2026-05-02,Stock Purchase,Expense,-1200.00\n"
+)
+
+
+def test_import_consorsbank_csv(client: TestClient) -> None:
+    """POST /cost/import with valid Consorsbank CSV returns 200 with imported count."""
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("consorsbank_mai2026.csv", CONSORSBANK_CSV, "text/csv")},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["imported"] == 2
+    assert data["skipped"] == 0
+
+
+def test_import_trade_republic_csv(client: TestClient) -> None:
+    """POST /cost/import with valid Trade Republic CSV returns 200 with imported count."""
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("trade_republic_mai2026.csv", TRADE_REPUBLIC_CSV, "text/csv")},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["imported"] == 2
+    assert data["skipped"] == 0
+
+
+def test_import_unknown_filename(client: TestClient) -> None:
+    """POST /cost/import with unrecognized filename returns 400."""
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("exports.csv", b"Datum,Betrag\n2026-05-01,100", "text/csv")},
+    )
+    assert resp.status_code == 400
+    detail = resp.json()["detail"].lower()
+    assert "consorsbank" in detail or "trade_republic" in detail
+
+
+def test_import_malformed_csv(client: TestClient) -> None:
+    """POST /cost/import with wrong columns returns 400."""
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("consorsbank_broken.csv", b"WrongCol1;WrongCol2\n1;2", "text/csv")},
+    )
+    assert resp.status_code == 400
+
+
+def test_import_duplicate_skipped(client: TestClient) -> None:
+    """Second upload of same CSV results in skipped=2, imported=0."""
+    client.post(
+        "/cost/import",
+        files={"file": ("consorsbank_mai2026.csv", CONSORSBANK_CSV, "text/csv")},
+    )
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("consorsbank_mai2026.csv", CONSORSBANK_CSV, "text/csv")},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["imported"] == 0
+    assert data["skipped"] == 2
+

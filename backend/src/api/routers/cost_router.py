@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
+import tempfile
 import uuid
+from pathlib import Path
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query, UploadFile
 
 from src.api.dependencies import CostRepoDep
 from src.api.schemas.cost_schemas import (
@@ -179,4 +182,53 @@ async def get_cost_analytics(
     analytics = await GetCostAnalyticsUseCase(repo).execute(year=year, month=month, tags=tags)
     return CostAnalyticsResponse.from_domain(analytics)
 
+
+# ---------------------------------------------------------------------------
+# Import
+# ---------------------------------------------------------------------------
+
+logger = logging.getLogger(__name__)
+
+
+@router.post("/import", response_model=dict)
+async def import_csv(file: UploadFile, repo: CostRepoDep) -> dict:
+    from src.application.use_cases.cost_use_cases import (
+        ImportTransactionsInput,
+        ImportTransactionsUseCase,
+    )
+    from src.infrastructure.import_.csv_parser import (
+        CSVParser,
+        InvalidCSVFormatError,
+        InvalidTransactionDataError,
+    )
+
+    filename = (file.filename or "").lower()
+    if "consorsbank" in filename:
+        import_source = "consorsbank"
+        parse_fn = CSVParser.parse_consorsbank
+    elif "trade_republic" in filename or "traderepublic" in filename:
+        import_source = "trade_republic"
+        parse_fn = CSVParser.parse_trade_republic
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Unbekanntes CSV-Format. Dateiname muss 'consorsbank' oder 'trade_republic' enthalten.",
+        )
+
+    content = await file.read()
+    tmp_path = Path(tempfile.mktemp(suffix=".csv"))
+    try:
+        tmp_path.write_bytes(content)
+        try:
+            parsed_rows = parse_fn(tmp_path)
+        except (InvalidCSVFormatError, InvalidTransactionDataError) as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+    use_case = ImportTransactionsUseCase(repo)
+    result = await use_case.execute(
+        ImportTransactionsInput(parsed_rows=parsed_rows, import_source=import_source)
+    )
+    return {"imported": result.imported, "skipped": result.skipped}
 
