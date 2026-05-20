@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date as date_type
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import delete, extract, func, select, union
@@ -138,3 +140,17 @@ class PostgresCostRepository(ICostRepository):
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return transaction_from_model(model) if model else None
+
+    async def transaction_exists(
+        self, transaction_date: date_type, amount: Decimal, description: str
+    ) -> bool:
+        from sqlalchemy import exists as sa_exists
+        stmt = select(
+            sa_exists().where(
+                TransactionModel.date == transaction_date,
+                TransactionModel.amount == amount,
+                TransactionModel.title == description,
+            )
+        )
+        result = await self._session.execute(stmt)
+        return bool(result.scalar())
