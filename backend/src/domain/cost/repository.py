@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
+from datetime import date as date_type
+from decimal import Decimal
 
 from src.domain.cost.entities import RecurringTransaction, Transaction
 from src.domain.cost.value_objects import TransactionType
@@ -76,5 +78,15 @@ class ICostRepository(ABC):
             month: Month (1-12)
 
         Returns: Opening balance Transaction or None
+        """
+        ...
+
+    @abstractmethod
+    async def transaction_exists(
+        self, transaction_date: date_type, amount: Decimal, description: str
+    ) -> bool:
+        """Check if a transaction with the same date, amount, and description already exists.
+
+        Used for deduplication during CSV import.
         """
         ...

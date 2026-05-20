@@ -118,6 +118,14 @@ class InMemoryCostRepository(ICostRepository):
                 return t
         return None
 
+    async def transaction_exists(
+        self, transaction_date: date, amount: Decimal, description: str
+    ) -> bool:
+        return any(
+            t.date == transaction_date and t.amount == amount and t.title == description
+            for t in self._transactions.values()
+        )
+
     @property
     def transactions(self) -> list[Transaction]:
         """Expose transactions list for testing."""
@@ -726,3 +734,48 @@ async def test_list_transactions_does_not_create_opening_balance() -> None:
     # UseCase itself does not create opening balance transactions
     assert all(not t.is_opening_balance for t in result)
     assert len(result) == 0  # No May transactions exist yet
+
+
+# ---------------------------------------------------------------------------
+# transaction_exists
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_transaction_exists_returns_true_for_existing(repo: InMemoryCostRepository) -> None:
+    """transaction_exists returns True when a transaction with same date/amount/description exists."""
+    tx = Transaction.create(
+        title="Miete",
+        amount=Decimal("800.00"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 5, 1),
+    )
+    await repo.save_transaction(tx)
+
+    result = await repo.transaction_exists(date(2026, 5, 1), Decimal("800.00"), "Miete")
+
+    assert result is True
+
+
+@pytest.mark.asyncio
+async def test_transaction_exists_returns_false_for_nonexistent(repo: InMemoryCostRepository) -> None:
+    """transaction_exists returns False when no matching transaction exists."""
+    result = await repo.transaction_exists(date(2026, 5, 1), Decimal("800.00"), "Miete")
+
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_transaction_exists_requires_all_three_fields(repo: InMemoryCostRepository) -> None:
+    """transaction_exists returns False if only date and amount match but description differs."""
+    tx = Transaction.create(
+        title="Miete",
+        amount=Decimal("800.00"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 5, 1),
+    )
+    await repo.save_transaction(tx)
+
+    result = await repo.transaction_exists(date(2026, 5, 1), Decimal("800.00"), "Andere Beschreibung")
+
+    assert result is False
