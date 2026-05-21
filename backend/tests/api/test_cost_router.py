@@ -516,3 +516,29 @@ def test_import_duplicate_skipped(client: TestClient) -> None:
     assert data["imported"] == 0
     assert data["skipped"] == 2
 
+
+# ---------------------------------------------------------------------------
+# Reset
+# ---------------------------------------------------------------------------
+
+
+def test_reset_all_deletes_transactions(client: TestClient) -> None:
+    """DELETE /cost/reset wipes all transactions."""
+    client.post("/cost/transactions", json={
+        "title": "Test", "amount": "100.00",
+        "transaction_type": "expense", "date": "2026-05-01",
+    })
+    resp = client.delete("/cost/reset")
+    assert resp.status_code == 204
+    assert client.get("/cost/transactions").json() == []
+
+
+def test_reset_all_deletes_recurring(client: TestClient) -> None:
+    """DELETE /cost/reset wipes all recurring entries."""
+    client.post("/cost/recurring", json={
+        "title": "Netflix", "amount": "15.00",
+        "transaction_type": "expense", "day_of_month": 1,
+    })
+    client.delete("/cost/reset")
+    assert client.get("/cost/recurring").json() == []
+

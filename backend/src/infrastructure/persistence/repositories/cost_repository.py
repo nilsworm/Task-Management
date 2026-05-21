@@ -153,3 +153,8 @@ class PostgresCostRepository(ICostRepository):
         )
         result = await self._session.execute(stmt)
         return bool(result.scalar())
+
+    async def reset_all(self) -> None:
+        await self._session.execute(delete(TransactionModel))
+        await self._session.execute(delete(RecurringTransactionModel))
+        await self._session.commit()

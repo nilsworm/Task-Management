@@ -90,3 +90,8 @@ class ICostRepository(ABC):
         Used for deduplication during CSV import.
         """
         ...
+
+    @abstractmethod
+    async def reset_all(self) -> None:
+        """Delete all transactions and recurring transactions."""
+        ...

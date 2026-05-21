@@ -126,6 +126,10 @@ class InMemoryCostRepository(ICostRepository):
             for t in self._transactions.values()
         )
 
+    async def reset_all(self) -> None:
+        self._transactions.clear()
+        self._recurring.clear()
+
     @property
     def transactions(self) -> list[Transaction]:
         """Expose transactions list for testing."""
