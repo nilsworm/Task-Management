@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
+from datetime import date as date_type
+from decimal import Decimal
 
 from src.domain.cost.entities import RecurringTransaction, Transaction
 from src.domain.cost.value_objects import TransactionType
@@ -66,17 +68,6 @@ class ICostRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_last_import_status(self) -> dict:
-        """Get last import date and transaction count from imports.
-
-        Returns:
-            Dict with keys:
-                - last_import_date: ISO format date string or None if no imports exist
-                - transaction_count: count of transactions with import_source set
-        """
-        ...
-
-    @abstractmethod
     async def get_opening_balance_transaction(
         self, year: int, month: int
     ) -> Transaction | None:
@@ -88,4 +79,19 @@ class ICostRepository(ABC):
 
         Returns: Opening balance Transaction or None
         """
+        ...
+
+    @abstractmethod
+    async def transaction_exists(
+        self, transaction_date: date_type, amount: Decimal, description: str
+    ) -> bool:
+        """Check if a transaction with the same date, amount, and description already exists.
+
+        Used for deduplication during CSV import.
+        """
+        ...
+
+    @abstractmethod
+    async def reset_all(self) -> None:
+        """Delete all transactions and recurring transactions."""
         ...

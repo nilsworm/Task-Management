@@ -264,3 +264,30 @@ async def test_get_opening_balance_transaction_not_found(repo: PostgresCostRepos
     """Return None if no opening balance exists."""
     result = await repo.get_opening_balance_transaction(year=2026, month=5)
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_transaction_exists_returns_true(repo: PostgresCostRepository) -> None:
+    """transaction_exists returns True for a transaction with matching date/amount/description."""
+    from datetime import date
+    tx = Transaction.create(
+        title="Supermarkt",
+        amount=Decimal("45.50"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 5, 10),
+    )
+    await repo.save_transaction(tx)
+
+    result = await repo.transaction_exists(date(2026, 5, 10), Decimal("45.50"), "Supermarkt")
+
+    assert result is True
+
+
+@pytest.mark.asyncio
+async def test_transaction_exists_returns_false(repo: PostgresCostRepository) -> None:
+    """transaction_exists returns False when no matching transaction exists."""
+    from datetime import date
+
+    result = await repo.transaction_exists(date(2026, 5, 10), Decimal("45.50"), "Supermarkt")
+
+    assert result is False

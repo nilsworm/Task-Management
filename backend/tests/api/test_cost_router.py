@@ -131,8 +131,11 @@ def test_list_transactions_filter_month(client: TestClient) -> None:
     resp = client.get("/cost/transactions?year=2026&month=4")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) == 1
-    assert data[0]["title"] == "April"
+    # Querying a past month with prior transactions triggers EnsureOpeningBalanceTransactionUseCase,
+    # which auto-creates an "Opening Balance April" entry. Filter it out to verify the real transaction.
+    user_transactions = [t for t in data if not t["title"].startswith("Opening Balance")]
+    assert len(user_transactions) == 1
+    assert user_transactions[0]["title"] == "April"
 
 
 # ---------------------------------------------------------------------------
@@ -437,84 +440,105 @@ def test_analytics_income_not_in_by_tag(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# GET /cost/import-status
+# POST /cost/import
+# ---------------------------------------------------------------------------
+
+CONSORSBANK_CSV = (
+    b"Konto\nAllgemeine Informationen\nKontostand\nKontoums\xc3\xa4tze\n"
+    b"Buchung;Valuta;Sender / Empf\xc3\xa4nger;IBAN;BIC;Buchungstext;Verwendungszweck;Kategorie;Stichw\xc3\xb6rter;Umsatz geteilt;Betrag;W\xc3\xa4hrung\n"
+    b"01.05.2026;01.05.2026;John Doe;DE123;BIC123;UEBERWEISUNG;Salary May;n/a;n/a;n/a;5.000,00;EUR\n"
+    b"02.05.2026;02.05.2026;Amazon;DE456;BIC456;KARTENZAHLUNG;Laptop;n/a;n/a;n/a;\xe2\x88\x92250,50;EUR\n"
+)
+
+TRADE_REPUBLIC_CSV = (
+    b"Datum,Beschreibung,Typ,Betrag\n"
+    b"2026-05-01,Dividend Payment,Income,+50.00\n"
+    b"2026-05-02,Stock Purchase,Expense,-1200.00\n"
+)
+
+
+def test_import_consorsbank_csv(client: TestClient) -> None:
+    """POST /cost/import with valid Consorsbank CSV returns 200 with imported count."""
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("consorsbank_mai2026.csv", CONSORSBANK_CSV, "text/csv")},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["imported"] == 2
+    assert data["skipped"] == 0
+
+
+def test_import_trade_republic_csv(client: TestClient) -> None:
+    """POST /cost/import with valid Trade Republic CSV returns 200 with imported count."""
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("trade_republic_mai2026.csv", TRADE_REPUBLIC_CSV, "text/csv")},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["imported"] == 2
+    assert data["skipped"] == 0
+
+
+def test_import_unknown_filename(client: TestClient) -> None:
+    """POST /cost/import with unrecognized filename returns 400."""
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("exports.csv", b"Datum,Betrag\n2026-05-01,100", "text/csv")},
+    )
+    assert resp.status_code == 400
+    detail = resp.json()["detail"].lower()
+    assert "consorsbank" in detail or "trade_republic" in detail
+
+
+def test_import_malformed_csv(client: TestClient) -> None:
+    """POST /cost/import with wrong columns returns 400."""
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("consorsbank_broken.csv", b"WrongCol1;WrongCol2\n1;2", "text/csv")},
+    )
+    assert resp.status_code == 400
+
+
+def test_import_duplicate_skipped(client: TestClient) -> None:
+    """Second upload of same CSV results in skipped=2, imported=0."""
+    client.post(
+        "/cost/import",
+        files={"file": ("consorsbank_mai2026.csv", CONSORSBANK_CSV, "text/csv")},
+    )
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("consorsbank_mai2026.csv", CONSORSBANK_CSV, "text/csv")},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["imported"] == 0
+    assert data["skipped"] == 2
+
+
+# ---------------------------------------------------------------------------
+# Reset
 # ---------------------------------------------------------------------------
 
 
-def test_get_import_status_empty(client: TestClient) -> None:
-    """GET /cost/import-status returns null date and 0 count when no imports exist."""
-    resp = client.get("/cost/import-status")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["last_import_date"] is None
-    assert data["transaction_count"] == 0
+def test_reset_all_deletes_transactions(client: TestClient) -> None:
+    """DELETE /cost/reset wipes all transactions."""
+    client.post("/cost/transactions", json={
+        "title": "Test", "amount": "100.00",
+        "transaction_type": "expense", "date": "2026-05-01",
+    })
+    resp = client.delete("/cost/reset")
+    assert resp.status_code == 204
+    assert client.get("/cost/transactions").json() == []
 
 
-def test_get_import_status_with_imports(client: TestClient, repo: InMemoryCostRepository) -> None:
-    """GET /cost/import-status returns last import date and count after importing."""
-    import_date = date(2026, 5, 10)
-    # Directly add transaction with import_source to test repo
-    transaction = Transaction.create(
-        title="Test Import",
-        amount=Decimal("100.00"),
-        transaction_type=TransactionType.EXPENSE,
-        transaction_date=import_date,
-        import_source="consorsbank",
-    )
-    repo._transactions[transaction.id] = transaction
+def test_reset_all_deletes_recurring(client: TestClient) -> None:
+    """DELETE /cost/reset wipes all recurring entries."""
+    client.post("/cost/recurring", json={
+        "title": "Netflix", "amount": "15.00",
+        "transaction_type": "expense", "day_of_month": 1,
+    })
+    client.delete("/cost/reset")
+    assert client.get("/cost/recurring").json() == []
 
-    resp = client.get("/cost/import-status")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["last_import_date"] == "2026-05-10"
-    assert data["transaction_count"] == 1
-
-
-def test_get_import_status_multiple_imports(client: TestClient, repo: InMemoryCostRepository) -> None:
-    """GET /cost/import-status counts all imported transactions and returns latest date."""
-    # Add multiple imported transactions
-    for i in range(3):
-        transaction = Transaction.create(
-            title=f"Import {i}",
-            amount=Decimal("50.00"),
-            transaction_type=TransactionType.EXPENSE,
-            transaction_date=date(2026, 5, 10 + i),
-            import_source="trade_republic",
-        )
-        repo._transactions[transaction.id] = transaction
-
-    resp = client.get("/cost/import-status")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["last_import_date"] == "2026-05-12"  # Latest date
-    assert data["transaction_count"] == 3
-
-
-def test_get_import_status_ignores_manual_transactions(
-    client: TestClient, repo: InMemoryCostRepository
-) -> None:
-    """GET /cost/import-status ignores manual transactions without import_source."""
-    # Add manual transaction (no import_source)
-    manual = Transaction.create(
-        title="Manual",
-        amount=Decimal("100.00"),
-        transaction_type=TransactionType.EXPENSE,
-        transaction_date=date(2026, 5, 10),
-    )
-    repo._transactions[manual.id] = manual
-
-    # Add imported transaction
-    imported = Transaction.create(
-        title="Imported",
-        amount=Decimal("50.00"),
-        transaction_type=TransactionType.EXPENSE,
-        transaction_date=date(2026, 5, 11),
-        import_source="consorsbank",
-    )
-    repo._transactions[imported.id] = imported
-
-    resp = client.get("/cost/import-status")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["last_import_date"] == "2026-05-11"
-    assert data["transaction_count"] == 1
