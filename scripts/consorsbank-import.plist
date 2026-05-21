@@ -7,7 +7,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/zsh</string>
-        <string>/Users/nilsworm/Library/Mobile Documents/com~apple~CloudDocs/Projects/Task Management/scripts/consorsbank-import.sh</string>
+        <string>/Users/nilsworm/bin/consorsbank-import.sh</string>
     </array>
     <key>WatchPaths</key>
     <array>
