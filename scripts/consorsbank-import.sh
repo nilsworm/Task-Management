@@ -11,7 +11,7 @@ source "$ENV_FILE"
 
 STATE_FILE="$HOME/.consorsbank-last-import"
 
-latest=$(ls -t ~/Downloads/*consorsbank*.csv 2>/dev/null | head -1)
+latest=$(ls -t ~/Downloads/consorsbank.csv 2>/dev/null | head -1)
 [[ -z "$latest" ]] && exit 0
 
 [[ -f "$STATE_FILE" ]] && [[ "$(cat "$STATE_FILE")" == "$latest" ]] && exit 0
