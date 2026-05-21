@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     backend_port: int = 8000
     cors_origins: str = "http://localhost:5173,http://localhost:5174"
     cost_currency: str = "EUR"
+    root_path: str = ""
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5:14b-instruct-q4_K_M"
     ai_provider: str = "ollama"

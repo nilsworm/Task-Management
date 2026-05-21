@@ -25,6 +25,7 @@ app = FastAPI(
     title="Task Manager API",
     version="0.1.0",
     description="Personal task management — single-user, local-only.",
+    root_path=settings.root_path,
 )
 
 app.add_middleware(
