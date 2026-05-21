@@ -9,8 +9,10 @@
         <string>/bin/zsh</string>
         <string>/Users/nilsworm/Library/Mobile Documents/com~apple~CloudDocs/Projects/Task Management/scripts/consorsbank-import.sh</string>
     </array>
-    <key>StartInterval</key>
-    <integer>60</integer>
+    <key>WatchPaths</key>
+    <array>
+        <string>/Users/nilsworm/Downloads</string>
+    </array>
     <key>StandardOutPath</key>
     <string>/Users/nilsworm/Library/Logs/consorsbank-import.log</string>
     <key>StandardErrorPath</key>
