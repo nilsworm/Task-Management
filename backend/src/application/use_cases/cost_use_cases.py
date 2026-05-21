@@ -342,15 +342,9 @@ class CalculateOpeningBalanceUseCase:
             prev_month = 12
             prev_year -= 1
 
-        # Get all transactions from previous month (excluding opening balance)
         prev_transactions = await self._repo.list_transactions(
             year=prev_year, month=prev_month
         )
-
-        # Filter out opening balance transactions
-        prev_transactions = [
-            t for t in prev_transactions if not t.is_opening_balance
-        ]
 
         # Calculate balance
         income = sum(

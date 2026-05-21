@@ -601,6 +601,39 @@ async def test_calculate_opening_balance_past_month() -> None:
 
 
 @pytest.mark.asyncio
+async def test_calculate_opening_balance_includes_prev_opening_balance() -> None:
+    """Opening balance of month N includes the opening balance of month N-1 (chain preserved)."""
+    repo = InMemoryCostRepository()
+    # April has its own opening balance of 4000 (carried from March)
+    await repo.save_transaction(Transaction.create(
+        title="Opening Balance April",
+        amount=Decimal("4000"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 4, 1),
+        is_opening_balance=True,
+    ))
+    # April real transactions: +1000 income, -500 expense
+    await repo.save_transaction(Transaction.create(
+        title="Salary",
+        amount=Decimal("1000"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 4, 10),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Rent",
+        amount=Decimal("500"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 4, 15),
+    ))
+
+    uc = CalculateOpeningBalanceUseCase(repo)
+    result = await uc.execute(year=2026, month=5)
+
+    # May opening balance = 4000 + 1000 - 500 = 4500 (full April closing balance)
+    assert result == Decimal("4500")
+
+
+@pytest.mark.asyncio
 async def test_calculate_opening_balance_first_month() -> None:
     """First month (no previous) has opening balance 0."""
     repo = InMemoryCostRepository()
