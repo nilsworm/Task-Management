@@ -95,6 +95,8 @@
 #### Phase 11.1 — CSVParser Implementation ✅
 **Liefergegenstand:** Utility-Modul zum Parsen von Consorsbank- und Trade Republic-CSV-Formaten
 
+> Note: ImportScheduler entfernt — ersetzt durch manuellen Upload-Endpoint (Phase 11.5)
+
 - [x] `InvalidCSVFormatError` und `InvalidTransactionDataError` Exception-Klassen
 - [x] `CSVParser.parse_consorsbank(file_path)` — parst Consorsbank-Format
 - [x] `CSVParser.parse_trade_republic(file_path)` — parst Trade Republic-Format
@@ -106,31 +108,35 @@
 #### Phase 11.3 — Repository Extension for CSV Imports ✅
 **Liefergegenstand:** CostRepository-Methode zum Persistieren geparster CSV-Zeilen
 
+> Note: ImportScheduler entfernt — ersetzt durch manuellen Upload-Endpoint (Phase 11.5)
+
 - [x] `ICostRepository.create_transaction_from_import(parsed_row, import_source)` Interface-Methode
 - [x] `PostgresCostRepository.create_transaction_from_import()` Implementierung mit Typ-Konvertierung
 - [x] `InMemoryCostRepository` Stub für Test-Kompatibilität ergänzt
 - [x] 2 Integration-Tests (Consorsbank + Trade Republic Quellen)
 - [x] 567 Backend-Tests gesamt ✅ (2 neue Tests, alle grün)
 
-#### Phase 11.4 — ImportScheduler for Weekly Execution ✅
-**Liefergegenstand:** Scheduler-Klasse, die /imports-Ordner scannt, Dateien verarbeitet und archiviert
+#### Phase 11.4 — ImportScheduler ~~✅~~ REMOVED
+**Liefergegenstand:** ~~Scheduler-Klasse, die /imports-Ordner scannt, Dateien verarbeitet und archiviert~~
 
-- [x] `ImportScheduler` Service-Klasse in `src/application/services/import_scheduler.py`
-- [x] `run_weekly_import()` async-Methode — scannt /imports, detectet Formate, parst, importiert, archiviert
-- [x] Format-Detektion: consorsbank vs trade_republic via Filename-Pattern
-- [x] Fehlerbehandlung: ungültige Dateien bleiben in /imports, einzelne Reihen-Fehler werden geloggt + ignoriert
-- [x] Archive-Ordner (`/archived`) wird automatisch erstellt falls nicht vorhanden
-- [x] Rückgabe: `{"status": "success", "imported": int, "files": [str]}`
-- [x] 8 Unit-Tests (gültige Formate, mehrere Dateien, Fehlerbehandlung, leerer Ordner, unbekannte Formate, Reihen-Fehler)
-- [x] 575 Backend-Tests gesamt ✅ (8 neue Tests, alle grün)
+> **Entfernt:** ImportScheduler und APScheduler-Dependency wurden entfernt. Ersetzt durch manuellen `POST /cost/import` Upload-Endpoint (Phase 11.5), der von Mac Shortcuts aufgerufen wird. Kein Server-seitiger Cloud-Credential-Bedarf.
 
-#### Phase 11.5 — CSV-Upload Endpoint (TODO)
-**Liefergegenstand:** `POST /cost/import` akzeptiert hochgeladene CSV-Datei
+#### Phase 11.5 — POST /cost/import Endpoint ✅
+**Liefergegenstand:** `POST /cost/import` akzeptiert hochgeladene CSV-Datei mit Format-Erkennung, Dedup via transaction_exists, temp file handling
 
-- [ ] `ImportTransactionsUseCase` — orchestriert Parse + Batch-Save via `CSVParser`
-- [ ] Endpoint `POST /cost/import` mit `file: UploadFile`
-- [ ] Error-Handling: ungültige Formate, Duplikat-Warnung
-- [ ] 409-Antwort wenn Transaktionen für Datum bereits existieren
+- [x] `ICostRepository.transaction_exists(date, amount, description) -> bool` Interface-Methode
+- [x] `PostgresCostRepository.transaction_exists()` mit EXISTS-Query
+- [x] `InMemoryCostRepository.transaction_exists()` Stub
+- [x] `ImportTransactionsUseCase` mit stiller Deduplizierung (imported + skipped counters)
+- [x] `POST /cost/import` — filename-basierte Format-Detektion (consorsbank/trade_republic)
+- [x] Temp-File-Handling mit `NamedTemporaryFile` + cleanup
+- [x] Error-Handling: 400 für unbekanntes Format, 400 für ungültige CSV-Struktur
+- [x] ImportScheduler-Service + APScheduler-Dependency entfernt
+- [x] GET /cost/import-status Endpoint + Interface-Methode entfernt
+- [x] Frontend: ImportStatusCard + useImportStatus Hook entfernt
+- [x] OpenAPI-Spec + TypeScript-Types neu generiert
+- [x] 14 neue Tests (3 transaction_exists UC + 2 transaction_exists repo + 4 UC + 5 API)
+- [x] 548 Backend-Tests gesamt ✅
 
 #### Phase 11.6 — Frontend Import Dialog (TODO)
 **Liefergegenstand:** UI zum Uploaden einer CSV-Datei mit Vorschau vor dem Importieren
@@ -379,6 +385,28 @@
 ---
 
 ## Session-Log
+
+### 2026-05-21 — Phase 11.5: POST /cost/import Endpoint ✅
+
+**Scope:** Replaced weekly ImportScheduler with on-demand CSV upload endpoint triggered by Mac Shortcuts.
+
+**Backend:**
+- Removed ImportScheduler service + APScheduler dependency
+- Removed GET /cost/import-status endpoint + interface method
+- Added ICostRepository.transaction_exists(date, amount, description) -> bool
+- Added PostgresCostRepository.transaction_exists() with EXISTS-Query
+- Added ImportTransactionsUseCase with silent deduplication
+- Added POST /cost/import with filename-based format detection (Consorsbank/Trade Republic)
+- New tests: 3 (transaction_exists UC) + 2 (transaction_exists repo) + 4 (use case) + 5 (API) = 14 new tests
+
+**Frontend:**
+- Removed ImportStatusCard component + useImportStatus hook
+- Updated CostManagementPage (removed ImportStatusCard)
+- Regenerated OpenAPI spec + TypeScript types
+
+**Architecture:** Clean Architecture maintained — dedup logic in Use Case, repo only does data access, router only HTTP handling.
+
+**Mac Shortcuts integration:** Upload via POST /cost/import with Basic Auth header — no server-side cloud credentials needed.
 
 ### 2026-05-15 — Task 5: EnsureOpeningBalanceTransactionUseCase ✅
 

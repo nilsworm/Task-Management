@@ -109,22 +109,6 @@ class InMemoryCostRepository(ICostRepository):
         await self.save_transaction(transaction)
         return transaction
 
-    async def get_last_import_status(self) -> dict:
-        """Get last import date and transaction count from imports."""
-        imported = [
-            t for t in self._transactions.values() if t.import_source is not None
-        ]
-        if not imported:
-            return {
-                "last_import_date": None,
-                "transaction_count": 0,
-            }
-        max_date = max(t.date for t in imported)
-        return {
-            "last_import_date": max_date.isoformat(),
-            "transaction_count": len(imported),
-        }
-
     async def get_opening_balance_transaction(
         self, year: int, month: int
     ) -> Transaction | None:
@@ -133,6 +117,18 @@ class InMemoryCostRepository(ICostRepository):
             if t.date.year == year and t.date.month == month and t.is_opening_balance:
                 return t
         return None
+
+    async def transaction_exists(
+        self, transaction_date: date, amount: Decimal, description: str
+    ) -> bool:
+        return any(
+            t.date == transaction_date and t.amount == amount and t.title == description
+            for t in self._transactions.values()
+        )
+
+    async def reset_all(self) -> None:
+        self._transactions.clear()
+        self._recurring.clear()
 
     @property
     def transactions(self) -> list[Transaction]:
@@ -609,6 +605,39 @@ async def test_calculate_opening_balance_past_month() -> None:
 
 
 @pytest.mark.asyncio
+async def test_calculate_opening_balance_includes_prev_opening_balance() -> None:
+    """Opening balance of month N includes the opening balance of month N-1 (chain preserved)."""
+    repo = InMemoryCostRepository()
+    # April has its own opening balance of 4000 (carried from March)
+    await repo.save_transaction(Transaction.create(
+        title="Opening Balance April",
+        amount=Decimal("4000"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 4, 1),
+        is_opening_balance=True,
+    ))
+    # April real transactions: +1000 income, -500 expense
+    await repo.save_transaction(Transaction.create(
+        title="Salary",
+        amount=Decimal("1000"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 4, 10),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Rent",
+        amount=Decimal("500"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 4, 15),
+    ))
+
+    uc = CalculateOpeningBalanceUseCase(repo)
+    result = await uc.execute(year=2026, month=5)
+
+    # May opening balance = 4000 + 1000 - 500 = 4500 (full April closing balance)
+    assert result == Decimal("4500")
+
+
+@pytest.mark.asyncio
 async def test_calculate_opening_balance_first_month() -> None:
     """First month (no previous) has opening balance 0."""
     repo = InMemoryCostRepository()
@@ -742,3 +771,134 @@ async def test_list_transactions_does_not_create_opening_balance() -> None:
     # UseCase itself does not create opening balance transactions
     assert all(not t.is_opening_balance for t in result)
     assert len(result) == 0  # No May transactions exist yet
+
+
+# ---------------------------------------------------------------------------
+# transaction_exists
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_transaction_exists_returns_true_for_existing(repo: InMemoryCostRepository) -> None:
+    """transaction_exists returns True when a transaction with same date/amount/description exists."""
+    tx = Transaction.create(
+        title="Miete",
+        amount=Decimal("800.00"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 5, 1),
+    )
+    await repo.save_transaction(tx)
+
+    result = await repo.transaction_exists(date(2026, 5, 1), Decimal("800.00"), "Miete")
+
+    assert result is True
+
+
+@pytest.mark.asyncio
+async def test_transaction_exists_returns_false_for_nonexistent(repo: InMemoryCostRepository) -> None:
+    """transaction_exists returns False when no matching transaction exists."""
+    result = await repo.transaction_exists(date(2026, 5, 1), Decimal("800.00"), "Miete")
+
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_transaction_exists_requires_all_three_fields(repo: InMemoryCostRepository) -> None:
+    """transaction_exists returns False if only date and amount match but description differs."""
+    tx = Transaction.create(
+        title="Miete",
+        amount=Decimal("800.00"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 5, 1),
+    )
+    await repo.save_transaction(tx)
+
+    result = await repo.transaction_exists(date(2026, 5, 1), Decimal("800.00"), "Andere Beschreibung")
+
+    assert result is False
+
+
+# ---------------------------------------------------------------------------
+# ImportTransactionsUseCase
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_import_transactions_all_new(repo: InMemoryCostRepository) -> None:
+    """All rows are new — imported count equals row count, skipped is 0."""
+    from datetime import date
+    from src.application.use_cases.cost_use_cases import ImportTransactionsUseCase, ImportTransactionsInput
+
+    rows = [
+        {"date": date(2026, 5, 1), "amount": Decimal("500.00"), "description": "Gehalt", "type": "INCOME"},
+        {"date": date(2026, 5, 2), "amount": Decimal("50.00"), "description": "Supermarkt", "type": "EXPENSE"},
+    ]
+    use_case = ImportTransactionsUseCase(repo)
+
+    result = await use_case.execute(ImportTransactionsInput(parsed_rows=rows, import_source="consorsbank"))
+
+    assert result.imported == 2
+    assert result.skipped == 0
+    assert len(repo.transactions) == 2
+
+
+@pytest.mark.asyncio
+async def test_import_transactions_all_duplicates(repo: InMemoryCostRepository) -> None:
+    """All rows already exist — imported is 0, skipped equals row count."""
+    from datetime import date
+    from src.application.use_cases.cost_use_cases import ImportTransactionsUseCase, ImportTransactionsInput
+
+    rows = [
+        {"date": date(2026, 5, 1), "amount": Decimal("500.00"), "description": "Gehalt", "type": "INCOME"},
+    ]
+    tx = Transaction.create(
+        title="Gehalt",
+        amount=Decimal("500.00"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 5, 1),
+    )
+    await repo.save_transaction(tx)
+
+    use_case = ImportTransactionsUseCase(repo)
+    result = await use_case.execute(ImportTransactionsInput(parsed_rows=rows, import_source="consorsbank"))
+
+    assert result.imported == 0
+    assert result.skipped == 1
+    assert len(repo.transactions) == 1
+
+
+@pytest.mark.asyncio
+async def test_import_transactions_mixed(repo: InMemoryCostRepository) -> None:
+    """Mixed rows: some new, some duplicates — counts are accurate."""
+    from datetime import date
+    from src.application.use_cases.cost_use_cases import ImportTransactionsUseCase, ImportTransactionsInput
+
+    tx = Transaction.create(
+        title="Miete",
+        amount=Decimal("800.00"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 5, 1),
+    )
+    await repo.save_transaction(tx)
+
+    rows = [
+        {"date": date(2026, 5, 1), "amount": Decimal("800.00"), "description": "Miete", "type": "EXPENSE"},
+        {"date": date(2026, 5, 3), "amount": Decimal("30.00"), "description": "Tankstelle", "type": "EXPENSE"},
+    ]
+    use_case = ImportTransactionsUseCase(repo)
+    result = await use_case.execute(ImportTransactionsInput(parsed_rows=rows, import_source="consorsbank"))
+
+    assert result.imported == 1
+    assert result.skipped == 1
+    assert len(repo.transactions) == 2
+
+
+@pytest.mark.asyncio
+async def test_import_transactions_empty(repo: InMemoryCostRepository) -> None:
+    """Empty rows list — both counts are 0."""
+    from src.application.use_cases.cost_use_cases import ImportTransactionsUseCase, ImportTransactionsInput
+
+    use_case = ImportTransactionsUseCase(repo)
+    result = await use_case.execute(ImportTransactionsInput(parsed_rows=[], import_source="consorsbank"))
+
+    assert result.imported == 0
+    assert result.skipped == 0

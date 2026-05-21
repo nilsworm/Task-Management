@@ -79,6 +79,22 @@
         "operationId": "list_tasks_tasks_get",
         "parameters": [
           {
+            "name": "overdue",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Overdue"
+            }
+          },
+          {
             "name": "status",
             "in": "query",
             "required": false,
@@ -685,6 +701,18 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteSprintRequest",
+                "default": {
+                  "move_incomplete_to_backlog": false
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1980,14 +2008,23 @@
         }
       }
     },
-    "/cost/import-status": {
-      "get": {
+    "/cost/import": {
+      "post": {
         "tags": [
           "cost"
         ],
-        "summary": "Get Import Status",
-        "description": "Get last CSV import status: date and transaction count.",
-        "operationId": "get_import_status_cost_import_status_get",
+        "summary": "Import Csv",
+        "operationId": "import_csv_cost_import_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_csv_cost_import_post"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1996,7 +2033,81 @@
                 "schema": {
                   "additionalProperties": true,
                   "type": "object",
-                  "title": "Response Get Import Status Cost Import Status Get"
+                  "title": "Response Import Csv Cost Import Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/insights": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Get Insights",
+        "operationId": "get_insights_ai_insights_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InsightCardResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Get Insights Ai Insights Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/chat": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Chat",
+        "operationId": "chat_ai_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AIChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2007,6 +2118,43 @@
   },
   "components": {
     "schemas": {
+      "AIChatRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "History"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "AIChatRequest"
+      },
+      "Body_import_csv_cost_import_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_csv_cost_import_post"
+      },
       "BurndownPoint": {
         "properties": {
           "date": {
@@ -2074,6 +2222,40 @@
           "actual_remaining"
         ],
         "title": "BurndownResponse"
+      },
+      "ChatMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "ChatMessage"
+      },
+      "CompleteSprintRequest": {
+        "properties": {
+          "move_incomplete_to_backlog": {
+            "type": "boolean",
+            "title": "Move Incomplete To Backlog",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "CompleteSprintRequest"
       },
       "CostAnalyticsResponse": {
         "properties": {
@@ -2453,6 +2635,29 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "InsightCardResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "body",
+          "type"
+        ],
+        "title": "InsightCardResponse"
       },
       "KeyResultCreateRequest": {
         "properties": {

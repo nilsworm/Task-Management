@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date as date_type
+from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import delete, extract, func, select, union
+from sqlalchemy import delete, exists as sa_exists, extract, func, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.cost.entities import RecurringTransaction, Transaction
@@ -125,22 +127,6 @@ class PostgresCostRepository(ICostRepository):
         await self.save_transaction(transaction)
         return transaction
 
-    async def get_last_import_status(self) -> dict:
-        """Get last import date and transaction count from imports."""
-        stmt = select(
-            func.max(TransactionModel.date).label("last_date"),
-            func.count(TransactionModel.id).label("count"),
-        ).where(TransactionModel.import_source.isnot(None))
-
-        result = await self._session.execute(stmt)
-        row = result.one()
-        last_date, count = row.last_date, row.count
-
-        return {
-            "last_import_date": last_date.isoformat() if last_date else None,
-            "transaction_count": int(count or 0),
-        }
-
     async def get_opening_balance_transaction(
         self, year: int, month: int
     ) -> Transaction | None:
@@ -154,3 +140,21 @@ class PostgresCostRepository(ICostRepository):
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
         return transaction_from_model(model) if model else None
+
+    async def transaction_exists(
+        self, transaction_date: date_type, amount: Decimal, description: str
+    ) -> bool:
+        stmt = select(
+            sa_exists().where(
+                TransactionModel.date == transaction_date,
+                TransactionModel.amount == amount,
+                TransactionModel.title == description,
+            )
+        )
+        result = await self._session.execute(stmt)
+        return bool(result.scalar())
+
+    async def reset_all(self) -> None:
+        await self._session.execute(delete(TransactionModel))
+        await self._session.execute(delete(RecurringTransactionModel))
+        await self._session.commit()
