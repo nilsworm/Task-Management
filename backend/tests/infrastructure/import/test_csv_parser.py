@@ -167,3 +167,32 @@ class TestCSVParserTradeRepublic:
             f.flush()
             with pytest.raises(InvalidTransactionDataError):
                 CSVParser.parse_trade_republic(Path(f.name))
+
+    def test_transfer_inbound_from_unknown_iban_passes_through_as_income(self):
+        """When own_ibans is empty, TRANSFER_INBOUND from external party should pass through as INCOME."""
+        csv_content = f"""{TR_HEADER}
+"2026-05-01T10:00:00Z","2026-05-01","DEFAULT","CASH","TRANSFER_INBOUND","","External Party","","","","500.000000","","","EUR","","","","Incoming transfer from external party","id1","External Party","DE99EXTERNAL000001","",""
+"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=True, encoding="utf-8") as f:
+            f.write(csv_content)
+            f.flush()
+            result = CSVParser.parse_trade_republic(Path(f.name), own_account_ibans=[])
+
+        assert len(result) == 1
+        assert result[0]["type"] == "INCOME"
+        assert result[0]["amount"] == Decimal("500.000000")
+        assert result[0]["description"] == "External Party"
+
+    def test_transfer_inbound_from_non_own_iban_passes_through_as_income(self):
+        """When counterparty IBAN is not in own_ibans, TRANSFER_INBOUND should pass through as INCOME."""
+        csv_content = f"""{TR_HEADER}
+"2026-05-01T10:00:00Z","2026-05-01","DEFAULT","CASH","TRANSFER_INBOUND","","External Party","","","","500.000000","","","EUR","","","","Incoming transfer from external party","id1","External Party","DE99EXTERNAL000001","",""
+"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=True, encoding="utf-8") as f:
+            f.write(csv_content)
+            f.flush()
+            result = CSVParser.parse_trade_republic(Path(f.name), own_account_ibans=[OWN_CONSORSBANK_IBAN])
+
+        assert len(result) == 1
+        assert result[0]["type"] == "INCOME"
+        assert result[0]["amount"] == Decimal("500.000000")

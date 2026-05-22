@@ -122,7 +122,7 @@ class CSVParser:
 
                 if tx_type_raw == "TRANSFER_INBOUND":
                     counterparty = row.get("counterparty_iban", "").strip()
-                    if not own_ibans or counterparty in own_ibans:
+                    if own_ibans and counterparty in own_ibans:
                         continue
 
                 try:

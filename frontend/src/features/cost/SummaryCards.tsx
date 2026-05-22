@@ -39,7 +39,7 @@ interface Props {
 export function SummaryCards({ summary, isLoading }: Props) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <SummaryCardSkeleton />
         <SummaryCardSkeleton />
         <SummaryCardSkeleton />
@@ -52,7 +52,7 @@ export function SummaryCards({ summary, isLoading }: Props) {
   const balance = Number(summary?.balance ?? 0)
 
   return (
-    <div className="grid grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       <SummaryCard
         label="Einnahmen"
         value={formatEur(summary?.income ?? 0)}
