@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +15,14 @@ class Settings(BaseSettings):
     ai_provider: str = "ollama"
     ai_api_key: str = ""
     ai_model: str = "meta-llama/llama-3.3-70b-instruct:free"
+    own_account_ibans: list[str] = []
+
+    @field_validator("own_account_ibans", mode="before")
+    @classmethod
+    def parse_ibans(cls, v: str | list) -> list[str]:
+        if isinstance(v, str):
+            return [i.strip().upper() for i in v.split(",") if i.strip()]
+        return [i.upper() for i in v]
 
 
 settings = Settings()
