@@ -15,6 +15,7 @@ class InvalidTransactionDataError(Exception):
 
 
 class CSVParser:
+    _TR_SKIP_TYPES: frozenset[str] = frozenset({"FREE_RECEIPT", "CUSTOMER_INPAYMENT"})
 
     @staticmethod
     def parse_consorsbank(file_path: Path) -> list[dict]:
@@ -82,39 +83,57 @@ class CSVParser:
         return result
 
     @staticmethod
-    def parse_trade_republic(file_path: Path) -> list[dict]:
-        """Parse Trade Republic CSV (pre-converted from PDF via kontoauszug.jonathanpagel.com).
+    def parse_trade_republic(
+        file_path: Path,
+        own_account_ibans: list[str] | None = None,
+    ) -> list[dict]:
+        """Parse Trade Republic CSV export (Transaktionsexport.csv).
 
-        Expected columns: Datum, Beschreibung, Typ, Betrag
+        Skips FREE_RECEIPT (no cash), CUSTOMER_INPAYMENT (own-account top-up),
+        and TRANSFER_INBOUND from own accounts to avoid double-counting.
+        BUY transactions become type STOCK (neutral, visible in analytics).
 
-        Returns: [{"date": DATE, "amount": DECIMAL, "description": str, "type": "INCOME" | "EXPENSE"}]
+        Returns: [{"date": DATE, "amount": DECIMAL, "description": str, "type": str}]
         """
-        required_columns = ["Datum", "Beschreibung", "Typ", "Betrag"]
-
+        required_columns = ["date", "type", "name", "amount", "counterparty_iban"]
+        own_ibans: set[str] = set(own_account_ibans or [])
         result = []
 
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
-
-            # Validate columns
             if reader.fieldnames is None or not all(col in reader.fieldnames for col in required_columns):
                 raise InvalidCSVFormatError(f"Missing required columns. Expected: {required_columns}")
 
             for row in reader:
-                try:
-                    # Parse date
-                    date_str = row["Datum"].strip()
-                    tx_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                tx_type_raw = row["type"].strip()
 
-                    # Parse amount (handle +/− prefixes)
-                    amount_str = row["Betrag"].strip().replace("+", "").replace("−", "-").replace(",", ".")
+                if tx_type_raw in CSVParser._TR_SKIP_TYPES:
+                    continue
+
+                if tx_type_raw == "TRANSFER_INBOUND":
+                    counterparty = row.get("counterparty_iban", "").strip()
+                    if not own_ibans or counterparty in own_ibans:
+                        continue
+
+                try:
+                    tx_date = datetime.strptime(row["date"].strip(), "%Y-%m-%d").date()
+
+                    amount_str = row["amount"].strip()
+                    if not amount_str:
+                        continue
                     amount = Decimal(amount_str)
 
-                    # Determine type based on sign (override Typ column if needed)
-                    tx_type = "INCOME" if amount > 0 else "EXPENSE"
-                    amount = abs(amount)
+                    if tx_type_raw == "BUY":
+                        tx_type = "STOCK"
+                        amount = abs(amount)
+                    elif amount >= 0:
+                        tx_type = "INCOME"
+                    else:
+                        tx_type = "EXPENSE"
+                        amount = abs(amount)
 
-                    description = row["Beschreibung"].strip()
+                    name = row["name"].strip()
+                    description = name if name else tx_type_raw
 
                     result.append({
                         "date": tx_date,
