@@ -8,7 +8,8 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 
-from src.api.dependencies import get_cost_repo
+from src.api.dependencies import get_ai_client, get_cost_repo
+from src.domain.ai.client import IAIClient
 from src.domain.cost.entities import RecurringTransaction, Transaction
 from src.domain.cost.repository import ICostRepository
 from src.domain.cost.value_objects import RecurrenceInterval, TransactionType
@@ -535,6 +536,44 @@ def test_import_duplicate_skipped(client: TestClient) -> None:
     data = resp.json()
     assert data["imported"] == 0
     assert data["skipped"] == 2
+
+
+class _FixedTagAI(IAIClient):
+    async def is_available(self) -> bool:
+        return True
+
+    async def generate(self, prompt: str, system: str) -> str:
+        import json
+        import re
+        ids = re.findall(r'"id":\s*"([0-9a-f-]{36})"', prompt)
+        return json.dumps([{"id": tid, "tags": ["lebensmittel"]} for tid in ids])
+
+    async def generate_stream(self, messages, system):  # type: ignore[override]
+        yield ""
+
+
+@pytest.fixture
+def tagging_client(repo: InMemoryCostRepository) -> TestClient:
+    app.dependency_overrides[get_cost_repo] = lambda: repo
+    app.dependency_overrides[get_ai_client] = lambda: _FixedTagAI()
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+
+def test_import_triggers_auto_tagging(
+    tagging_client: TestClient, repo: InMemoryCostRepository
+) -> None:
+    """After import, background task tags all new transactions via AI."""
+    resp = tagging_client.post(
+        "/cost/import",
+        files={"file": ("consorsbank_mai2026.csv", CONSORSBANK_CSV, "text/csv")},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["imported"] == 2
+    # BackgroundTask runs synchronously in TestClient
+    for tx in repo.transactions:
+        assert "lebensmittel" in tx.tags
 
 
 # ---------------------------------------------------------------------------
