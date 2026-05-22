@@ -171,6 +171,8 @@ class MonthlyComparisonResponse(BaseModel):
     month: int
     income: Decimal
     expenses: Decimal
+    transfers: Decimal
+    stock_investments: Decimal
 
 
 class CostAnalyticsResponse(BaseModel):
@@ -185,7 +187,14 @@ class CostAnalyticsResponse(BaseModel):
                 for tb in analytics.expenses_by_tag
             ],
             monthly_comparison=[
-                MonthlyComparisonResponse(year=mc.year, month=mc.month, income=mc.income, expenses=mc.expenses)
+                MonthlyComparisonResponse(
+                    year=mc.year,
+                    month=mc.month,
+                    income=mc.income,
+                    expenses=mc.expenses,
+                    transfers=mc.transfers,
+                    stock_investments=mc.stock_investments,
+                )
                 for mc in analytics.monthly_comparison
             ],
         )

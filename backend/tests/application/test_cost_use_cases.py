@@ -579,6 +579,45 @@ async def test_analytics_monthly_comparison_sums_correctly(repo: InMemoryCostRep
     assert april.income == Decimal("3000.00")
 
 
+@pytest.mark.asyncio
+async def test_analytics_includes_transfers_and_stock_per_month(repo: InMemoryCostRepository) -> None:
+    from src.application.use_cases.cost_use_cases import GetCostAnalyticsUseCase
+
+    await repo.save_transaction(Transaction.create(
+        title="Gehalt",
+        amount=Decimal("3000.00"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 4, 1),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Miete",
+        amount=Decimal("800.00"),
+        transaction_type=TransactionType.EXPENSE,
+        transaction_date=date(2026, 4, 1),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Transfer to savings",
+        amount=Decimal("500.00"),
+        transaction_type=TransactionType.TRANSFER,
+        transaction_date=date(2026, 4, 10),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Buy ETF",
+        amount=Decimal("300.00"),
+        transaction_type=TransactionType.STOCK,
+        transaction_date=date(2026, 4, 15),
+    ))
+
+    analytics = await GetCostAnalyticsUseCase(repo).execute(year=2026, month=4)
+    april = analytics.monthly_comparison[-1]
+
+    assert april.transfers == Decimal("500.00")
+    assert april.stock_investments == Decimal("300.00")
+    # balance is still only income - expenses
+    assert april.income == Decimal("3000.00")
+    assert april.expenses == Decimal("800.00")
+
+
 # ---------------------------------------------------------------------------
 # UpdateRecurring
 # ---------------------------------------------------------------------------

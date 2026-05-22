@@ -290,6 +290,8 @@ class MonthlyComparison:
     month: int
     income: Decimal
     expenses: Decimal
+    transfers: Decimal = field(default_factory=lambda: Decimal(0))
+    stock_investments: Decimal = field(default_factory=lambda: Decimal(0))
 
 
 @dataclass
@@ -331,7 +333,24 @@ class GetCostAnalyticsUseCase:
                 (t.amount for t in txs if t.transaction_type == TransactionType.EXPENSE),
                 Decimal("0"),
             )
-            comparison.append(MonthlyComparison(year=y, month=m, income=income, expenses=exps))
+            transfers = sum(
+                (t.amount for t in txs if t.transaction_type == TransactionType.TRANSFER),
+                Decimal("0"),
+            )
+            stock_investments = sum(
+                (t.amount for t in txs if t.transaction_type == TransactionType.STOCK),
+                Decimal("0"),
+            )
+            comparison.append(
+                MonthlyComparison(
+                    year=y,
+                    month=m,
+                    income=income,
+                    expenses=exps,
+                    transfers=transfers,
+                    stock_investments=stock_investments,
+                )
+            )
 
         return CostAnalytics(expenses_by_tag=expenses_by_tag, monthly_comparison=comparison)
 
