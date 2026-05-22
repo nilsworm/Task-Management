@@ -2008,6 +2008,20 @@
         }
       }
     },
+    "/cost/reset": {
+      "delete": {
+        "tags": [
+          "cost"
+        ],
+        "summary": "Reset All",
+        "operationId": "reset_all_cost_reset_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
     "/cost/import": {
       "post": {
         "tags": [
@@ -2305,6 +2319,16 @@
             "type": "string",
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Balance"
+          },
+          "transfers": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Transfers"
+          },
+          "stock_investments": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Stock Investments"
           }
         },
         "type": "object",
@@ -2313,7 +2337,9 @@
           "month",
           "income",
           "expenses",
-          "balance"
+          "balance",
+          "transfers",
+          "stock_investments"
         ],
         "title": "CostSummaryResponse"
       },
@@ -2859,6 +2885,16 @@
             "type": "string",
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Expenses"
+          },
+          "transfers": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Transfers"
+          },
+          "stock_investments": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Stock Investments"
           }
         },
         "type": "object",
@@ -2866,7 +2902,9 @@
           "year",
           "month",
           "income",
-          "expenses"
+          "expenses",
+          "transfers",
+          "stock_investments"
         ],
         "title": "MonthlyComparisonResponse"
       },

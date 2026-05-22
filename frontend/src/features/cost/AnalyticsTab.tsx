@@ -71,6 +71,8 @@ export function AnalyticsTab({ year, month }: Props) {
     name: `${MONTH_NAMES[mc.month - 1]} ${String(mc.year).slice(2)}`,
     Einnahmen: Number(mc.income),
     Ausgaben: Number(mc.expenses),
+    Transfers: Number(mc.transfers),
+    Aktieninvestments: Number(mc.stock_investments),
   }))
 
   return (
@@ -139,7 +141,7 @@ export function AnalyticsTab({ year, month }: Props) {
         </p>
         {isLoading ? (
           <SkeletonBlock h="h-48" />
-        ) : barData.every((d) => d.Einnahmen === 0 && d.Ausgaben === 0) ? (
+        ) : barData.every((d) => d.Einnahmen === 0 && d.Ausgaben === 0 && d.Transfers === 0 && d.Aktieninvestments === 0) ? (
           <p className="py-12 text-center text-xs text-muted-foreground">
             Keine Daten für die letzten 6 Monate.
           </p>
@@ -167,6 +169,8 @@ export function AnalyticsTab({ year, month }: Props) {
               />
               <Bar dataKey="Einnahmen" fill="#06d6a0" radius={[3, 3, 0, 0]} />
               <Bar dataKey="Ausgaben" fill="#ff4d6d" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Transfers" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Aktieninvestments" fill="#f59e0b" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

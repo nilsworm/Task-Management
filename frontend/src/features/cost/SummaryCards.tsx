@@ -39,7 +39,9 @@ interface Props {
 export function SummaryCards({ summary, isLoading }: Props) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-5 gap-4">
+        <SummaryCardSkeleton />
+        <SummaryCardSkeleton />
         <SummaryCardSkeleton />
         <SummaryCardSkeleton />
         <SummaryCardSkeleton />
@@ -50,7 +52,7 @@ export function SummaryCards({ summary, isLoading }: Props) {
   const balance = Number(summary?.balance ?? 0)
 
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-5 gap-4">
       <SummaryCard
         label="Einnahmen"
         value={formatEur(summary?.income ?? 0)}
@@ -69,6 +71,16 @@ export function SummaryCards({ summary, isLoading }: Props) {
             ? "text-blue-600 dark:text-blue-400"
             : "text-red-600 dark:text-red-400"
         }
+      />
+      <SummaryCard
+        label="Transfers"
+        value={formatEur(summary?.transfers ?? 0)}
+        colorClass="text-purple-600 dark:text-purple-400"
+      />
+      <SummaryCard
+        label="Aktieninvestments"
+        value={formatEur(summary?.stock_investments ?? 0)}
+        colorClass="text-amber-600 dark:text-amber-400"
       />
     </div>
   )

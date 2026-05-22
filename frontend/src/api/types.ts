@@ -496,6 +496,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cost/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Reset All */
+        delete: operations["reset_all_cost_reset_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cost/import": {
         parameters: {
             query?: never;
@@ -636,6 +653,10 @@ export interface components {
             expenses: string;
             /** Balance */
             balance: string;
+            /** Transfers */
+            transfers: string;
+            /** Stock Investments */
+            stock_investments: string;
         };
         /** DashboardResponse */
         DashboardResponse: {
@@ -837,6 +858,10 @@ export interface components {
             income: string;
             /** Expenses */
             expenses: string;
+            /** Transfers */
+            transfers: string;
+            /** Stock Investments */
+            stock_investments: string;
         };
         /** RecurringCreateRequest */
         RecurringCreateRequest: {
@@ -2521,6 +2546,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    reset_all_cost_reset_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
