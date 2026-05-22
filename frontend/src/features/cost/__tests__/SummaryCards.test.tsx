@@ -9,6 +9,8 @@ const summary: CostSummary = {
   income: "4150.00",
   expenses: "1420.12",
   balance: "2729.88",
+  transfers: "0.00",
+  stock_investments: "0.00",
 }
 
 describe("SummaryCards", () => {
