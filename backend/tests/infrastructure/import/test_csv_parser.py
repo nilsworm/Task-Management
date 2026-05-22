@@ -62,6 +62,29 @@ Buchung;Valuta;Sender / Empfänger;IBAN;BIC;Buchungstext;Verwendungszweck;Katego
             with pytest.raises(InvalidTransactionDataError):
                 CSVParser.parse_consorsbank(Path(f.name))
 
+    def test_transfer_to_own_account_emits_transfer_type(self):
+        """When IBAN is in own_account_ibans, emit type=TRANSFER with abs(amount)."""
+        csv_content = """Konto
+Allgemeine Informationen
+Kontostand
+Kontoumsätze
+Buchung;Valuta;Sender / Empfänger;IBAN;BIC;Buchungstext;Verwendungszweck;Kategorie;Stichwörter;Umsatz geteilt;Betrag;Währung
+01.05.2026;01.05.2026;Trade Republic;DE44100123450409695601;BIC123;UEBERWEISUNG;Transfer to TR;n/a;n/a;n/a;−1.500,00;EUR"""
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=True, encoding='utf-8') as f:
+            f.write(csv_content)
+            f.flush()
+
+            result = CSVParser.parse_consorsbank(
+                Path(f.name),
+                own_account_ibans=["DE44100123450409695601"]
+            )
+
+        assert len(result) == 1
+        assert result[0]["type"] == "TRANSFER"
+        assert result[0]["amount"] == Decimal("1500.00")
+        assert result[0]["description"] == "Trade Republic"
+
 
 TR_HEADER = '"datetime","date","account_type","category","type","asset_class","name","symbol","shares","price","amount","fee","tax","currency","original_amount","original_currency","fx_rate","description","transaction_id","counterparty_name","counterparty_iban","payment_reference","mcc_code"'
 

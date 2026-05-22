@@ -18,15 +18,19 @@ class CSVParser:
     _TR_SKIP_TYPES: frozenset[str] = frozenset({"FREE_RECEIPT", "CUSTOMER_INPAYMENT"})
 
     @staticmethod
-    def parse_consorsbank(file_path: Path) -> list[dict]:
+    def parse_consorsbank(file_path: Path, own_account_ibans: list[str] | None = None) -> list[dict]:
         """Parse Consorsbank CSV export (semicolon-delimited, German format).
 
         Expected columns: Buchung, Sender / Empfänger, Betrag, Währung
         Skips metadata headers until "Kontoumsätze" section.
 
-        Returns: [{"date": DATE, "amount": DECIMAL, "description": str, "type": "INCOME" | "EXPENSE"}]
+        If own_account_ibans is provided and the IBAN column matches, emit type=TRANSFER
+        with abs(amount) instead of INCOME/EXPENSE logic.
+
+        Returns: [{"date": DATE, "amount": DECIMAL, "description": str, "type": "INCOME" | "EXPENSE" | "TRANSFER"}]
         """
         required_columns = ["Buchung", "Sender / Empfänger", "Betrag", "Währung"]
+        own_ibans: set[str] = set(own_account_ibans or [])
 
         result = []
 
@@ -64,9 +68,15 @@ class CSVParser:
                     amount_str = betrag_val.replace(".", "").replace(",", ".").replace("−", "-")
                     amount = Decimal(amount_str)
 
-                    # Determine type based on sign
-                    tx_type = "INCOME" if amount > 0 else "EXPENSE"
-                    amount = abs(amount)
+                    # Check if this is a transfer to/from own account
+                    iban_val = row.get("IBAN", "").strip()
+                    if own_ibans and iban_val in own_ibans:
+                        tx_type = "TRANSFER"
+                        amount = abs(amount)
+                    else:
+                        # Determine type based on sign
+                        tx_type = "INCOME" if amount > 0 else "EXPENSE"
+                        amount = abs(amount)
 
                     # Build description from sender/empfänger
                     description = (row.get("Sender / Empfänger", "") or row.get("Sender / Empfänger", "")).strip()
