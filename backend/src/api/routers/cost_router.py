@@ -154,6 +154,8 @@ async def get_cost_summary(
         income=summary.income,
         expenses=summary.expenses,
         balance=summary.balance,
+        transfers=summary.transfers,
+        stock_investments=summary.stock_investments,
     )
 
 

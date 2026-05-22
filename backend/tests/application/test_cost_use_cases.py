@@ -437,6 +437,54 @@ async def test_summary_only_counts_given_month(repo: InMemoryCostRepository) -> 
     assert summary.expenses == Decimal("500.00")
 
 
+@pytest.mark.asyncio
+async def test_summary_includes_transfers(repo: InMemoryCostRepository) -> None:
+    create = CreateTransactionUseCase(repo)
+    await repo.save_transaction(Transaction.create(
+        title="Transfer to savings",
+        amount=Decimal("200.00"),
+        transaction_type=TransactionType.TRANSFER,
+        transaction_date=date(2026, 4, 10),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Transfer to checking",
+        amount=Decimal("350.00"),
+        transaction_type=TransactionType.TRANSFER,
+        transaction_date=date(2026, 4, 15),
+    ))
+    await create.execute(_expense_input(amount="100.00", tx_date=date(2026, 4, 1)))
+    summary = await GetCostSummaryUseCase(repo).execute(year=2026, month=4)
+    assert summary.transfers == Decimal("550.00")
+    assert summary.expenses == Decimal("100.00")
+    assert summary.balance == Decimal("-100.00")  # balance unaffected by transfers
+
+
+@pytest.mark.asyncio
+async def test_summary_includes_stock_investments(repo: InMemoryCostRepository) -> None:
+    await repo.save_transaction(Transaction.create(
+        title="Buy ETF",
+        amount=Decimal("500.00"),
+        transaction_type=TransactionType.STOCK,
+        transaction_date=date(2026, 4, 5),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Buy shares",
+        amount=Decimal("300.00"),
+        transaction_type=TransactionType.STOCK,
+        transaction_date=date(2026, 4, 20),
+    ))
+    await repo.save_transaction(Transaction.create(
+        title="Salary",
+        amount=Decimal("3000.00"),
+        transaction_type=TransactionType.INCOME,
+        transaction_date=date(2026, 4, 1),
+    ))
+    summary = await GetCostSummaryUseCase(repo).execute(year=2026, month=4)
+    assert summary.stock_investments == Decimal("800.00")
+    assert summary.income == Decimal("3000.00")
+    assert summary.balance == Decimal("3000.00")  # balance unaffected by stock investments
+
+
 # ---------------------------------------------------------------------------
 # Tags
 # ---------------------------------------------------------------------------

@@ -33,6 +33,8 @@ class CostSummary:
     income: Decimal
     expenses: Decimal
     balance: Decimal
+    transfers: Decimal = field(default_factory=lambda: Decimal(0))
+    stock_investments: Decimal = field(default_factory=lambda: Decimal(0))
 
 
 # ---------------------------------------------------------------------------
@@ -239,7 +241,23 @@ class GetCostSummaryUseCase:
             (t.amount for t in transactions if t.transaction_type == TransactionType.EXPENSE),
             Decimal("0"),
         )
-        return CostSummary(year=year, month=month, income=income, expenses=expenses, balance=income - expenses)
+        transfers = sum(
+            (t.amount for t in transactions if t.transaction_type == TransactionType.TRANSFER),
+            Decimal("0"),
+        )
+        stock_investments = sum(
+            (t.amount for t in transactions if t.transaction_type == TransactionType.STOCK),
+            Decimal("0"),
+        )
+        return CostSummary(
+            year=year,
+            month=month,
+            income=income,
+            expenses=expenses,
+            balance=income - expenses,
+            transfers=transfers,
+            stock_investments=stock_investments,
+        )
 
 
 # ---------------------------------------------------------------------------

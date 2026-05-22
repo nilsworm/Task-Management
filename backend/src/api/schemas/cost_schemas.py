@@ -125,6 +125,8 @@ class CostSummaryResponse(BaseModel):
     income: Decimal
     expenses: Decimal
     balance: Decimal
+    transfers: Decimal
+    stock_investments: Decimal
 
 
 class RecurringResponse(BaseModel):
