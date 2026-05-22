@@ -31,6 +31,9 @@ class OpenAICompatClient(IAIClient):
             ],
             stream=False,
         )
+        if not response.choices:
+            logger.warning("OpenRouter returned no choices (rate limit or model error)")
+            return ""
         return response.choices[0].message.content or ""
 
     async def generate_stream(

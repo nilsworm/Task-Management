@@ -26,6 +26,9 @@ _PROMPT_TEMPLATE = (
 )
 
 
+_BATCH_SIZE = 20
+
+
 class TagTransactionsUseCase:
     def __init__(self, cost_repo: ICostRepository, ai_client: IAIClient) -> None:
         self._repo = cost_repo
@@ -44,6 +47,10 @@ class TagTransactionsUseCase:
         if not transactions:
             return
 
+        for i in range(0, len(transactions), _BATCH_SIZE):
+            await self._tag_batch(transactions[i : i + _BATCH_SIZE])
+
+    async def _tag_batch(self, transactions: list) -> None:
         tx_json = json.dumps(
             [
                 {
@@ -69,13 +76,17 @@ class TagTransactionsUseCase:
             logger.warning("AI tagging failed: AI unavailable", exc_info=True)
             return
 
+        if not raw:
+            logger.warning("AI tagging failed: empty response from model")
+            return
+
         try:
             clean = raw.strip()
             if clean.startswith("```"):
                 clean = clean.split("\n", 1)[1].rsplit("```", 1)[0].strip()
             results = json.loads(clean)
         except (json.JSONDecodeError, ValueError):
-            logger.warning("AI tagging failed: could not parse JSON response")
+            logger.warning("AI tagging failed: could not parse JSON response: %.200s", raw)
             return
 
         for item in results:
