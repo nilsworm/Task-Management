@@ -1,8 +1,8 @@
 # Personal Task Management System
 
-Local-only task manager for a single user — no auth, no cloud. Think Azure DevOps / Jira, but self-hosted on your machine.
+Self-hosted task manager for a single user — no cloud, deployable on your own server. Think Azure DevOps / Jira, but yours.
 
-**Features:** tasks with state machine · sprint kanban board (drag & drop) · OKR goals with key results · burndown / velocity / metrics dashboard · dark mode
+**Features:** tasks with state machine · sprint kanban board · OKR goals with key results · burndown / velocity / metrics dashboard · cost management with bank import · AI financial advisor · auto-tagging of transactions · dark mode
 
 ---
 
@@ -109,13 +109,46 @@ All seed data is deterministic (uuid5 namespace) and repeatable across environme
 
 ---
 
+## Cost management & bank import
+
+Import transactions from CSV exports and let the AI categorise them automatically.
+
+**Supported banks:**
+- Consorsbank (semicolon-delimited, ISO-8859-1)
+- Trade Republic (comma-delimited, UTF-8)
+
+```bash
+# Clear existing transactions
+DELETE /cost/transactions/all    # via Swagger UI or curl
+
+# Import CSV via the UI or directly:
+POST /cost/import   (multipart/form-data, field: file)
+```
+
+After a successful import the backend runs AI auto-tagging in the background — no action needed. Each transaction receives one or more tags from the built-in list (thematic: `lebensmittel`, `transport`, `versicherung`, … / evaluative: `unnötig`, `ungesund`, `wiederkehrend`, …).
+
+---
+
+## AI features
+
+The system connects to a local or cloud AI provider for two features:
+
+| Feature | How |
+|---|---|
+| **Financial advisor** | Chat interface + monthly insight cards |
+| **Auto-tagging** | Runs after every CSV import (background task, no user action) |
+
+Configure the provider via env vars (see [Environment variables](#environment-variables)). Ollama works fully offline; OpenRouter requires an API key.
+
+---
+
 ## Tests
 
 ### Backend — pytest
 
 ```bash
 cd backend
-uv run pytest                          # all 449 tests
+uv run pytest                          # all 640 tests
 uv run pytest --cov=src               # with coverage
 ```
 
@@ -188,3 +221,10 @@ Copy `.env.example` to `.env` and adjust as needed. All variables have working d
 | `PGADMIN_EMAIL` | `admin@local.dev` | pgAdmin login |
 | `PGADMIN_PASSWORD` | `admin` | pgAdmin password |
 | `PGADMIN_PORT` | `5050` | Host port for pgAdmin |
+| `AI_PROVIDER` | `ollama` | AI backend: `ollama` or `openrouter` |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API base URL |
+| `OLLAMA_MODEL` | `llama3` | Model name for Ollama |
+| `AI_API_KEY` | *(none)* | OpenRouter API key (required when `AI_PROVIDER=openrouter`) |
+| `AI_MODEL` | *(none)* | Model ID for OpenRouter (e.g. `mistralai/mistral-7b-instruct`) |
+| `COST_CURRENCY` | `EUR` | Display currency for cost management |
+| `OWN_ACCOUNT_IBANS` | `[]` | JSON array of own IBANs — transfers between them are skipped as internal |
