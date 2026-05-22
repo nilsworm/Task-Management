@@ -11,5 +11,5 @@ ALLOWED_TAGS: frozenset[str] = frozenset({
     "investition", "sparen", "steuer", "geschenk",
     # bewertend
     "unnötig", "impuls", "ungesund", "tabak", "alkohol",
-    "luxury", "wiederkehrend", "einmalig",
+    "luxus", "wiederkehrend", "einmalig",
 })
