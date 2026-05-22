@@ -92,6 +92,11 @@ class ICostRepository(ABC):
         ...
 
     @abstractmethod
+    async def update_tags(self, transaction_id: uuid.UUID, tags: list[str]) -> None:
+        """Overwrite the tags on an existing transaction."""
+        ...
+
+    @abstractmethod
     async def reset_all(self) -> None:
         """Delete all transactions and recurring transactions."""
         ...

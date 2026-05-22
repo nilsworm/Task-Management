@@ -5,9 +5,9 @@ import tempfile
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query, UploadFile
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, UploadFile
 
-from src.api.dependencies import CostRepoDep
+from src.api.dependencies import AIClientDep, CostRepoDep
 from src.api.schemas.cost_schemas import (
     CostAnalyticsResponse,
     CostSummaryResponse,
@@ -200,11 +200,17 @@ async def reset_all(repo: CostRepoDep) -> None:
 # ---------------------------------------------------------------------------
 
 @router.post("/import", response_model=dict)
-async def import_csv(file: UploadFile, repo: CostRepoDep) -> dict:
+async def import_csv(
+    file: UploadFile,
+    repo: CostRepoDep,
+    background_tasks: BackgroundTasks,
+    ai_client: AIClientDep,
+) -> dict:
     from src.application.use_cases.cost_use_cases import (
         ImportTransactionsInput,
         ImportTransactionsUseCase,
     )
+    from src.application.use_cases.tag_transactions import TagTransactionsUseCase
     from src.config import settings
     from src.infrastructure.import_.csv_parser import (
         CSVParser,
@@ -247,9 +253,14 @@ async def import_csv(file: UploadFile, repo: CostRepoDep) -> dict:
     finally:
         tmp_path.unlink(missing_ok=True)
 
-    use_case = ImportTransactionsUseCase(repo)
-    result = await use_case.execute(
+    result = await ImportTransactionsUseCase(repo).execute(
         ImportTransactionsInput(parsed_rows=parsed_rows, import_source=import_source)
     )
+
+    if result.new_ids:
+        background_tasks.add_task(
+            TagTransactionsUseCase(repo, ai_client).execute, result.new_ids
+        )
+
     return {"imported": result.imported, "skipped": result.skipped}
 

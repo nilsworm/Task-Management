@@ -5,7 +5,7 @@ from datetime import date as date_type
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import delete, exists as sa_exists, extract, func, select, union
+from sqlalchemy import delete, exists as sa_exists, extract, func, select, union, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.cost.entities import RecurringTransaction, Transaction
@@ -138,7 +138,7 @@ class PostgresCostRepository(ICostRepository):
         )
 
         result = await self._session.execute(stmt)
-        model = result.scalar_one_or_none()
+        model = result.scalars().first()
         return transaction_from_model(model) if model else None
 
     async def transaction_exists(
@@ -153,6 +153,14 @@ class PostgresCostRepository(ICostRepository):
         )
         result = await self._session.execute(stmt)
         return bool(result.scalar())
+
+    async def update_tags(self, transaction_id: uuid.UUID, tags: list[str]) -> None:
+        await self._session.execute(
+            update(TransactionModel)
+            .where(TransactionModel.id == transaction_id)
+            .values(tags=tags)
+        )
+        await self._session.commit()
 
     async def reset_all(self) -> None:
         await self._session.execute(delete(TransactionModel))

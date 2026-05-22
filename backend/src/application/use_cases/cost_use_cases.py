@@ -458,6 +458,7 @@ class ImportTransactionsInput:
 class ImportTransactionsResult:
     imported: int
     skipped: int
+    new_ids: list[uuid.UUID] = field(default_factory=list)
 
 
 class ImportTransactionsUseCase:
@@ -467,6 +468,7 @@ class ImportTransactionsUseCase:
     async def execute(self, input: ImportTransactionsInput) -> ImportTransactionsResult:
         imported = 0
         skipped = 0
+        new_ids: list[uuid.UUID] = []
         for row in input.parsed_rows:
             try:
                 exists = await self._repo.transaction_exists(
@@ -475,8 +477,9 @@ class ImportTransactionsUseCase:
                 if exists:
                     skipped += 1
                 else:
-                    await self._repo.create_transaction_from_import(row, input.import_source)
+                    tx = await self._repo.create_transaction_from_import(row, input.import_source)
                     imported += 1
+                    new_ids.append(tx.id)
             except Exception:
                 logger.error("Failed to import row: %s", row, exc_info=True)
-        return ImportTransactionsResult(imported=imported, skipped=skipped)
+        return ImportTransactionsResult(imported=imported, skipped=skipped, new_ids=new_ids)

@@ -126,6 +126,11 @@ class InMemoryCostRepository(ICostRepository):
             for t in self._transactions.values()
         )
 
+    async def update_tags(self, transaction_id: uuid.UUID, tags: list[str]) -> None:
+        tx = self._transactions.get(transaction_id)
+        if tx is not None:
+            tx.tags = tags
+
     async def reset_all(self) -> None:
         self._transactions.clear()
         self._recurring.clear()
@@ -989,3 +994,38 @@ async def test_import_transactions_empty(repo: InMemoryCostRepository) -> None:
 
     assert result.imported == 0
     assert result.skipped == 0
+
+
+@pytest.mark.asyncio
+async def test_update_tags_sets_tags_on_transaction(repo: InMemoryCostRepository) -> None:
+    tx = await CreateTransactionUseCase(repo).execute(
+        CreateTransactionInput(
+            title="Rewe",
+            amount=Decimal("45.00"),
+            transaction_type=TransactionType.EXPENSE,
+            date=date(2026, 5, 1),
+        )
+    )
+    await repo.update_tags(tx.id, ["lebensmittel"])
+    updated = await repo.get_transaction(tx.id)
+    assert updated is not None
+    assert updated.tags == ["lebensmittel"]
+
+
+@pytest.mark.asyncio
+async def test_import_returns_new_ids(repo: InMemoryCostRepository) -> None:
+    from src.application.use_cases.cost_use_cases import ImportTransactionsInput, ImportTransactionsUseCase
+    rows = [
+        {
+            "date": date(2026, 5, 1),
+            "amount": Decimal("100.00"),
+            "type": "INCOME",
+            "description": "Gehalt Mai",
+        }
+    ]
+    result = await ImportTransactionsUseCase(repo).execute(
+        ImportTransactionsInput(parsed_rows=rows, import_source="consorsbank")
+    )
+    assert result.imported == 1
+    assert len(result.new_ids) == 1
+    assert isinstance(result.new_ids[0], uuid.UUID)
