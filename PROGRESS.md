@@ -386,6 +386,32 @@
 
 ## Session-Log
 
+### 2026-05-22 — Phase 11.7: Trade Republic CSV Import + TRANSFER/STOCK Types ✅
+
+**Branch:** `feature/trade-republic-import`
+
+**Scope:** Rewrote `parse_trade_republic` for the real Transaktionsexport.csv format; added TRANSFER and STOCK transaction types; prevented double-counting of inter-account transfers.
+
+**Backend:**
+- New `TransactionType` values: `TRANSFER = "transfer"`, `STOCK = "stock"`
+- `config.py`: `own_account_ibans: list[str] = []` env var (comma-separated, uppercase-normalized)
+- `parse_trade_republic` fully rewritten for 23-column TR CSV (CARD_TRANSACTION→EXPENSE, INTEREST/DIVIDEND/SAVEBACK→INCOME, BUY→STOCK, TRANSFER_INBOUND from own account→skip, FREE_RECEIPT/CUSTOMER_INPAYMENT→skip)
+- `parse_consorsbank`: new `own_account_ibans` param; rows where IBAN matches own account emit TRANSFER type
+- Import router: `"transaktionsexport"` filename detection; `settings.own_account_ibans` passed to both parsers
+- `CostSummary` + `GetCostSummaryUseCase`: new `transfers` and `stock_investments` fields
+- `MonthlyComparison` + `GetCostAnalyticsUseCase`: new `transfers` and `stock_investments` per month
+- Bug fix: TRANSFER_INBOUND skip only fires when `own_ibans` is non-empty AND counterparty matches (was inverted)
+- New tests: 12 CSV parser tests + 1 router test + 2 summary tests + 1 analytics test = 16 new tests
+
+**Frontend:**
+- Regenerated OpenAPI spec + TypeScript types
+- `SummaryCards.tsx`: 2 new cards (Transfers, Aktieninvestments) with responsive `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5`
+- `AnalyticsTab.tsx`: 2 new bars in monthly chart (purple for Transfers, amber for Aktieninvestments)
+
+**Commits:** `efc2f9e` → `d1f7ed7` (9 commits)
+
+---
+
 ### 2026-05-21 — Phase 11.5: POST /cost/import Endpoint ✅
 
 **Scope:** Replaced weekly ImportScheduler with on-demand CSV upload endpoint triggered by Mac Shortcuts.
