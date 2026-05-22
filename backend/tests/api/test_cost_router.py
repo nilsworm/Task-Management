@@ -450,10 +450,18 @@ CONSORSBANK_CSV = (
     b"02.05.2026;02.05.2026;Amazon;DE456;BIC456;KARTENZAHLUNG;Laptop;n/a;n/a;n/a;\xe2\x88\x92250,50;EUR\n"
 )
 
+TR_CSV_HEADER = b'"datetime","date","account_type","category","type","asset_class","name","symbol","shares","price","amount","fee","tax","currency","original_amount","original_currency","fx_rate","description","transaction_id","counterparty_name","counterparty_iban","payment_reference","mcc_code"\n'
+
 TRADE_REPUBLIC_CSV = (
-    b"Datum,Beschreibung,Typ,Betrag\n"
-    b"2026-05-01,Dividend Payment,Income,+50.00\n"
-    b"2026-05-02,Stock Purchase,Expense,-1200.00\n"
+    TR_CSV_HEADER
+    + b'"2026-05-01T10:00:00Z","2026-05-01","DEFAULT","CASH","CARD_TRANSACTION","","Lidl","","","","-13.12","","","EUR","","","","TR Card","id1","","","",""\n'
+    + b'"2026-05-02T10:00:00Z","2026-05-02","DEFAULT","CASH","INTEREST_PAYMENT","","","","","","0.68","","","EUR","","","","Interest","id2","","","",""\n'
+)
+
+TRANSAKTIONSEXPORT_CSV = (
+    TR_CSV_HEADER
+    + b'"2026-05-03T10:00:00Z","2026-05-03","DEFAULT","CASH","CARD_TRANSACTION","","Rewe","","","","-25.00","","","EUR","","","","TR Card","id3","","","",""\n'
+    + b'"2026-05-04T10:00:00Z","2026-05-04","DEFAULT","CASH","INTEREST_PAYMENT","","","","","","1.20","","","EUR","","","","Interest","id4","","","",""\n'
 )
 
 
@@ -470,10 +478,22 @@ def test_import_consorsbank_csv(client: TestClient) -> None:
 
 
 def test_import_trade_republic_csv(client: TestClient) -> None:
-    """POST /cost/import with valid Trade Republic CSV returns 200 with imported count."""
+    """POST /cost/import with valid Trade Republic CSV (trade_republic filename) returns 200."""
     resp = client.post(
         "/cost/import",
         files={"file": ("trade_republic_mai2026.csv", TRADE_REPUBLIC_CSV, "text/csv")},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["imported"] == 2
+    assert data["skipped"] == 0
+
+
+def test_import_transaktionsexport_csv(client: TestClient) -> None:
+    """POST /cost/import with transaktionsexport filename routes to Trade Republic parser."""
+    resp = client.post(
+        "/cost/import",
+        files={"file": ("transaktionsexport_2026-05.csv", TRANSAKTIONSEXPORT_CSV, "text/csv")},
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -489,7 +509,7 @@ def test_import_unknown_filename(client: TestClient) -> None:
     )
     assert resp.status_code == 400
     detail = resp.json()["detail"].lower()
-    assert "consorsbank" in detail or "trade_republic" in detail
+    assert "consorsbank" in detail or "trade_republic" in detail or "transaktionsexport" in detail
 
 
 def test_import_malformed_csv(client: TestClient) -> None:

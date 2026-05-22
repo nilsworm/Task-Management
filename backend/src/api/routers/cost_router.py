@@ -203,6 +203,7 @@ async def import_csv(file: UploadFile, repo: CostRepoDep) -> dict:
         ImportTransactionsInput,
         ImportTransactionsUseCase,
     )
+    from src.config import settings
     from src.infrastructure.import_.csv_parser import (
         CSVParser,
         InvalidCSVFormatError,
@@ -212,14 +213,24 @@ async def import_csv(file: UploadFile, repo: CostRepoDep) -> dict:
     filename = (file.filename or "").lower()
     if "consorsbank" in filename:
         import_source = "consorsbank"
-        parse_fn = CSVParser.parse_consorsbank
-    elif "trade_republic" in filename or "traderepublic" in filename:
+
+        def parse_fn(path: Path) -> list[dict]:
+            return CSVParser.parse_consorsbank(path, own_account_ibans=settings.own_account_ibans)
+
+    elif (
+        "trade_republic" in filename
+        or "traderepublic" in filename
+        or "transaktionsexport" in filename
+    ):
         import_source = "trade_republic"
-        parse_fn = CSVParser.parse_trade_republic
+
+        def parse_fn(path: Path) -> list[dict]:
+            return CSVParser.parse_trade_republic(path, own_account_ibans=settings.own_account_ibans)
+
     else:
         raise HTTPException(
             status_code=400,
-            detail="Unbekanntes CSV-Format. Dateiname muss 'consorsbank' oder 'trade_republic' enthalten.",
+            detail="Unbekanntes CSV-Format. Dateiname muss 'consorsbank', 'trade_republic' oder 'transaktionsexport' enthalten.",
         )
 
     content = await file.read()
