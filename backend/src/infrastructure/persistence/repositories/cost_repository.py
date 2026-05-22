@@ -138,7 +138,7 @@ class PostgresCostRepository(ICostRepository):
         )
 
         result = await self._session.execute(stmt)
-        model = result.scalar_one_or_none()
+        model = result.scalars().first()
         return transaction_from_model(model) if model else None
 
     async def transaction_exists(
