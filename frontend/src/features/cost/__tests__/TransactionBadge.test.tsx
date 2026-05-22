@@ -22,6 +22,26 @@ describe("TransactionTypeBadge", () => {
     const { container } = render(<TransactionTypeBadge type="expense" />)
     expect(container.firstChild).toHaveClass("border-red-500")
   })
+
+  it("renders 'Transfer' for transfer", () => {
+    render(<TransactionTypeBadge type="transfer" />)
+    expect(screen.getByText("Transfer")).toBeInTheDocument()
+  })
+
+  it("applies purple class for transfer", () => {
+    const { container } = render(<TransactionTypeBadge type="transfer" />)
+    expect(container.firstChild).toHaveClass("border-purple-500")
+  })
+
+  it("renders 'Investment' for stock", () => {
+    render(<TransactionTypeBadge type="stock" />)
+    expect(screen.getByText("Investment")).toBeInTheDocument()
+  })
+
+  it("applies amber class for stock", () => {
+    const { container } = render(<TransactionTypeBadge type="stock" />)
+    expect(container.firstChild).toHaveClass("border-amber-500")
+  })
 })
 
 describe("formatAmount", () => {

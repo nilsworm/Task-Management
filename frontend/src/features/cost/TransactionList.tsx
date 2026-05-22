@@ -78,16 +78,20 @@ export function TransactionList({ filters }: Props) {
                 </TableCell>
                 <TableCell className="font-medium">{t.title}</TableCell>
                 <TableCell>
-                  <TransactionTypeBadge type={t.transaction_type as "income" | "expense"} />
+                  <TransactionTypeBadge type={t.transaction_type as "income" | "expense" | "transfer" | "stock"} />
                 </TableCell>
                 <TableCell
                   className={`text-right font-mono font-medium ${
                     t.transaction_type === "income"
                       ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
+                      : t.transaction_type === "expense"
+                        ? "text-red-600 dark:text-red-400"
+                        : t.transaction_type === "transfer"
+                          ? "text-purple-600 dark:text-purple-400"
+                          : "text-amber-600 dark:text-amber-400"
                   }`}
                 >
-                  {t.transaction_type === "income" ? "+" : "-"}
+                  {t.transaction_type === "income" ? "+" : t.transaction_type === "expense" ? "-" : ""}
                   {formatAmount(t.amount)}
                 </TableCell>
                 <TableCell>
