@@ -291,3 +291,14 @@ async def test_transaction_exists_returns_false(repo: PostgresCostRepository) ->
     result = await repo.transaction_exists(date(2026, 5, 10), Decimal("45.50"), "Supermarkt")
 
     assert result is False
+
+
+@pytest.mark.asyncio
+async def test_update_tags_sets_tags(repo: PostgresCostRepository) -> None:
+    """update_tags sets tags on an existing transaction."""
+    tx = _tx(title="Rewe", tags=[])
+    await repo.save_transaction(tx)
+    await repo.update_tags(tx.id, ["lebensmittel", "unnötig"])
+    fetched = await repo.get_transaction(tx.id)
+    assert fetched is not None
+    assert set(fetched.tags) == {"lebensmittel", "unnötig"}
